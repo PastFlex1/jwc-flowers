@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -52,6 +52,7 @@ const navItems = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const router = useRouter();
 
   return (
     <SidebarProvider>
@@ -145,6 +146,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <MenubarItem>Notas de credito</MenubarItem>
                 <MenubarItem>Notas de debito</MenubarItem>
               </MenubarContent>
+            </MenubarMenu>
+            <MenubarMenu>
+              <MenubarTrigger className="cursor-pointer" onClick={() => router.push('/invoices/new')}>
+                Nueva Venta
+              </MenubarTrigger>
+            </MenubarMenu>
+            <MenubarMenu>
+              <MenubarTrigger className="cursor-pointer" onClick={() => router.push('/inventory')}>
+                Inventario
+              </MenubarTrigger>
             </MenubarMenu>
            </Menubar>
         </header>
