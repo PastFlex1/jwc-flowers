@@ -5,34 +5,62 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { format } from 'date-fns';
+import { CalendarIcon, Trash2, PlusCircle, Edit } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Trash2, PlusCircle } from 'lucide-react';
-import { customers, inventory } from '@/lib/mock-data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { customers, fincas, vendedores, cargueras, paises } from '@/lib/mock-data';
 
 const lineItemSchema = z.object({
-  itemId: z.string().min(1, 'Please select an item.'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1.'),
+  id: z.string().optional(),
+  invoiceNumber: z.string().min(1, "Requerido"),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
+  boxCount: z.coerce.number().positive("Debe ser > 0"),
+  bunchCount: z.coerce.number().positive("Debe ser > 0"),
+  bunchesPerBox: z.coerce.number().positive("Debe ser > 0"),
+  description: z.string().min(1, "Descripción requerida."),
+  length: z.coerce.number().positive("Debe ser > 0"),
+  stemCount: z.coerce.number().positive("Debe ser > 0"),
+  purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
+  salePrice: z.coerce.number().min(0, "Debe ser >= 0"),
 });
 
 const invoiceSchema = z.object({
-  customerId: z.string().min(1, 'Please select a customer.'),
-  items: z.array(lineItemSchema).min(1, 'Please add at least one item.'),
+  farmDepartureDate: z.date({ required_error: "Fecha de salida requerida." }),
+  flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
+  sellerId: z.string().min(1, 'Seleccione un vendedor.'),
+  consigneeId: z.string().min(1, 'Seleccione un consignatario.'),
+  farmId: z.string().min(1, 'Seleccione una finca.'),
+  carrierId: z.string().min(1, 'Seleccione una carguera.'),
+  countryId: z.string().min(1, 'Seleccione un país.'),
+  pointOfSale: z.string().min(1, 'Punto de venta requerido.'),
+  reference: z.string().optional(),
+  masterAWB: z.string().min(1, 'Guía Madre requerida.'),
+  houseAWB: z.string().min(1, 'Guía Hija requerida.'),
+  items: z.array(lineItemSchema).min(0),
 });
+
+type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
 export default function NewInvoicePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof invoiceSchema>>({
+  const [isHeaderSet, setIsHeaderSet] = useState(false);
+
+  const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
-      customerId: '',
-      items: [{ itemId: '', quantity: 1 }],
+      items: [],
+      reference: '',
     },
   });
 
@@ -41,173 +69,264 @@ export default function NewInvoicePage() {
     name: 'items',
   });
 
-  const watchItems = form.watch('items');
-  const subtotal = watchItems.reduce((acc, currentItem) => {
-    const item = inventory.find(i => i.id === currentItem.itemId);
-    return acc + (item ? item.price * currentItem.quantity : 0);
-  }, 0);
-  const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + tax;
+  async function handleHeaderSubmit() {
+    const headerFields: (keyof InvoiceFormValues)[] = [
+      'farmDepartureDate', 'flightDate', 'sellerId', 'consigneeId', 
+      'farmId', 'carrierId', 'countryId', 'pointOfSale', 
+      'masterAWB', 'houseAWB'
+    ];
+    const result = await form.trigger(headerFields);
+    if (result) {
+      setIsHeaderSet(true);
+    } else {
+       toast({
+        title: 'Error de Validación',
+        description: 'Por favor, complete todos los campos del encabezado.',
+        variant: 'destructive',
+      });
+    }
+  }
 
-  function onSubmit(values: z.infer<typeof invoiceSchema>) {
+  function onSubmit(values: InvoiceFormValues) {
+    if (values.items.length === 0) {
+      toast({
+        title: 'Factura Vacía',
+        description: 'Por favor, añada al menos un ítem a la factura.',
+        variant: 'destructive',
+      });
+      return;
+    }
     console.log(values);
     toast({
-      title: 'Invoice Created!',
-      description: 'The new invoice has been successfully saved.',
+      title: 'Factura Creada!',
+      description: 'La nueva factura ha sido guardada exitosamente.',
     });
     router.push('/');
+  }
+
+  const watchItems = form.watch('items');
+
+  const getCalculations = (item: any) => {
+    const purchasePrice = Number(item.purchasePrice) || 0;
+    const salePrice = Number(item.salePrice) || 0;
+    const stemCount = Number(item.stemCount) || 0;
+    const difference = salePrice - purchasePrice;
+    const total = salePrice * stemCount;
+    return { difference, total };
+  };
+
+  const handleEdit = (index: number) => {
+    // This is a placeholder for a more complex edit modal if needed later
+    console.log("Editing row", index);
+     toast({
+        title: 'Edición en línea',
+        description: 'Puede editar los valores directamente en la fila.',
+      });
   }
 
   return (
     <div className="space-y-6">
        <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">New Invoice</h2>
-          <p className="text-muted-foreground">Create a new invoice for a customer.</p>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">Nueva Venta</h2>
+          <p className="text-muted-foreground">Crear una nueva factura de venta.</p>
         </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          
           <Card>
             <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
+              <CardTitle>Datos de la Factura</CardTitle>
             </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="customerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Customer</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a customer" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {customers.map(customer => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha Salida Finca</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, "PPP") : <span>Seleccione fecha</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("1900-01-01")} initialFocus />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Items</CardTitle>
-              <CardDescription>Add products and services to this invoice.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead className="w-[100px]">Qty</TableHead>
-                    <TableHead className="w-[150px]">Unit Price</TableHead>
-                    <TableHead className="w-[150px] text-right">Total</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fields.map((field, index) => {
-                    const selectedItem = inventory.find(i => i.id === watchItems[index]?.itemId);
-                    return (
-                      <TableRow key={field.id}>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.itemId`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select an item" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {inventory.map(item => (
-                                      <SelectItem key={item.id} value={item.id}>
-                                        {item.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.quantity`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Input type="number" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell>${selectedItem?.price.toFixed(2) || '0.00'}</TableCell>
-                        <TableCell className="text-right">
-                          ${( (selectedItem?.price || 0) * (watchItems[index]?.quantity || 0) ).toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                            <Trash2 className="h-4 w-4" />
+              )}/>
+               <FormField control={form.control} name="flightDate" render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha Vuelo</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                            {field.value ? format(field.value, "PPP") : <span>Seleccione fecha</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => append({ itemId: '', quantity: 1 })}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Item
-              </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date("1900-01-01")} initialFocus />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+              )}/>
+              <FormField control={form.control} name="sellerId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vendedor</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un vendedor" /></SelectTrigger></FormControl>
+                    <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="consigneeId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Consignatario (Cliente)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger></FormControl>
+                    <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="farmId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Finca</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una finca" /></SelectTrigger></FormControl>
+                    <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="carrierId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Carguera</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una carguera" /></SelectTrigger></FormControl>
+                    <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="countryId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>País</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un país" /></SelectTrigger></FormControl>
+                    <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="pointOfSale" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Punto de Venta</FormLabel>
+                  <FormControl><Input placeholder="Punto de Venta" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                </FormItem>
+              )}/>
+               <FormField control={form.control} name="reference" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Referencia</FormLabel>
+                  <FormControl><Input placeholder="Referencia" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                </FormItem>
+              )}/>
+               <FormField control={form.control} name="masterAWB" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Guía Madre</FormLabel>
+                  <FormControl><Input placeholder="Guía Madre" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="houseAWB" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Guía Hija</FormLabel>
+                  <FormControl><Input placeholder="Guía Hija" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                </FormItem>
+              )}/>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end">
-            <div className="w-full max-w-xs space-y-2">
-                <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                    <span>Tax (8%)</span>
-                    <span>${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
-                </div>
+          {!isHeaderSet && (
+             <div className="flex justify-end">
+              <Button type="button" onClick={handleHeaderSubmit}>Crear Factura y Añadir Items</Button>
             </div>
-          </div>
+          )}
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/')}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Invoice</Button>
-          </div>
+          {isHeaderSet && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Items de la Factura</CardTitle>
+                <CardDescription>Añada los productos a la factura.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">N°</TableHead>
+                        <TableHead># Invoice</TableHead>
+                        <TableHead>Tipo Caja</TableHead>
+                        <TableHead>N° Cajas</TableHead>
+                        <TableHead>N° Bunches</TableHead>
+                        <TableHead>Bunches/Caja</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Longitud</TableHead>
+                        <TableHead>N° Tallos</TableHead>
+                        <TableHead>P. Compra</TableHead>
+                        <TableHead>P. Venta</TableHead>
+                        <TableHead>Diferencia</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead className="w-[100px]">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {fields.map((field, index) => {
+                         const { difference, total } = getCalculations(watchItems[index]);
+                         return (
+                          <TableRow key={field.id}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.invoiceNumber`} render={({ field }) => <Input {...field} className="min-w-[100px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl><SelectTrigger className="min-w-[80px]"><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
+                                </Select>
+                            )} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.description`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
+                            <TableCell className="min-w-[100px]">${difference.toFixed(2)}</TableCell>
+                            <TableCell className="min-w-[100px]">${total.toFixed(2)}</TableCell>
+                            <TableCell className="flex items-center gap-1">
+                              <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(index)}><Edit className="h-4 w-4" /></Button>
+                              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ invoiceNumber: '', boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0})}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {isHeaderSet && (
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => router.push('/')}>Cancelar</Button>
+              <Button type="submit">Guardar Factura</Button>
+            </div>
+          )}
         </form>
       </Form>
     </div>
