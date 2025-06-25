@@ -1,4 +1,4 @@
-import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera } from './types';
+import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera, type Vendedor } from './types';
 
 export const customers: Customer[] = [
   { id: 'cus_1', name: 'Alex', pais: 'Ecuador', estadoCiudad: 'Pichincha', address: '123 Meadow Lane, Greenfield, CA 91234', email: 'alex@example.com', phone: '0991234567', agencia: 'Agencia A', vendedor: 'Vendedor 1', plazo: 15, cupo: 5000 },
@@ -48,6 +48,11 @@ export const invoices: Invoice[] = [
 export const fincas: Finca[] = [
   { id: 'finca_1', name: 'Finca Rosaleda', address: 'Valle de las Flores, Cayambe', phone: '0991234567', taxId: '1791234567001', productType: 'Rosas' },
   { id: 'finca_2', name: 'Girasoles del Sol', address: 'Ruta del Sol, km 25', phone: '0987654321', taxId: '1798765432001', productType: 'Girasoles' },
+];
+
+export const vendedores: Vendedor[] = [
+  { id: 'ven_1', nombre: 'Alex Palma', siglas: 'AP' },
+  { id: 'ven_2', nombre: 'Beatriz Solis', siglas: 'BS' },
 ];
 
 export const marcaciones: Marcacion[] = [

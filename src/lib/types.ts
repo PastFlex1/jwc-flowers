@@ -44,6 +44,12 @@ export interface Finca {
   productType: string;
 }
 
+export interface Vendedor {
+  id: string;
+  nombre: string;
+  siglas: string;
+}
+
 export interface Marcacion {
   id: string;
   numeroMarcacion: string;
