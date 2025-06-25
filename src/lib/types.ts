@@ -59,3 +59,9 @@ export interface Dae {
   pais: string;
   numeroDae: string;
 }
+
+export interface Carguera {
+  id: string;
+  nombreCarguera: string;
+  pais: string;
+}

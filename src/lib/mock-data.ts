@@ -1,4 +1,4 @@
-import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae } from './types';
+import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera } from './types';
 
 export const customers: Customer[] = [
   { id: 'cus_1', name: 'Elena Rodriguez', email: 'elena.r@example.com', billingAddress: '123 Meadow Lane, Greenfield, CA 91234', isFirstOrder: true },
@@ -70,4 +70,32 @@ export const provincias: Provincia[] = [
 export const daes: Dae[] = [
   { id: 'dae_1', pais: 'Ecuador', numeroDae: 'DAE-EC-001' },
   { id: 'dae_2', pais: 'Colombia', numeroDae: 'DAE-CO-002' },
+];
+
+export const cargueras: Carguera[] = [
+    { id: 'car_1', nombreCarguera: 'ALIANZA LOGISTIC/G&G', pais: 'Ecuador' },
+    { id: 'car_2', nombreCarguera: 'CARGO MASTER/DSV/PANALPINA', pais: 'Ecuador' },
+    { id: 'car_3', nombreCarguera: 'CEVA CARGO/CIMA CARGO', pais: 'Ecuador' },
+    { id: 'car_4', nombreCarguera: 'CHAMPION AIR CARGO', pais: 'Ecuador' },
+    { id: 'car_5', nombreCarguera: 'D Y CARGO', pais: 'Ecuador' },
+    { id: 'car_6', nombreCarguera: 'DIRECT CARGO', pais: 'Ecuador' },
+    { id: 'car_7', nombreCarguera: 'EBF CARGO', pais: 'Ecuador' },
+    { id: 'car_8', nombreCarguera: 'ECUADOR CARGO', pais: 'Ecuador' },
+    { id: 'car_9', nombreCarguera: 'FLORAL TECH-LOGIKE CARGO', pais: 'Ecuador' },
+    { id: 'car_10', nombreCarguera: 'FLOWER CARGO', pais: 'Ecuador' },
+    { id: 'car_11', nombreCarguera: 'FRESH LINK', pais: 'Ecuador' },
+    { id: 'car_12', nombreCarguera: 'FRESH LOGISTIK', pais: 'Ecuador' },
+    { id: 'car_13', nombreCarguera: 'GREEN LOGISTIC', pais: 'Ecuador' },
+    { id: 'car_14', nombreCarguera: 'HP APOLLO', pais: 'Ecuador' },
+    { id: 'car_15', nombreCarguera: 'KHUENE NAGEL', pais: 'Ecuador' },
+    { id: 'car_16', nombreCarguera: 'LOGISTI USA/PANATLANTIC', pais: 'Ecuador' },
+    { id: 'car_17', nombreCarguera: 'ONE TEAM CARGO', pais: 'Ecuador' },
+    { id: 'car_18', nombreCarguera: 'OPERFLOR', pais: 'Ecuador' },
+    { id: 'car_19', nombreCarguera: 'PACIFIC AIR CARGO', pais: 'Ecuador' },
+    { id: 'car_20', nombreCarguera: 'PG CARGO', pais: 'Ecuador' },
+    { id: 'car_21', nombreCarguera: 'SAFTEC', pais: 'Ecuador' },
+    { id: 'car_22', nombreCarguera: 'UPS SAFTEC', pais: 'Ecuador' },
+    { id: 'car_23', nombreCarguera: 'SIERRA CARGO', pais: 'Ecuador' },
+    { id: 'car_24', nombreCarguera: 'VALUE CARGO', pais: 'Ecuador' },
+    { id: 'car_25', nombreCarguera: 'WORLD WIDE', pais: 'Ecuador' },
 ];

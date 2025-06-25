@@ -142,7 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <MenubarItem onClick={() => router.push('/pais')}>Pais</MenubarItem>
                 <MenubarItem onClick={() => router.push('/provincias')}>Provincias</MenubarItem>
                 <MenubarItem onClick={() => router.push('/dae')}>Dae</MenubarItem>
-                <MenubarItem>Carguera</MenubarItem>
+                <MenubarItem onClick={() => router.push('/cargueras')}>Carguera</MenubarItem>
                 <MenubarItem>Notas de credito</MenubarItem>
                 <MenubarItem>Notas de debito</MenubarItem>
               </MenubarContent>
