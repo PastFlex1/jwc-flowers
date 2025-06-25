@@ -30,7 +30,7 @@ export interface Invoice {
 }
 
 export interface Finca {
-  id: string;
+  id:string;
   name: string;
   address: string;
   phone: string;
@@ -40,7 +40,8 @@ export interface Finca {
 
 export interface Marcacion {
   id: string;
-  pais: string;
+  numeroMarcacion: string;
+  cliente: string;
 }
 
 export interface Pais {

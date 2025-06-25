@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import type { Marcacion } from '@/lib/types';
 
 const formSchema = z.object({
-  pais: z.string().min(2, { message: "El país debe tener al menos 2 caracteres." }),
+  numeroMarcacion: z.string().min(1, { message: "El número de marcación es requerido." }),
+  cliente: z.string().min(2, { message: "El nombre del cliente debe tener al menos 2 caracteres." }),
 });
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
@@ -25,13 +26,15 @@ export function MarcacionForm({ onSubmit, onClose, initialData }: MarcacionFormP
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
-      pais: '',
+      numeroMarcacion: '',
+      cliente: '',
     },
   });
 
   useEffect(() => {
     form.reset(initialData || {
-      pais: '',
+      numeroMarcacion: '',
+      cliente: '',
     });
   }, [initialData, form]);
 
@@ -45,12 +48,25 @@ export function MarcacionForm({ onSubmit, onClose, initialData }: MarcacionFormP
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="pais"
+          name="numeroMarcacion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>País</FormLabel>
+              <FormLabel>Número de Marcación</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Ecuador" {...field} />
+                <Input placeholder="e.g., MARC-001" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cliente"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cliente</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Elena Rodriguez" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

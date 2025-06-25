@@ -97,14 +97,16 @@ export default function MarcacionPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>País</TableHead>
+                  <TableHead>Número de Marcación</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {marcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
-                    <TableCell className="font-medium">{marcacion.pais}</TableCell>
+                    <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
+                    <TableCell>{marcacion.cliente}</TableCell>
                     <TableCell className="text-right space-x-0">
                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(marcacion)}>
                            <Edit className="h-4 w-4" />

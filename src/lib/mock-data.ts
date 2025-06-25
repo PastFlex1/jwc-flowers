@@ -52,8 +52,8 @@ export const fincas: Finca[] = [
 ];
 
 export const marcaciones: Marcacion[] = [
-  { id: 'mar_1', pais: 'Ecuador' },
-  { id: 'mar_2', pais: 'Colombia' },
+  { id: 'mar_1', numeroMarcacion: 'MARC-001', cliente: 'Elena Rodriguez' },
+  { id: 'mar_2', numeroMarcacion: 'MARC-002', cliente: 'Benjamin Carter' },
 ];
 
 export const paises: Pais[] = [
