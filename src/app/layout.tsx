@@ -5,7 +5,7 @@ import { AuthProvider } from '@/context/auth-context';
 import { AppInitializer } from '@/components/layout/app-initializer';
 
 export const metadata: Metadata = {
-  title: 'Bloom Invoice',
+  title: 'JCW FLOWERS',
   description: 'Complete invoicing system for florists',
 };
 

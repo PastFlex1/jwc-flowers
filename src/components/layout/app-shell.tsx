@@ -35,6 +35,13 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarTrigger,
+} from '@/components/ui/menubar';
 
 const navItems = [
   { href: '/', label: 'Invoices', icon: FileText },
@@ -55,7 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Flower2 className="h-6 w-6 text-primary" />
             </Button>
             <div className="flex flex-col">
-              <h2 className="text-lg font-semibold font-headline">Bloom Invoice</h2>
+              <h2 className="text-lg font-semibold font-headline">JCW FLOWERS</h2>
               <p className="text-sm text-muted-foreground">For Florists</p>
             </div>
           </div>
@@ -120,9 +127,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex items-center justify-between p-4 border-b">
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
            <SidebarTrigger className="md:hidden" />
-           <h1 className="text-2xl font-bold font-headline capitalize">{pathname.substring(1) || 'Invoices'}</h1>
+           <h1 className="text-xl font-bold whitespace-nowrap">JCW FLOWERS</h1>
+           <Menubar className="p-0 bg-transparent border-none">
+            <MenubarMenu>
+              <MenubarTrigger>Archivo</MenubarTrigger>
+              <MenubarContent>
+                <MenubarItem>Fincas</MenubarItem>
+                <MenubarItem>Clientes</MenubarItem>
+                <MenubarItem>Vendedores</MenubarItem>
+                <MenubarItem>Marcacion</MenubarItem>
+                <MenubarItem>Pais</MenubarItem>
+                <MenubarItem>Provincias</MenubarItem>
+                <MenubarItem>Dae</MenubarItem>
+                <MenubarItem>Carguera</MenubarItem>
+                <MenubarItem>Notas de credito</MenubarItem>
+                <MenubarItem>Notas de debito</MenubarItem>
+              </MenubarContent>
+            </MenubarMenu>
+           </Menubar>
         </header>
         <main className="p-4 md:p-6 lg:p-8">
           {children}
