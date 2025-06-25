@@ -1,7 +1,8 @@
 import type {Metadata} from 'next';
 import './globals.css';
-import { AppShell } from '@/components/layout/app-shell';
 import { Toaster } from '@/components/ui/toaster';
+import { AuthProvider } from '@/context/auth-context';
+import { AppInitializer } from '@/components/layout/app-initializer';
 
 export const metadata: Metadata = {
   title: 'Bloom Invoice',
@@ -21,10 +22,12 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AppShell>
-          {children}
-        </AppShell>
-        <Toaster />
+        <AuthProvider>
+          <AppInitializer>
+            {children}
+          </AppInitializer>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

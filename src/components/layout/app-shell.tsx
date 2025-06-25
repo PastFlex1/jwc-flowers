@@ -22,6 +22,7 @@ import {
   Boxes,
   Settings,
   CircleUser,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -33,6 +34,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { useAuth } from '@/context/auth-context';
 
 const navItems = [
   { href: '/', label: 'Invoices', icon: FileText },
@@ -42,6 +44,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
   return (
     <SidebarProvider>
@@ -79,7 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="justify-start gap-3 w-full px-2 h-12">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://placehold.co/40x40.png" alt="User" />
+                  <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="profile user" />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start">
@@ -107,7 +110,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => logout()}>
+                <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
