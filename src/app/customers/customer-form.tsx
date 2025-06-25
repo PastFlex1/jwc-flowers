@@ -1,82 +1,236 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Customer } from '@/lib/types';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Invalid email address." }),
-  billingAddress: z.string().min(10, { message: "Billing address is too short." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  pais: z.string().min(2, { message: "El país es requerido." }),
+  estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
+  address: z.string().min(10, { message: "La dirección es muy corta." }),
+  email: z.string().email({ message: "Correo electrónico no válido." }),
+  phone: z.string().min(7, { message: "El teléfono no es válido." }),
+  agencia: z.string().min(2, { message: "La agencia es requerida." }),
+  vendedor: z.string().min(2, { message: "El vendedor es requerido." }),
+  plazo: z.coerce.number().refine(val => [8, 15, 30, 45].includes(val), { message: "Plazo no válido." }),
+  cupo: z.coerce.number().positive({ message: "El cupo debe ser un número positivo." }),
 });
 
+type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
+
 type CustomerFormProps = {
-  onSubmit: (data: Omit<Customer, 'id'>) => void;
+  onSubmit: (data: CustomerFormData) => void;
+  onClose: () => void;
+  initialData?: Customer | null;
 };
 
-export function CustomerForm({ onSubmit }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      ...initialData,
+      plazo: Number(initialData.plazo),
+      cupo: Number(initialData.cupo),
+    } : {
       name: '',
+      pais: '',
+      estadoCiudad: '',
+      address: '',
       email: '',
-      billingAddress: '',
+      phone: '',
+      agencia: '',
+      vendedor: '',
+      plazo: 15,
+      cupo: 0,
     },
   });
 
+  useEffect(() => {
+    form.reset(initialData ? {
+      ...initialData,
+      plazo: Number(initialData.plazo),
+      cupo: Number(initialData.cupo),
+    } : {
+      name: '',
+      pais: '',
+      estadoCiudad: '',
+      address: '',
+      email: '',
+      phone: '',
+      agencia: '',
+      vendedor: '',
+      plazo: 15,
+      cupo: 0,
+    });
+  }, [initialData, form]);
+
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values);
-    form.reset();
+    const dataToSubmit: CustomerFormData = initialData ? { ...values, id: initialData.id } : values;
+    onSubmit(dataToSubmit);
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre del Cliente</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Alex" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="pais"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>País</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Ecuador" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="estadoCiudad"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Estado/Ciudad</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Pichincha" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Correo Electrónico</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., alex@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Teléfono</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., 0991234567" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="agencia"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Agencia</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Agencia A" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="vendedor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Vendedor</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Vendedor 1" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="plazo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Plazo (días)</FormLabel>
+                <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un plazo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[8, 15, 30, 45].map(d => (
+                        <SelectItem key={d} value={String(d)}>
+                          {d} días
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="cupo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cupo</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="5000" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Jane Doe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email Address</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., jane.doe@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="billingAddress"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Billing Address</FormLabel>
-              <FormControl>
-                <Textarea placeholder="123 Main St, Anytown, USA 12345" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">Add Customer</Button>
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Dirección</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="123 Main St, Anytown, USA 12345" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+          </Button>
+          <Button type="submit">
+              {initialData ? 'Guardar Cambios' : 'Añadir Cliente'}
+          </Button>
+        </div>
       </form>
     </Form>
   );

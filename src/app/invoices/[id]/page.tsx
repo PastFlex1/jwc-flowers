@@ -36,7 +36,7 @@ export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
     customerName: customer.name,
     orderSummary,
     invoiceTotal: total,
-    isFirstOrder: customer.isFirstOrder || false,
+    isFirstOrder: false,
   } : null;
 
   return (
@@ -61,7 +61,7 @@ export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
               <h3 className="font-semibold mb-2">Bill To:</h3>
               <address className="not-italic text-muted-foreground">
                 {customer?.name}<br />
-                {customer?.billingAddress.split(',').map(line => <div key={line}>{line.trim()}</div>)}<br />
+                {customer?.address.split(',').map(line => <div key={line}>{line.trim()}</div>)}<br />
                 {customer?.email}
               </address>
             </div>

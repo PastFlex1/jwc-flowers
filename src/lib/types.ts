@@ -1,9 +1,15 @@
 export interface Customer {
   id: string;
   name: string;
+  pais: string;
+  estadoCiudad: string;
+  address: string;
   email: string;
-  billingAddress: string;
-  isFirstOrder?: boolean;
+  phone: string;
+  agencia: string;
+  vendedor: string;
+  plazo: number;
+  cupo: number;
 }
 
 export interface InventoryItem {

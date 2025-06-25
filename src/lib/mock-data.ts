@@ -1,10 +1,9 @@
 import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera } from './types';
 
 export const customers: Customer[] = [
-  { id: 'cus_1', name: 'Elena Rodriguez', email: 'elena.r@example.com', billingAddress: '123 Meadow Lane, Greenfield, CA 91234', isFirstOrder: true },
-  { id: 'cus_2', name: 'Benjamin Carter', email: 'ben.carter@example.com', billingAddress: '456 Oak Avenue, Metropolis, NY 54321' },
-  { id: 'cus_3', name: 'Sophia Loren', email: 'sophia.l@example.com', billingAddress: '789 Pine Street, Star City, TX 67890' },
-  { id: 'cus_4', name: 'The Wedding Planners Inc.', email: 'contact@weddingplanners.com', billingAddress: '101 Rose Boulevard, Celebration, FL 11223' },
+  { id: 'cus_1', name: 'Alex', pais: 'Ecuador', estadoCiudad: 'Pichincha', address: '123 Meadow Lane, Greenfield, CA 91234', email: 'alex@example.com', phone: '0991234567', agencia: 'Agencia A', vendedor: 'Vendedor 1', plazo: 15, cupo: 5000 },
+  { id: 'cus_2', name: 'Benjamin Carter', pais: 'USA', estadoCiudad: 'New York', address: '456 Oak Avenue, Metropolis, NY 54321', email: 'ben.carter@example.com', phone: '1234567890', agencia: 'Agencia B', vendedor: 'Vendedor 2', plazo: 30, cupo: 10000 },
+  { id: 'cus_3', name: 'Sophia Loren', pais: 'Italia', estadoCiudad: 'Roma', address: '789 Pine Street, Star City, TX 67890', email: 'sophia.l@example.com', phone: '0987654321', agencia: 'Agencia C', vendedor: 'Vendedor 1', plazo: 45, cupo: 7500 },
 ];
 
 export const inventory: InventoryItem[] = [
