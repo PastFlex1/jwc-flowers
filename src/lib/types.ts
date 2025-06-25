@@ -37,3 +37,24 @@ export interface Finca {
   taxId: string;
   productType: string;
 }
+
+export interface Marcacion {
+  id: string;
+  pais: string;
+}
+
+export interface Pais {
+  id: string;
+  nombre: string;
+}
+
+export interface Provincia {
+  id: string;
+  nombre: string;
+}
+
+export interface Dae {
+  id: string;
+  pais: string;
+  numeroDae: string;
+}

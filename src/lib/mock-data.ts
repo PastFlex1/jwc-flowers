@@ -1,4 +1,4 @@
-import { type Customer, type InventoryItem, type Invoice, type Finca } from './types';
+import { type Customer, type InventoryItem, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae } from './types';
 
 export const customers: Customer[] = [
   { id: 'cus_1', name: 'Elena Rodriguez', email: 'elena.r@example.com', billingAddress: '123 Meadow Lane, Greenfield, CA 91234', isFirstOrder: true },
@@ -49,4 +49,25 @@ export const invoices: Invoice[] = [
 export const fincas: Finca[] = [
   { id: 'finca_1', name: 'Finca Rosaleda', address: 'Valle de las Flores, Cayambe', phone: '0991234567', taxId: '1791234567001', productType: 'Rosas' },
   { id: 'finca_2', name: 'Girasoles del Sol', address: 'Ruta del Sol, km 25', phone: '0987654321', taxId: '1798765432001', productType: 'Girasoles' },
+];
+
+export const marcaciones: Marcacion[] = [
+  { id: 'mar_1', pais: 'Ecuador' },
+  { id: 'mar_2', pais: 'Colombia' },
+];
+
+export const paises: Pais[] = [
+  { id: 'pais_1', nombre: 'Ecuador' },
+  { id: 'pais_2', nombre: 'Colombia' },
+  { id: 'pais_3', nombre: 'Perú' },
+];
+
+export const provincias: Provincia[] = [
+  { id: 'prov_1', nombre: 'Pichincha' },
+  { id: 'prov_2', nombre: 'Guayas' },
+];
+
+export const daes: Dae[] = [
+  { id: 'dae_1', pais: 'Ecuador', numeroDae: 'DAE-EC-001' },
+  { id: 'dae_2', pais: 'Colombia', numeroDae: 'DAE-CO-002' },
 ];
