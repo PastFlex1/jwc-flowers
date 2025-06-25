@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -17,14 +18,18 @@ const formSchema = z.object({
   productType: z.string().min(3, { message: "El tipo de producto es muy corto." }),
 });
 
+type FincaFormData = Omit<Finca, 'id'> & { id?: string };
+
 type FincaFormProps = {
-  onSubmit: (data: Omit<Finca, 'id'>) => void;
+  onSubmit: (data: FincaFormData) => void;
+  onClose: () => void;
+  initialData?: Finca | null;
 };
 
-export function FincaForm({ onSubmit }: FincaFormProps) {
+export function FincaForm({ onSubmit, onClose, initialData }: FincaFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       name: '',
       address: '',
       phone: '',
@@ -33,9 +38,19 @@ export function FincaForm({ onSubmit }: FincaFormProps) {
     },
   });
 
+  useEffect(() => {
+    form.reset(initialData || {
+      name: '',
+      address: '',
+      phone: '',
+      taxId: '',
+      productType: '',
+    });
+  }, [initialData, form]);
+
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit(values);
-    form.reset();
+    const dataToSubmit = initialData ? { ...values, id: initialData.id } : values;
+    onSubmit(dataToSubmit);
   }
 
   return (
@@ -106,7 +121,14 @@ export function FincaForm({ onSubmit }: FincaFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Añadir Finca</Button>
+        <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+            </Button>
+            <Button type="submit">
+                {initialData ? 'Guardar Cambios' : 'Añadir Finca'}
+            </Button>
+        </div>
       </form>
     </Form>
   );
