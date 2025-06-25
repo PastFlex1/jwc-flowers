@@ -135,8 +135,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <MenubarMenu>
               <MenubarTrigger>Archivo</MenubarTrigger>
               <MenubarContent>
-                <MenubarItem>Fincas</MenubarItem>
-                <MenubarItem>Clientes</MenubarItem>
+                <MenubarItem onClick={() => router.push('/fincas')}>Fincas</MenubarItem>
+                <MenubarItem onClick={() => router.push('/customers')}>Clientes</MenubarItem>
                 <MenubarItem>Vendedores</MenubarItem>
                 <MenubarItem>Marcacion</MenubarItem>
                 <MenubarItem>Pais</MenubarItem>

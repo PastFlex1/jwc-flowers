@@ -1,4 +1,4 @@
-import { type Customer, type InventoryItem, type Invoice } from './types';
+import { type Customer, type InventoryItem, type Invoice, type Finca } from './types';
 
 export const customers: Customer[] = [
   { id: 'cus_1', name: 'Elena Rodriguez', email: 'elena.r@example.com', billingAddress: '123 Meadow Lane, Greenfield, CA 91234', isFirstOrder: true },
@@ -44,4 +44,9 @@ export const invoices: Invoice[] = [
     items: [{ itemId: 'item_3', quantity: 2 }],
     status: 'Overdue',
   },
+];
+
+export const fincas: Finca[] = [
+  { id: 'finca_1', name: 'Finca Rosaleda', address: 'Valle de las Flores, Cayambe', phone: '0991234567', taxId: '1791234567001', productType: 'Rosas' },
+  { id: 'finca_2', name: 'Girasoles del Sol', address: 'Ruta del Sol, km 25', phone: '0987654321', taxId: '1798765432001', productType: 'Girasoles' },
 ];

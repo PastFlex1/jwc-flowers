@@ -28,3 +28,12 @@ export interface Invoice {
   items: InvoiceItem[];
   status: 'Paid' | 'Pending' | 'Overdue';
 }
+
+export interface Finca {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  taxId: string;
+  productType: string;
+}
