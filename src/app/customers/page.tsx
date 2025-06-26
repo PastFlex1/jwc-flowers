@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,16 +14,43 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { customers as initialCustomers } from '@/lib/mock-data';
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
 import type { Customer } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 
+type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const { toast } = useToast();
+
+  const fetchCustomers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const customersData = await getCustomers();
+      setCustomers(customersData);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los clientes.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -35,29 +62,64 @@ export default function CustomersPage() {
     setEditingCustomer(null);
   };
 
-  const handleFormSubmit = (customerData: Omit<Customer, 'id'> & { id?: string }) => {
-    if (customerData.id) {
-      setCustomers(customers.map(c => c.id === customerData.id ? (customerData as Customer) : c));
-    } else {
-      const newCustomer: Customer = {
-        id: `cus_${Date.now()}`,
-        ...(customerData as Omit<Customer, 'id'>),
-      };
-      setCustomers(prev => [...prev, newCustomer]);
+  const handleFormSubmit = async (customerData: CustomerFormData) => {
+    try {
+      if (customerData.id) {
+        const { id, ...dataToUpdate } = customerData;
+        await updateCustomer(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = customerData;
+        await addCustomer(dataToAdd as Omit<Customer, 'id'>);
+        toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
+      }
+      handleCloseDialog();
+      fetchCustomers();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el cliente.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
   
   const handleDeleteClick = (customer: Customer) => {
     setCustomerToDelete(customer);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (customerToDelete) {
-      setCustomers(customers.filter(c => c.id !== customerToDelete.id));
-      setCustomerToDelete(null);
+       try {
+        await deleteCustomer(customerToDelete.id);
+        toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
+        setCustomerToDelete(null);
+        fetchCustomers();
+      } catch (error) {
+        console.error("Error deleting customer:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el cliente.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+  
+  const renderSkeleton = () => (
+    Array.from({ length: 5 }).map((_, index) => (
+      <Card key={`skeleton-${index}`}>
+         <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
+            <Skeleton className="h-6 w-32 mb-2" />
+          </CardContent>
+          <div className="p-4 border-t flex justify-center gap-2">
+            <Skeleton className="h-9 w-16" />
+            <Skeleton className="h-9 w-9" />
+          </div>
+      </Card>
+    ))
+  );
 
   return (
     <>
@@ -86,7 +148,7 @@ export default function CustomersPage() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {customers.map((customer) => (
+          {isLoading ? renderSkeleton() : customers.map((customer) => (
             <Card key={customer.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{customer.name}</h3>

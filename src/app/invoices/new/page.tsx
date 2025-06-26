@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format } from 'date-fns';
+import { format, toDate } from 'date-fns';
 import { CalendarIcon, Trash2, PlusCircle, Edit } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { customers, fincas, vendedores, cargueras, paises } from '@/lib/mock-data';
+
+import { getCustomers } from '@/services/customers';
+import { getFincas } from '@/services/fincas';
+import { getVendedores } from '@/services/vendedores';
+import { getCargueras } from '@/services/cargueras';
+import { getPaises } from '@/services/paises';
+// import { addInvoice } from '@/services/invoices';
+
+import type { Customer, Finca, Vendedor, Carguera, Pais } from '@/lib/types';
+
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
@@ -38,7 +47,7 @@ const invoiceSchema = z.object({
   farmDepartureDate: z.date({ required_error: "Fecha de salida requerida." }),
   flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
   sellerId: z.string().min(1, 'Seleccione un vendedor.'),
-  consigneeId: z.string().min(1, 'Seleccione un consignatario.'),
+  customerId: z.string().min(1, 'Seleccione un consignatario.'),
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
@@ -55,6 +64,44 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isHeaderSet, setIsHeaderSet] = useState(false);
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [fincas, setFincas] = useState<Finca[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [customersData, fincasData, vendedoresData, carguerasData, paisesData] = await Promise.all([
+          getCustomers(),
+          getFincas(),
+          getVendedores(),
+          getCargueras(),
+          getPaises(),
+        ]);
+        setCustomers(customersData);
+        setFincas(fincasData);
+        setVendedores(vendedoresData);
+        setCargueras(carguerasData);
+        setPaises(paisesData);
+      } catch (error) {
+        toast({
+          title: 'Error de Carga',
+          description: 'No se pudieron cargar los datos para los selectores. Verifique la conexión.',
+          variant: 'destructive',
+        });
+        console.error("Error fetching dropdown data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [toast]);
+
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -73,7 +120,7 @@ export default function NewInvoicePage() {
   async function handleHeaderSubmit() {
     const headerFields: (keyof InvoiceFormValues)[] = [
       'invoiceNumber',
-      'farmDepartureDate', 'flightDate', 'sellerId', 'consigneeId', 
+      'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
       'farmId', 'carrierId', 'countryId', 'pointOfSale', 
       'masterAWB', 'houseAWB'
     ];
@@ -98,10 +145,35 @@ export default function NewInvoicePage() {
       });
       return;
     }
-    console.log(values);
+    console.log("Form values to be submitted:", values);
+    
+    // const invoiceData = {
+    //   ...values,
+    //   farmDepartureDate: values.farmDepartureDate.toISOString(),
+    //   flightDate: values.flightDate.toISOString(),
+    //   status: 'Pending' as const
+    // };
+
+    // try {
+    //   await addInvoice(invoiceData);
+    //   toast({
+    //     title: 'Factura Creada!',
+    //     description: 'La nueva factura ha sido guardada exitosamente.',
+    //   });
+    //   router.push('/');
+    // } catch (error) {
+    //   console.error("Error creating invoice:", error);
+    //   toast({
+    //     title: 'Error',
+    //     description: 'No se pudo crear la factura.',
+    //     variant: 'destructive',
+    //   });
+    // }
+    
+    // NOTE: Temporarily logging to console until `addInvoice` service is fully implemented
     toast({
-      title: 'Factura Creada!',
-      description: 'La nueva factura ha sido guardada exitosamente.',
+        title: 'Factura Lista para Guardar',
+        description: 'La funcionalidad de guardado está en desarrollo. Revise la consola para ver los datos.',
     });
     router.push('/');
   }
@@ -118,7 +190,6 @@ export default function NewInvoicePage() {
   };
 
   const handleEdit = (index: number) => {
-    // This is a placeholder for a more complex edit modal if needed later
     console.log("Editing row", index);
      toast({
         title: 'Edición en línea',
@@ -153,7 +224,7 @@ export default function NewInvoicePage() {
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP") : <span>Seleccione fecha</span>}
+                            {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -172,7 +243,7 @@ export default function NewInvoicePage() {
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                            {field.value ? format(field.value, "PPP") : <span>Seleccione fecha</span>}
+                            {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -187,17 +258,17 @@ export default function NewInvoicePage() {
               <FormField control={form.control} name="sellerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un vendedor" /></SelectTrigger></FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet || isLoading}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? "Cargando..." : "Seleccione un vendedor"} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
-              <FormField control={form.control} name="consigneeId" render={({ field }) => (
+              <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Consignatario (Cliente)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un cliente" /></SelectTrigger></FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet || isLoading}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? "Cargando..." : "Seleccione un cliente"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -205,8 +276,8 @@ export default function NewInvoicePage() {
               <FormField control={form.control} name="farmId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Finca</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una finca" /></SelectTrigger></FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet || isLoading}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? "Cargando..." : "Seleccione una finca"} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -214,8 +285,8 @@ export default function NewInvoicePage() {
               <FormField control={form.control} name="carrierId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Carguera</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione una carguera" /></SelectTrigger></FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet || isLoading}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? "Cargando..." : "Seleccione una carguera"} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -223,8 +294,8 @@ export default function NewInvoicePage() {
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>País</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un país" /></SelectTrigger></FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet || isLoading}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={isLoading ? "Cargando..." : "Seleccione un país"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -258,7 +329,9 @@ export default function NewInvoicePage() {
 
           {!isHeaderSet && (
              <div className="flex justify-end">
-              <Button type="button" onClick={handleHeaderSubmit}>Crear Factura y Añadir Items</Button>
+              <Button type="button" onClick={handleHeaderSubmit} disabled={isLoading}>
+                {isLoading ? 'Cargando datos...' : 'Crear Factura y Añadir Items'}
+              </Button>
             </div>
           )}
 

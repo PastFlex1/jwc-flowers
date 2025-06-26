@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,15 +16,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { marcaciones as initialMarcaciones } from '@/lib/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getMarcaciones, addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
 
+type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
+
 export default function MarcacionPage() {
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>(initialMarcaciones);
+  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
+  const { toast } = useToast();
+
+  const fetchMarcaciones = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMarcaciones();
+      setMarcaciones(data);
+    } catch (error) {
+      console.error("Error fetching marcaciones:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar las marcaciones.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchMarcaciones();
+  }, [fetchMarcaciones]);
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);
@@ -36,29 +63,63 @@ export default function MarcacionPage() {
     setEditingMarcacion(null);
   };
 
-  const handleFormSubmit = (marcacionData: Omit<Marcacion, 'id'> & { id?: string }) => {
-    if (marcacionData.id) {
-      setMarcaciones(marcaciones.map(m => m.id === marcacionData.id ? (marcacionData as Marcacion) : m));
-    } else {
-      const newMarcacion: Marcacion = {
-        id: `mar_${Date.now()}`,
-        ...(marcacionData as Omit<Marcacion, 'id'>),
-      };
-      setMarcaciones(prev => [...prev, newMarcacion]);
+  const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
+    try {
+      if (marcacionData.id) {
+        const { id, ...dataToUpdate } = marcacionData;
+        await updateMarcacion(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = marcacionData;
+        await addMarcacion(dataToAdd as Omit<Marcacion, 'id'>);
+        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+      }
+      handleCloseDialog();
+      fetchMarcaciones();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar la marcación.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (marcacion: Marcacion) => {
     setMarcacionToDelete(marcacion);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (marcacionToDelete) {
-      setMarcaciones(marcaciones.filter(m => m.id !== marcacionToDelete.id));
-      setMarcacionToDelete(null);
+      try {
+        await deleteMarcacion(marcacionToDelete.id);
+        toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+        setMarcacionToDelete(null);
+        fetchMarcaciones();
+      } catch (error) {
+        console.error("Error deleting marcación:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar la marcación.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+  
+  const renderSkeleton = () => (
+    Array.from({ length: 3 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+        <TableCell className="text-right space-x-0">
+          <Skeleton className="h-8 w-8 inline-block" />
+          <Skeleton className="h-8 w-8 inline-block ml-2" />
+        </TableCell>
+      </TableRow>
+    ))
+  );
 
   return (
     <>
@@ -103,7 +164,7 @@ export default function MarcacionPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {marcaciones.map((marcacion) => (
+                {isLoading ? renderSkeleton() : marcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
                     <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
                     <TableCell>{marcacion.cliente}</TableCell>

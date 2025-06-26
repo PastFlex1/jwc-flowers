@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,15 +16,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { cargueras as initialCargueras } from '@/lib/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getCargueras, addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
 
+type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
+
 export default function CarguerasPage() {
-  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
+  const { toast } = useToast();
+
+  const fetchCargueras = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const carguerasData = await getCargueras();
+      setCargueras(carguerasData);
+    } catch (error) {
+      console.error("Error fetching cargueras:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar las cargueras.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCargueras();
+  }, [fetchCargueras]);
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);
@@ -36,29 +63,63 @@ export default function CarguerasPage() {
     setEditingCarguera(null);
   };
 
-  const handleFormSubmit = (cargueraData: Omit<Carguera, 'id'> & { id?: string }) => {
-    if (cargueraData.id) {
-      setCargueras(cargueras.map(c => c.id === cargueraData.id ? (cargueraData as Carguera) : c));
-    } else {
-      const newCarguera: Carguera = {
-        id: `car_${Date.now()}`,
-        ...(cargueraData as Omit<Carguera, 'id'>),
-      };
-      setCargueras(prev => [...prev, newCarguera]);
+  const handleFormSubmit = async (cargueraData: CargueraFormData) => {
+    try {
+      if (cargueraData.id) {
+        const { id, ...dataToUpdate } = cargueraData;
+        await updateCarguera(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = cargueraData;
+        await addCarguera(dataToAdd as Omit<Carguera, 'id'>);
+        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+      }
+      handleCloseDialog();
+      fetchCargueras();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar la carguera.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (carguera: Carguera) => {
     setCargueraToDelete(carguera);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (cargueraToDelete) {
-      setCargueras(cargueras.filter(c => c.id !== cargueraToDelete.id));
-      setCargueraToDelete(null);
+      try {
+        await deleteCarguera(cargueraToDelete.id);
+        toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
+        setFincaToDelete(null);
+        fetchCargueras();
+      } catch (error) {
+        console.error("Error deleting carguera:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar la carguera.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+
+  const renderSkeleton = () => (
+    Array.from({ length: 5 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell className="text-right space-x-0">
+          <Skeleton className="h-8 w-8 inline-block" />
+          <Skeleton className="h-8 w-8 inline-block ml-2" />
+        </TableCell>
+      </TableRow>
+    ))
+  );
 
   return (
     <>
@@ -103,7 +164,7 @@ export default function CarguerasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cargueras.map((carguera) => (
+                {isLoading ? renderSkeleton() : cargueras.map((carguera) => (
                   <TableRow key={carguera.id}>
                     <TableCell className="font-medium">{carguera.nombreCarguera}</TableCell>
                     <TableCell>{carguera.pais}</TableCell>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,15 +16,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { paises as initialPaises } from '@/lib/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getPaises, addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
 
+type PaisFormData = Omit<Pais, 'id'> & { id?: string };
+
 export default function PaisPage() {
-  const [paises, setPaises] = useState<Pais[]>(initialPaises);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
+  const { toast } = useToast();
+
+  const fetchPaises = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPaises();
+      setPaises(data);
+    } catch (error) {
+      console.error("Error fetching paises:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los países.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchPaises();
+  }, [fetchPaises]);
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);
@@ -36,29 +63,62 @@ export default function PaisPage() {
     setEditingPais(null);
   };
 
-  const handleFormSubmit = (paisData: Omit<Pais, 'id'> & { id?: string }) => {
-    if (paisData.id) {
-      setPaises(paises.map(p => p.id === paisData.id ? (paisData as Pais) : p));
-    } else {
-      const newPais: Pais = {
-        id: `pais_${Date.now()}`,
-        ...(paisData as Omit<Pais, 'id'>),
-      };
-      setPaises(prev => [...prev, newPais]);
+  const handleFormSubmit = async (paisData: PaisFormData) => {
+    try {
+      if (paisData.id) {
+        const { id, ...dataToUpdate } = paisData;
+        await updatePais(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = paisData;
+        await addPais(dataToAdd as Omit<Pais, 'id'>);
+        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+      }
+      handleCloseDialog();
+      fetchPaises();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el país.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (pais: Pais) => {
     setPaisToDelete(pais);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (paisToDelete) {
-      setPaises(paises.filter(p => p.id !== paisToDelete.id));
-      setPaisToDelete(null);
+      try {
+        await deletePais(paisToDelete.id);
+        toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+        setPaisToDelete(null);
+        fetchPaises();
+      } catch (error) {
+        console.error("Error deleting pais:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el país.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+
+  const renderSkeleton = () => (
+    Array.from({ length: 3 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell className="text-right space-x-0">
+          <Skeleton className="h-8 w-8 inline-block" />
+          <Skeleton className="h-8 w-8 inline-block ml-2" />
+        </TableCell>
+      </TableRow>
+    ))
+  );
 
   return (
     <>
@@ -102,7 +162,7 @@ export default function PaisPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paises.map((pais) => (
+                {isLoading ? renderSkeleton() : paises.map((pais) => (
                   <TableRow key={pais.id}>
                     <TableCell className="font-medium">{pais.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,15 +15,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { vendedores as initialVendedores } from '@/lib/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getVendedores, addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
 
+type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
+
 export default function VendedoresPage() {
-  const [vendedores, setVendedores] = useState<Vendedor[]>(initialVendedores);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
+  const { toast } = useToast();
+
+  const fetchVendedores = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getVendedores();
+      setVendedores(data);
+    } catch (error) {
+      console.error("Error fetching vendedores:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los vendedores.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchVendedores();
+  }, [fetchVendedores]);
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);
@@ -35,29 +62,65 @@ export default function VendedoresPage() {
     setEditingVendedor(null);
   };
 
-  const handleFormSubmit = (vendedorData: Omit<Vendedor, 'id'> & { id?: string }) => {
-    if (vendedorData.id) {
-      setVendedores(vendedores.map(v => v.id === vendedorData.id ? (vendedorData as Vendedor) : v));
-    } else {
-      const newVendedor: Vendedor = {
-        id: `ven_${Date.now()}`,
-        ...(vendedorData as Omit<Vendedor, 'id'>),
-      };
-      setVendedores(prev => [...prev, newVendedor]);
+  const handleFormSubmit = async (vendedorData: VendedorFormData) => {
+    try {
+      if (vendedorData.id) {
+        const { id, ...dataToUpdate } = vendedorData;
+        await updateVendedor(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = vendedorData;
+        await addVendedor(dataToAdd as Omit<Vendedor, 'id'>);
+        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+      }
+      handleCloseDialog();
+      fetchVendedores();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el vendedor.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
   
   const handleDeleteClick = (vendedor: Vendedor) => {
     setVendedorToDelete(vendedor);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (vendedorToDelete) {
-      setVendedores(vendedores.filter(v => v.id !== vendedorToDelete.id));
-      setVendedorToDelete(null);
+      try {
+        await deleteVendedor(vendedorToDelete.id);
+        toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+        setVendedorToDelete(null);
+        fetchVendedores();
+      } catch (error) {
+        console.error("Error deleting vendedor:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el vendedor.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+  
+  const renderSkeleton = () => (
+    Array.from({ length: 5 }).map((_, index) => (
+      <Card key={`skeleton-${index}`}>
+         <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
+            <Skeleton className="h-6 w-32 mb-2" />
+            <Skeleton className="h-4 w-8" />
+          </CardContent>
+          <div className="p-4 border-t flex justify-center gap-2">
+            <Skeleton className="h-9 w-16" />
+            <Skeleton className="h-9 w-9" />
+          </div>
+      </Card>
+    ))
+  );
 
   return (
     <>
@@ -86,7 +149,7 @@ export default function VendedoresPage() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {vendedores.map((vendedor) => (
+          {isLoading ? renderSkeleton() : vendedores.map((vendedor) => (
             <Card key={vendedor.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{vendedor.nombre}</h3>

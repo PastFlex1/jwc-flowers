@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,15 +16,42 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { daes as initialDaes } from '@/lib/mock-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { getDaes, addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
 
+type DaeFormData = Omit<Dae, 'id'> & { id?: string };
+
 export default function DaePage() {
-  const [daes, setDaes] = useState<Dae[]>(initialDaes);
+  const [daes, setDaes] = useState<Dae[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
+  const { toast } = useToast();
+
+  const fetchDaes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const daesData = await getDaes();
+      setDaes(daesData);
+    } catch (error) {
+      console.error("Error fetching DAEs:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar los DAEs.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchDaes();
+  }, [fetchDaes]);
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);
@@ -36,29 +63,63 @@ export default function DaePage() {
     setEditingDae(null);
   };
 
-  const handleFormSubmit = (daeData: Omit<Dae, 'id'> & { id?: string }) => {
-    if (daeData.id) {
-      setDaes(daes.map(d => d.id === daeData.id ? (daeData as Dae) : d));
-    } else {
-      const newDae: Dae = {
-        id: `dae_${Date.now()}`,
-        ...(daeData as Omit<Dae, 'id'>),
-      };
-      setDaes(prev => [...prev, newDae]);
+  const handleFormSubmit = async (daeData: DaeFormData) => {
+    try {
+      if (daeData.id) {
+        const { id, ...dataToUpdate } = daeData;
+        await updateDae(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = daeData;
+        await addDae(dataToAdd as Omit<Dae, 'id'>);
+        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+      }
+      handleCloseDialog();
+      fetchDaes();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar el DAE.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (dae: Dae) => {
     setDaeToDelete(dae);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (daeToDelete) {
-      setDaes(daes.filter(d => d.id !== daeToDelete.id));
-      setDaeToDelete(null);
+      try {
+        await deleteDae(daeToDelete.id);
+        toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+        setDaeToDelete(null);
+        fetchDaes();
+      } catch (error) {
+        console.error("Error deleting DAE:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar el DAE.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+
+  const renderSkeleton = () => (
+    Array.from({ length: 3 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell className="text-right space-x-0">
+          <Skeleton className="h-8 w-8 inline-block" />
+          <Skeleton className="h-8 w-8 inline-block ml-2" />
+        </TableCell>
+      </TableRow>
+    ))
+  );
 
   return (
     <>
@@ -103,7 +164,7 @@ export default function DaePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {daes.map((dae) => (
+                {isLoading ? renderSkeleton() : daes.map((dae) => (
                   <TableRow key={dae.id}>
                     <TableCell className="font-medium">{dae.pais}</TableCell>
                     <TableCell>{dae.numeroDae}</TableCell>
