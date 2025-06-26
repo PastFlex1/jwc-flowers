@@ -1,5 +1,5 @@
-import InvoicesPage from './invoices/page';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <InvoicesPage />;
+  redirect('/invoices');
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,36 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getDaes, addDae, updateDae, deleteDae } from '@/services/daes';
+import { addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
-export function DaeClient() {
-  const [daes, setDaes] = useState<Dae[]>([]);
+type DaeClientProps = {
+  initialDaes: Dae[];
+};
+
+export function DaeClient({ initialDaes }: DaeClientProps) {
+  const [daes, setDaes] = useState<Dae[]>(initialDaes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
-
-  const fetchDaes = useCallback(async () => {
-    try {
-      const daesData = await getDaes();
-      setDaes(daesData);
-    } catch (error) {
-      console.error("Error fetching DAEs:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los DAEs. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchDaes();
-  }, [fetchDaes]);
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);

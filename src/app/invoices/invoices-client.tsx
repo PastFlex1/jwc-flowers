@@ -1,17 +1,13 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { getCustomers } from '@/services/customers';
-import { getInvoices } from '@/services/invoices';
 import type { Invoice } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 
@@ -21,42 +17,8 @@ type InvoicesClientProps = {
 };
 
 export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientProps) {
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-  const [customers, setCustomers] = useState<Record<string, string>>(customerMap);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [invoicesData, customersData] = await Promise.all([
-        getInvoices(),
-        getCustomers(),
-      ]);
-      setInvoices(invoicesData);
-      
-      const newCustomerMap = customersData.reduce((acc, customer) => {
-        acc[customer.id] = customer.name;
-        return acc;
-      }, {} as Record<string, string>);
-      setCustomers(newCustomerMap);
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
+  const [invoices] = useState<Invoice[]>(initialInvoices);
+  const [customers] = useState<Record<string, string>>(customerMap);
 
   const getCustomerName = (customerId: string) => {
     return customers[customerId] || 'Cliente Desconocido';
@@ -72,19 +34,6 @@ export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientP
     return subtotal + tax;
   };
   
-  const renderSkeleton = () => (
-     Array.from({ length: 5 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-        <TableCell><Skeleton className="h-8 w-16" /></TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -117,7 +66,7 @@ export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientP
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? renderSkeleton() : invoices.map((invoice) => {
+              {invoices.map((invoice) => {
                 const total = getInvoiceTotal(invoice);
                 return (
                   <TableRow key={invoice.id}>

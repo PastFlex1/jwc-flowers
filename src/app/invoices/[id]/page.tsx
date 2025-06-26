@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,8 +7,6 @@ import type { InvoiceMessageInput } from '@/ai/flows/invoice-message-generation'
 import { getInvoiceById } from '@/services/invoices';
 import { getCustomerById } from '@/services/customers';
 import { format, parseISO } from 'date-fns';
-import type { Invoice, Customer } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type InvoiceDetailPageProps = {
   params: {
@@ -19,87 +14,14 @@ type InvoiceDetailPageProps = {
   };
 };
 
-function InvoiceDetailSkeleton() {
-  return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="p-4 sm:p-6 md:p-8">
-        <CardHeader className="p-0">
-          <div className="flex justify-between items-start">
-            <div>
-              <Skeleton className="h-8 w-32" />
-              <Skeleton className="h-4 w-24 mt-2" />
-            </div>
-            <div className="text-right">
-              <Skeleton className="h-8 w-40 ml-auto" />
-              <Skeleton className="h-4 w-24 mt-2 ml-auto" />
-            </div>
-          </div>
-          <Separator className="my-6" />
-        </CardHeader>
-        <CardContent className="p-0">
-           <div className="grid grid-cols-2 gap-6">
-            <div>
-              <Skeleton className="h-5 w-20 mb-2" />
-              <Skeleton className="h-4 w-48 mb-1" />
-              <Skeleton className="h-4 w-40" />
-            </div>
-            <div className="text-right">
-              <Skeleton className="h-5 w-24 ml-auto mb-2" />
-              <Skeleton className="h-4 w-32 ml-auto" />
-            </div>
-          </div>
-           <div className="mt-8">
-              <Skeleton className="h-48 w-full" />
-           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-
-export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [customer, setCustomer] = useState<Customer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    if (!params.id) return;
-    
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const invoiceData = await getInvoiceById(params.id);
-        
-        if (!invoiceData) {
-          notFound();
-          return;
-        }
-        setInvoice(invoiceData);
-
-        const customerData = await getCustomerById(invoiceData.customerId);
-        setCustomer(customerData);
-
-      } catch (error) {
-        console.error("Failed to fetch invoice details:", error);
-        // Optionally, show a toast notification for the error
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [params.id]);
-  
-  if (isLoading) {
-    return <InvoiceDetailSkeleton />;
-  }
+export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
+  const invoice = await getInvoiceById(params.id);
 
   if (!invoice) {
-    // This will be handled by the notFound() in useEffect,
-    // but as a fallback we can render a message or redirect.
-    return <div>Factura no encontrada.</div>;
+    notFound();
   }
+
+  const customer = await getCustomerById(invoice.customerId);
 
   const subtotal = invoice.items.reduce((acc, item) => acc + (item.salePrice * item.stemCount), 0);
   const tax = subtotal * 0.12; // Standard VAT in Ecuador

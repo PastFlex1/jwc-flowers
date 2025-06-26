@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,36 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getPaises, addPais, updatePais, deletePais } from '@/services/paises';
+import { addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
-export function PaisClient() {
-  const [paises, setPaises] = useState<Pais[]>([]);
+type PaisClientProps = {
+  initialPaises: Pais[];
+};
+
+export function PaisClient({ initialPaises }: PaisClientProps) {
+  const [paises, setPaises] = useState<Pais[]>(initialPaises);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
-
-  const fetchPaises = useCallback(async () => {
-    try {
-      const data = await getPaises();
-      setPaises(data);
-    } catch (error) {
-      console.error("Error fetching paises:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los países. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchPaises();
-  }, [fetchPaises]);
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,36 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getProvincias, addProvincia, updateProvincia, deleteProvincia } from '@/services/provincias';
+import { addProvincia, updateProvincia, deleteProvincia } from '@/services/provincias';
 import type { Provincia } from '@/lib/types';
 import { ProvinciaForm } from './provincia-form';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
-export function ProvinciasClient() {
-  const [provincias, setProvincias] = useState<Provincia[]>([]);
+type ProvinciasClientProps = {
+  initialProvincias: Provincia[];
+};
+
+export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
+  const [provincias, setProvincias] = useState<Provincia[]>(initialProvincias);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
   const { toast } = useToast();
-
-  const fetchProvincias = useCallback(async () => {
-    try {
-      const data = await getProvincias();
-      setProvincias(data);
-    } catch (error) {
-      console.error("Error fetching provincias:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las provincias. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchProvincias();
-  }, [fetchProvincias]);
 
   const handleOpenDialog = (provincia: Provincia | null = null) => {
     setEditingProvincia(provincia);

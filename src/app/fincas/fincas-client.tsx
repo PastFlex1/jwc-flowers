@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,36 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { getFincas, addFinca, updateFinca, deleteFinca } from '@/services/fincas';
+import { addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
-export function FincasClient() {
-  const [fincas, setFincas] = useState<Finca[]>([]);
+type FincasClientProps = {
+  initialFincas: Finca[];
+};
+
+export function FincasClient({ initialFincas }: FincasClientProps) {
+  const [fincas, setFincas] = useState<Finca[]>(initialFincas);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
-
-  const fetchFincas = useCallback(async () => {
-    try {
-      const fincasData = await getFincas();
-      setFincas(fincasData);
-    } catch (error) {
-      console.error("Error fetching fincas:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las fincas. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchFincas();
-  }, [fetchFincas]);
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);

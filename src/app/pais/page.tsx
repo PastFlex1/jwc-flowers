@@ -1,5 +1,7 @@
 import { PaisClient } from './pais-client';
+import { getPaises } from '@/services/paises';
 
-export default function PaisPage() {
-  return <PaisClient />;
+export default async function PaisPage() {
+  const paisesData = await getPaises();
+  return <PaisClient initialPaises={paisesData} />;
 }

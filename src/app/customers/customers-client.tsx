@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,51 +16,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
-import { getPaises } from '@/services/paises';
-import { getCargueras } from '@/services/cargueras';
-import { getVendedores } from '@/services/vendedores';
+import { addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
 import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 import { CustomerForm } from './customer-form';
-import { cargueras as initialCargueras } from '@/lib/mock-data';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
-export function CustomersClient() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
-  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+type CustomersClientProps = {
+  initialCustomers: Customer[];
+  paises: Pais[];
+  cargueras: Carguera[];
+  vendedores: Vendedor[];
+};
+
+export function CustomersClient({ initialCustomers, paises, cargueras, vendedores }: CustomersClientProps) {
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { toast } = useToast();
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [customersData, paisesData, carguerasData, vendedoresData] = await Promise.all([
-        getCustomers(),
-        getPaises(),
-        getCargueras(),
-        getVendedores(),
-      ]);
-      setCustomers(customersData);
-      setPaises(paisesData);
-      setCargueras(carguerasData.length > 0 ? carguerasData : initialCargueras);
-      setVendedores(vendedoresData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos necesarios. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);

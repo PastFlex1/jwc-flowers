@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,36 +16,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getVendedores, addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
+import { addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 
-export function VendedoresClient() {
-  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+type VendedoresClientProps = {
+  initialVendedores: Vendedor[];
+};
+
+export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
+  const [vendedores, setVendedores] = useState<Vendedor[]>(initialVendedores);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
   const { toast } = useToast();
-
-  const fetchVendedores = useCallback(async () => {
-    try {
-      const data = await getVendedores();
-      setVendedores(data);
-    } catch (error) {
-      console.error("Error fetching vendedores:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los vendedores. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchVendedores();
-  }, [fetchVendedores]);
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,36 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getMarcaciones, addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
+import { addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
-export function MarcacionClient() {
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
+type MarcacionClientProps = {
+  initialMarcaciones: Marcacion[];
+};
+
+export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
+  const [marcaciones, setMarcaciones] = useState<Marcacion[]>(initialMarcaciones);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
-
-  const fetchMarcaciones = useCallback(async () => {
-    try {
-      const data = await getMarcaciones();
-      setMarcaciones(data);
-    } catch (error) {
-      console.error("Error fetching marcaciones:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las marcaciones. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchMarcaciones();
-  }, [fetchMarcaciones]);
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);

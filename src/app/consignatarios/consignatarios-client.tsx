@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,54 +17,31 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getConsignatarios, addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
-import { getPaises } from '@/services/paises';
-import { getCustomers } from '@/services/customers';
+import { addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
 import type { Consignatario, Pais, Customer } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
-export function ConsignatariosClient() {
-  const [consignatarios, setConsignatarios] = useState<Consignatario[]>([]);
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
+type ConsignatariosClientProps = {
+  initialConsignatarios: Consignatario[];
+  paises: Pais[];
+  customers: Customer[];
+  customerMap: Record<string, string>;
+};
+
+export function ConsignatariosClient({
+  initialConsignatarios,
+  paises,
+  customers,
+  customerMap: initialCustomerMap
+}: ConsignatariosClientProps) {
+  const [consignatarios, setConsignatarios] = useState<Consignatario[]>(initialConsignatarios);
+  const [customerMap, setCustomerMap] = useState<Record<string, string>>(initialCustomerMap);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
   const { toast } = useToast();
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [consignatariosData, paisesData, customersData] = await Promise.all([
-          getConsignatarios(),
-          getPaises(),
-          getCustomers(),
-      ]);
-      setConsignatarios(consignatariosData);
-      setPaises(paisesData);
-      setCustomers(customersData);
-
-      const newCustomerMap = customersData.reduce((acc, customer) => {
-        acc[customer.id] = customer.name;
-        return acc;
-      }, {} as Record<string, string>);
-      setCustomerMap(newCustomerMap);
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos. Verifique sus reglas de seguridad de Firestore.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleOpenDialog = (consignatario: Consignatario | null = null) => {
     setEditingConsignatario(consignatario);

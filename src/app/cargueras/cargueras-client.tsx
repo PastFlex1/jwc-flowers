@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,43 +17,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { getCargueras, addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
+import { addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
-import { cargueras as initialCargueras } from '@/lib/mock-data';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
-export function CarguerasClient() {
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+type CarguerasClientProps = {
+  initialCargueras: Carguera[];
+};
+
+export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
+  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
-
-  const fetchCargueras = useCallback(async () => {
-    try {
-      const carguerasData = await getCargueras();
-       if (carguerasData.length > 0) {
-        setCargueras(carguerasData);
-      } else {
-        // If DB is empty, use the initial mock data
-        setCargueras(initialCargueras);
-      }
-    } catch (error) {
-      console.error("Error fetching cargueras:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las cargueras. Mostrando lista por defecto.',
-        variant: 'destructive',
-      });
-      setCargueras(initialCargueras);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchCargueras();
-  }, [fetchCargueras]);
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);
