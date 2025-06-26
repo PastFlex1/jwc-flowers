@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Consignatario, Pais } from '@/lib/types';
+import type { Consignatario, Pais, Customer } from '@/lib/types';
 
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  nombreConsignatario: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   pais: z.string().min(1, { message: "Por favor seleccione un país." }),
+  customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
 });
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
@@ -22,21 +23,24 @@ type ConsignatarioFormProps = {
   onClose: () => void;
   initialData?: Consignatario | null;
   paises: Pais[];
+  customers: Customer[];
 };
 
-export function ConsignatarioForm({ onSubmit, onClose, initialData, paises }: ConsignatarioFormProps) {
+export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, customers }: ConsignatarioFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
-      nombre: '',
+      nombreConsignatario: '',
       pais: '',
+      customerId: '',
     },
   });
 
   useEffect(() => {
     form.reset(initialData || {
-      nombre: '',
+      nombreConsignatario: '',
       pais: '',
+      customerId: '',
     });
   }, [initialData, form]);
 
@@ -50,13 +54,37 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises }: Co
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="nombre"
+          name="nombreConsignatario"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nombre del Consignatario</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Flores de Holanda" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="customerId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cliente</FormLabel>
+               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un cliente" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {customers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               <FormMessage />
             </FormItem>
           )}

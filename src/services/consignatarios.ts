@@ -17,8 +17,9 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Consignat
   const data = snapshot.data();
   return {
     id: snapshot.id,
-    nombre: data.nombre,
+    nombreConsignatario: data.nombreConsignatario,
     pais: data.pais,
+    customerId: data.customerId,
   };
 };
 

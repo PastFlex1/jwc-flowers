@@ -97,6 +97,7 @@ export interface Carguera {
 
 export interface Consignatario {
   id: string;
-  nombre: string;
+  nombreConsignatario: string;
   pais: string;
+  customerId: string;
 }

@@ -19,7 +19,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { getConsignatarios, addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
 import { getPaises } from '@/services/paises';
-import type { Consignatario, Pais } from '@/lib/types';
+import { getCustomers } from '@/services/customers';
+import type { Consignatario, Pais, Customer } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
@@ -27,6 +28,8 @@ type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 export function ConsignatariosClient() {
   const [consignatarios, setConsignatarios] = useState<Consignatario[]>([]);
   const [paises, setPaises] = useState<Pais[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerMap, setCustomerMap] = useState<Record<string, string>>({});
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
@@ -34,12 +37,21 @@ export function ConsignatariosClient() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [consignatariosData, paisesData] = await Promise.all([
+      const [consignatariosData, paisesData, customersData] = await Promise.all([
           getConsignatarios(),
           getPaises(),
+          getCustomers(),
       ]);
       setConsignatarios(consignatariosData);
       setPaises(paisesData);
+      setCustomers(customersData);
+
+      const newCustomerMap = customersData.reduce((acc, customer) => {
+        acc[customer.id] = customer.name;
+        return acc;
+      }, {} as Record<string, string>);
+      setCustomerMap(newCustomerMap);
+
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -157,6 +169,7 @@ export function ConsignatariosClient() {
               onClose={handleCloseDialog}
               initialData={editingConsignatario}
               paises={paises}
+              customers={customers}
             />
           </DialogContent>
         </Dialog>
@@ -171,6 +184,7 @@ export function ConsignatariosClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre del Consignatario</TableHead>
+                  <TableHead>Cliente Dirigido</TableHead>
                   <TableHead>País</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -178,7 +192,8 @@ export function ConsignatariosClient() {
               <TableBody>
                 {consignatarios.map((consignatario) => (
                   <TableRow key={consignatario.id}>
-                    <TableCell className="font-medium">{consignatario.nombre}</TableCell>
+                    <TableCell className="font-medium">{consignatario.nombreConsignatario}</TableCell>
+                    <TableCell>{customerMap[consignatario.customerId] || 'N/A'}</TableCell>
                     <TableCell>{consignatario.pais}</TableCell>
                     <TableCell className="text-right space-x-0">
                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(consignatario)}>
