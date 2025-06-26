@@ -18,7 +18,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 
 import { addInvoice } from '@/services/invoices';
 import { getCustomers } from '@/services/customers';
@@ -65,7 +64,6 @@ export function NewInvoiceForm() {
   const { toast } = useToast();
   const [isHeaderSet, setIsHeaderSet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Data for dropdowns
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -89,7 +87,6 @@ export function NewInvoiceForm() {
   });
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
       const [customersData, fincasData, vendedoresData, carguerasData, paisesData] = await Promise.all([
         getCustomers(),
@@ -110,8 +107,6 @@ export function NewInvoiceForm() {
         description: 'No se pudieron cargar los datos necesarios para crear una factura.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 
@@ -192,23 +187,6 @@ export function NewInvoiceForm() {
         title: 'Edición en línea',
         description: 'Puede editar los valores directamente en la fila.',
       });
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-10 w-1/3 mb-2" />
-          <Skeleton className="h-4 w-1/2" />
-        </div>
-        <Card>
-          <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
   
   return (

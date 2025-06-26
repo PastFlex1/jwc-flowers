@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addCarguera, updateCarguera, deleteCarguera, getCargueras } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
@@ -39,6 +38,8 @@ export function CarguerasClient() {
     try {
       let data = await getCargueras();
       if (data.length === 0) {
+        // If firestore is empty, seed with mock data.
+        // In a real app, this might be a one-time migration.
         data = defaultCargueras;
       }
       setCargueras(data);
@@ -49,6 +50,8 @@ export function CarguerasClient() {
         description: 'No se pudieron cargar las cargueras.',
         variant: 'destructive',
       });
+      // Fallback to mock data on error
+      setCargueras(defaultCargueras);
     } finally {
       setIsLoading(false);
     }
@@ -71,27 +74,44 @@ export function CarguerasClient() {
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
     setIsSubmitting(true);
+    const originalCargueras = [...cargueras];
+    
+    // Optimistic Update
+    if (cargueraData.id) {
+        // Editing
+        setCargueras(prev => prev.map(c => c.id === cargueraData.id ? { ...c, ...cargueraData } as Carguera : c));
+    } else {
+        // Adding
+        const tempId = `temp-${Date.now()}`;
+        setCargueras(prev => [...prev, { ...cargueraData, id: tempId } as Carguera]);
+    }
+    
+    handleCloseDialog();
+
     try {
-      if (cargueraData.id) {
-        await updateCarguera(cargueraData.id, cargueraData as Carguera);
-        toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
-      } else {
-        await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
-      }
-      handleCloseDialog();
-      await fetchCargueras();
+        if (cargueraData.id) {
+            await updateCarguera(cargueraData.id, cargueraData as Carguera);
+            toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
+        } else {
+            const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
+            // Update temp id with real id
+            setCargueras(prev => prev.map(c => c.id.startsWith('temp-') ? { ...c, id: newId } : c));
+            toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+        }
+        await fetchCargueras(); // Re-sync with db state
     } catch (error) {
-      console.error("Error submitting form:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la carguera: ${errorMessage}. Por favor, revise su conexión y la configuración de Firestore.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+        // Revert on error
+        setCargueras(originalCargueras);
+        console.error("Error submitting form:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+            title: 'Error al Guardar',
+            description: `No se pudo guardar la carguera: ${errorMessage}.`,
+            variant: 'destructive',
+            duration: 10000,
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
 
@@ -102,11 +122,16 @@ export function CarguerasClient() {
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
     
+    const originalCargueras = [...cargueras];
+    // Optimistic Deletion
+    setCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
+    
     try {
       await deleteCarguera(cargueraToDelete.id);
       toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
-      await fetchCargueras();
     } catch (error) {
+      // Revert on error
+      setCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -119,30 +144,6 @@ export function CarguerasClient() {
       setCargueraToDelete(null);
     }
   };
-
-  if (isLoading) {
-    return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <>

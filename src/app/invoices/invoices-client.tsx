@@ -13,7 +13,6 @@ import { format, parseISO } from 'date-fns';
 import { getInvoices } from '@/services/invoices';
 import { getCustomers } from '@/services/customers';
 import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export function InvoicesClient() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -66,30 +65,6 @@ export function InvoicesClient() {
     const tax = subtotal * 0.12;
     return subtotal + tax;
   };
-  
-  if (isLoading) {
-    return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">

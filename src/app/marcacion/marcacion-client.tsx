@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addMarcacion, updateMarcacion, deleteMarcacion, getMarcaciones } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
@@ -67,17 +66,29 @@ export function MarcacionClient() {
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
     setIsSubmitting(true);
+    const originalData = [...marcaciones];
+
+    if (marcacionData.id) {
+        setMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } as Marcacion : m));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setMarcaciones(prev => [...prev, { ...marcacionData, id: tempId } as Marcacion]);
+    }
+
+    handleCloseDialog();
+
     try {
       if (marcacionData.id) {
         await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
       } else {
-        await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
+        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
+        setMarcaciones(prev => prev.map(m => m.id.startsWith('temp-') ? { ...m, id: newId } : m));
         toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
       }
-      handleCloseDialog();
-      await fetchMarcaciones();
+      await fetchMarcaciones(); // Re-sync
     } catch (error) {
+      setMarcaciones(originalData); // Revert
       console.error("Error submitting marcacion:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -97,11 +108,15 @@ export function MarcacionClient() {
 
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
+
+    const originalData = [...marcaciones];
+    setMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
+
     try {
       await deleteMarcacion(marcacionToDelete.id);
       toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
-      await fetchMarcaciones();
     } catch (error) {
+      setMarcaciones(originalData);
       console.error("Error deleting marcación:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -114,30 +129,6 @@ export function MarcacionClient() {
       setMarcacionToDelete(null);
     }
   };
-  
-  if (isLoading) {
-     return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <>

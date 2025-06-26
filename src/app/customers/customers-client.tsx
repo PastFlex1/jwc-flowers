@@ -23,7 +23,6 @@ import { getVendedores } from '@/services/vendedores';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 import { CustomerForm } from './customer-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
@@ -88,17 +87,30 @@ export function CustomersClient() {
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
     setIsSubmitting(true);
+    const originalCustomers = [...customers];
+
+    // Optimistic update
+    if (customerData.id) {
+        setCustomers(prev => prev.map(c => c.id === customerData.id ? { ...c, ...customerData } as Customer : c));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setCustomers(prev => [...prev, { ...customerData, id: tempId } as Customer]);
+    }
+    
+    handleCloseDialog();
+    
     try {
       if (customerData.id) {
         await updateCustomer(customerData.id, customerData as Customer);
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
       } else {
-        await addCustomer(customerData as Omit<Customer, 'id'>);
+        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
+        setCustomers(prev => prev.map(c => c.id.startsWith('temp-') ? { ...c, id: newId } : c));
         toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
       }
-      handleCloseDialog();
-      await fetchData();
+      await fetchData(); // Re-sync with db
     } catch (error) {
+      setCustomers(originalCustomers); // Revert on failure
       console.error("Error submitting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -118,12 +130,16 @@ export function CustomersClient() {
 
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
+    
+    const originalCustomers = [...customers];
+    // Optimistic delete
+    setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
 
     try {
       await deleteCustomer(customerToDelete.id);
       toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
-      await fetchData();
     } catch (error) {
+      setCustomers(originalCustomers); // Revert on failure
       console.error("Error deleting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -137,22 +153,6 @@ export function CustomersClient() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-             <Skeleton key={i} className="h-40 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
   return (
     <>
       <div className="space-y-6">

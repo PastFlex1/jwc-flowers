@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addFinca, updateFinca, deleteFinca, getFincas } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
@@ -67,17 +66,30 @@ export function FincasClient() {
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
     setIsSubmitting(true);
+    const originalFincas = [...fincas];
+
+    // Optimistic Update
+    if (fincaData.id) {
+        setFincas(prev => prev.map(f => f.id === fincaData.id ? { ...f, ...fincaData } as Finca : f));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setFincas(prev => [...prev, { ...fincaData, id: tempId } as Finca]);
+    }
+
+    handleCloseDialog();
+
     try {
       if (fincaData.id) {
         await updateFinca(fincaData.id, fincaData as Finca);
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
       } else {
-        await addFinca(fincaData);
+        const newId = await addFinca(fincaData);
+        setFincas(prev => prev.map(f => f.id.startsWith('temp-') ? { ...f, id: newId } : f));
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
       }
-      handleCloseDialog();
       await fetchFincas(); // Refresh data
     } catch (error) {
+      setFincas(originalFincas); // Revert on failure
       console.error("Error submitting finca:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -97,12 +109,16 @@ export function FincasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!fincaToDelete) return;
+
+    const originalFincas = [...fincas];
+    // Optimistic deletion
+    setFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
     
     try {
       await deleteFinca(fincaToDelete.id);
       toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
-      await fetchFincas(); // Refresh data
     } catch (error) {
+      setFincas(originalFincas); // Revert
       console.error("Error deleting finca:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -115,30 +131,6 @@ export function FincasClient() {
         setFincaToDelete(null);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <>

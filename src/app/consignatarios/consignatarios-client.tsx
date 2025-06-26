@@ -22,7 +22,6 @@ import { getPaises } from '@/services/paises';
 import { getCustomers } from '@/services/customers';
 import type { Consignatario, Pais, Customer } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
@@ -84,17 +83,30 @@ export function ConsignatariosClient() {
 
   const handleFormSubmit = async (formData: ConsignatarioFormData) => {
     setIsSubmitting(true);
+    const originalData = [...consignatarios];
+    
+    // Optimistic Update
+    if (formData.id) {
+        setConsignatarios(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } as Consignatario : c));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setConsignatarios(prev => [...prev, { ...formData, id: tempId } as Consignatario]);
+    }
+    
+    handleCloseDialog();
+    
     try {
       if (formData.id) {
         await updateConsignatario(formData.id, formData as Consignatario);
         toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
       } else {
-        await addConsignatario(formData as Omit<Consignatario, 'id'>);
+        const newId = await addConsignatario(formData as Omit<Consignatario, 'id'>);
+        setConsignatarios(prev => prev.map(c => c.id.startsWith('temp-') ? { ...c, id: newId } : c));
         toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
       }
-      handleCloseDialog();
-      await fetchData();
+      await fetchData(); // Re-sync
     } catch (error) {
+      setConsignatarios(originalData); // Revert
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -114,11 +126,16 @@ export function ConsignatariosClient() {
 
   const handleDeleteConfirm = async () => {
     if (!consignatarioToDelete) return;
+
+    const originalData = [...consignatarios];
+    // Optimistic Delete
+    setConsignatarios(prev => prev.filter(c => c.id !== consignatarioToDelete.id));
+
     try {
       await deleteConsignatario(consignatarioToDelete.id);
       toast({ title: 'Éxito', description: 'Consignatario eliminado correctamente.' });
-      await fetchData();
     } catch (error) {
+        setConsignatarios(originalData);
         console.error("Error deleting consignatario:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -131,30 +148,6 @@ export function ConsignatariosClient() {
       setConsignatarioToDelete(null);
     }
   };
-
-  if (isLoading) {
-    return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <>

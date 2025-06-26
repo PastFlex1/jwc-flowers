@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addPais, updatePais, deletePais, getPaises } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
@@ -68,17 +67,29 @@ export function PaisClient() {
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
     setIsSubmitting(true);
+    const originalData = [...paises];
+
+    if (paisData.id) {
+        setPaises(prev => prev.map(p => p.id === paisData.id ? { ...p, ...paisData } as Pais : p));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setPaises(prev => [...prev, { ...paisData, id: tempId } as Pais]);
+    }
+
+    handleCloseDialog();
+    
     try {
       if (paisData.id) {
         await updatePais(paisData.id, paisData as Pais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
       } else {
-        await addPais(paisData as Omit<Pais, 'id'>);
+        const newId = await addPais(paisData as Omit<Pais, 'id'>);
+        setPaises(prev => prev.map(p => p.id.startsWith('temp-') ? { ...p, id: newId } : p));
         toast({ title: 'Éxito', description: 'País añadido correctamente.' });
       }
-      handleCloseDialog();
       await fetchPaises();
     } catch (error) {
+      setPaises(originalData);
       console.error("Error submitting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -99,11 +110,14 @@ export function PaisClient() {
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
     
+    const originalData = [...paises];
+    setPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
+
     try {
       await deletePais(paisToDelete.id);
       toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
-      await fetchPaises();
     } catch (error) {
+      setPaises(originalData);
       console.error("Error deleting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -117,30 +131,6 @@ export function PaisClient() {
     }
   };
   
-  if (isLoading) {
-    return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="space-y-6">

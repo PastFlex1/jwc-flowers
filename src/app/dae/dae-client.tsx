@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { addDae, updateDae, deleteDae, getDaes } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
-import { Skeleton } from '@/components/ui/skeleton';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
@@ -67,17 +66,29 @@ export function DaeClient() {
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
     setIsSubmitting(true);
+    const originalData = [...daes];
+
+    if (daeData.id) {
+        setDaes(prev => prev.map(d => d.id === daeData.id ? { ...d, ...daeData } as Dae : d));
+    } else {
+        const tempId = `temp-${Date.now()}`;
+        setDaes(prev => [...prev, { ...daeData, id: tempId } as Dae]);
+    }
+    
+    handleCloseDialog();
+    
     try {
       if (daeData.id) {
         await updateDae(daeData.id, daeData as Dae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
       } else {
-        await addDae(daeData as Omit<Dae, 'id'>);
+        const newId = await addDae(daeData as Omit<Dae, 'id'>);
+        setDaes(prev => prev.map(d => d.id.startsWith('temp-') ? { ...d, id: newId } : d));
         toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
       }
-      handleCloseDialog();
-      await fetchDaes();
+      await fetchDaes(); // Re-sync
     } catch (error) {
+      setDaes(originalData); // Revert
       console.error("Error submitting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -97,11 +108,15 @@ export function DaeClient() {
 
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
+
+    const originalData = [...daes];
+    setDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
+
     try {
       await deleteDae(daeToDelete.id);
       toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
-      await fetchDaes();
     } catch (error) {
+      setDaes(originalData);
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -114,30 +129,6 @@ export function DaeClient() {
         setDaeToDelete(null);
     }
   };
-
-  if (isLoading) {
-    return (
-       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-10 w-36" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <>
