@@ -5,6 +5,7 @@ import {
   getDocs,
   addDoc,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   type DocumentData,
@@ -13,8 +14,9 @@ import {
 
 const customersCollection = collection(db, 'customers');
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Customer => {
+const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentData): Customer => {
   const data = snapshot.data();
+   if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
     name: data.name,
@@ -33,6 +35,15 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Customer 
 export async function getCustomers(): Promise<Customer[]> {
   const snapshot = await getDocs(customersCollection);
   return snapshot.docs.map(fromFirestore);
+}
+
+export async function getCustomerById(id: string): Promise<Customer | null> {
+  const customerDoc = doc(db, 'customers', id);
+  const snapshot = await getDoc(customerDoc);
+  if (snapshot.exists()) {
+    return fromFirestore(snapshot);
+  }
+  return null;
 }
 
 export async function addCustomer(customerData: Omit<Customer, 'id'>): Promise<string> {

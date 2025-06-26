@@ -24,9 +24,9 @@ import { getFincas } from '@/services/fincas';
 import { getVendedores } from '@/services/vendedores';
 import { getCargueras } from '@/services/cargueras';
 import { getPaises } from '@/services/paises';
-// import { addInvoice } from '@/services/invoices';
+import { addInvoice } from '@/services/invoices';
 
-import type { Customer, Finca, Vendedor, Carguera, Pais } from '@/lib/types';
+import type { Customer, Finca, Vendedor, Carguera, Pais, Invoice } from '@/lib/types';
 
 
 const lineItemSchema = z.object({
@@ -136,7 +136,7 @@ export default function NewInvoicePage() {
     }
   }
 
-  function onSubmit(values: InvoiceFormValues) {
+  async function onSubmit(values: InvoiceFormValues) {
     if (values.items.length === 0) {
       toast({
         title: 'Factura Vacía',
@@ -145,37 +145,28 @@ export default function NewInvoicePage() {
       });
       return;
     }
-    console.log("Form values to be submitted:", values);
     
-    // const invoiceData = {
-    //   ...values,
-    //   farmDepartureDate: values.farmDepartureDate.toISOString(),
-    //   flightDate: values.flightDate.toISOString(),
-    //   status: 'Pending' as const
-    // };
+    const invoiceData: Omit<Invoice, 'id' | 'status'> = {
+      ...values,
+      farmDepartureDate: values.farmDepartureDate.toISOString(),
+      flightDate: values.flightDate.toISOString(),
+    };
 
-    // try {
-    //   await addInvoice(invoiceData);
-    //   toast({
-    //     title: 'Factura Creada!',
-    //     description: 'La nueva factura ha sido guardada exitosamente.',
-    //   });
-    //   router.push('/');
-    // } catch (error) {
-    //   console.error("Error creating invoice:", error);
-    //   toast({
-    //     title: 'Error',
-    //     description: 'No se pudo crear la factura.',
-    //     variant: 'destructive',
-    //   });
-    // }
-    
-    // NOTE: Temporarily logging to console until `addInvoice` service is fully implemented
-    toast({
-        title: 'Factura Lista para Guardar',
-        description: 'La funcionalidad de guardado está en desarrollo. Revise la consola para ver los datos.',
-    });
-    router.push('/');
+    try {
+      await addInvoice(invoiceData);
+      toast({
+        title: 'Factura Creada!',
+        description: 'La nueva factura ha sido guardada exitosamente.',
+      });
+      router.push('/');
+    } catch (error) {
+      console.error("Error creating invoice:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear la factura.',
+        variant: 'destructive',
+      });
+    }
   }
 
   const watchItems = form.watch('items');

@@ -10,13 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-// Note: In a real app, you wouldn't fetch all customers just to display names.
-// You would either store the customer name on the invoice document (denormalization)
-// or have a more specific backend query. For this migration, we'll fetch all.
 import { getCustomers } from '@/services/customers';
-// import { getInvoices } from '@/services/invoices';
+import { getInvoices } from '@/services/invoices';
 import type { Customer, Invoice } from '@/lib/types';
-import { invoices as mockInvoices } from '@/lib/mock-data'; // TEMPORARY
+import { format, parseISO } from 'date-fns';
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -27,18 +24,12 @@ export default function InvoicesPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // const [invoicesData, customersData] = await Promise.all([
-      //   getInvoices(),
-      //   getCustomers(),
-      // ]);
-      // setInvoices(invoicesData);
-      // setCustomers(customersData);
-      
-      // FIXME: Using mock invoices until service is fully implemented
-      const customersData = await getCustomers();
-      setInvoices(mockInvoices);
+      const [invoicesData, customersData] = await Promise.all([
+        getInvoices(),
+        getCustomers(),
+      ]);
+      setInvoices(invoicesData);
       setCustomers(customersData);
-
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -62,20 +53,18 @@ export default function InvoicesPage() {
   const getInvoiceTotal = (invoice: Invoice) => {
     if (!invoice.items) return 0;
     return invoice.items.reduce((total, item) => {
-      // This is a simplified calculation. The old mock data had different structure.
       const itemTotal = (item.salePrice || 0) * (item.stemCount || 0);
       return total + itemTotal;
     }, 0);
   };
   
   const renderSkeleton = () => (
-     Array.from({ length: 3 }).map((_, index) => (
+     Array.from({ length: 5 }).map((_, index) => (
       <TableRow key={`skeleton-${index}`}>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
         <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
         <TableCell><Skeleton className="h-8 w-16" /></TableCell>
       </TableRow>
@@ -105,7 +94,7 @@ export default function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice</TableHead>
+                <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Flight Date</TableHead>
                 <TableHead>Amount</TableHead>
@@ -119,12 +108,12 @@ export default function InvoicesPage() {
                 return (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">
-                      <Link href={`/invoices/${invoice.id}`} className="hover:underline">
-                        #{invoice.invoiceNumber}
+                      <Link href={`/invoices/${invoice.id}`} className="hover:underline text-primary">
+                        {invoice.invoiceNumber}
                       </Link>
                     </TableCell>
                     <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
-                    <TableCell>{invoice.flightDate}</TableCell>
+                    <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
                     <TableCell>${total.toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge
@@ -137,9 +126,9 @@ export default function InvoicesPage() {
                         {invoice.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Link href={`/invoices/${invoice.id}`} passHref>
-                        <Button variant="ghost" size="sm">View</Button>
+                        <Button variant="outline" size="sm">View</Button>
                       </Link>
                     </TableCell>
                   </TableRow>

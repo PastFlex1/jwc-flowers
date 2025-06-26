@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation';
-import { customers, invoices, inventory } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { InvoiceMessageGenerator } from './invoice-message-generator';
 import type { InvoiceMessageInput } from '@/ai/flows/invoice-message-generation';
+import { getInvoiceById } from '@/services/invoices';
+import { getCustomerById } from '@/services/customers';
+import { format, parseISO } from 'date-fns';
+
 
 type InvoiceDetailPageProps = {
   params: {
@@ -12,24 +15,21 @@ type InvoiceDetailPageProps = {
   };
 };
 
-export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
-  const invoice = invoices.find(inv => inv.id === params.id);
+export default async function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
+  const invoice = await getInvoiceById(params.id);
+  
   if (!invoice) {
     notFound();
   }
 
-  const customer = customers.find(c => c.id === invoice.customerId);
-  const invoiceItems = invoice.items.map(item => {
-    const details = inventory.find(i => i.id === item.itemId);
-    return { ...item, ...details, total: (details?.price || 0) * item.quantity };
-  });
+  const customer = await getCustomerById(invoice.customerId);
 
-  const subtotal = invoiceItems.reduce((acc, item) => acc + item.total, 0);
-  const tax = subtotal * 0.08;
+  const subtotal = invoice.items.reduce((acc, item) => acc + (item.salePrice * item.stemCount), 0);
+  const tax = subtotal * 0.12; // Standard VAT in Ecuador
   const total = subtotal + tax;
 
-  const orderSummary = invoiceItems
-    .map(item => `${item.quantity}x ${item.name}`)
+  const orderSummary = invoice.items
+    .map(item => `${item.stemCount}x ${item.description}`)
     .join(', ');
 
   const aiMessageInput: InvoiceMessageInput | null = customer ? {
@@ -46,11 +46,11 @@ export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-3xl font-bold font-headline text-primary">INVOICE</h1>
-              <p className="text-muted-foreground">#{invoice.invoiceNumber}</p>
+              <p className="text-muted-foreground">{invoice.invoiceNumber}</p>
             </div>
             <div className="text-right">
-              <h2 className="text-2xl font-bold font-headline">Bloom Invoice</h2>
-              <p className="text-muted-foreground">123 Floral Ave, Petalburg, FL 12345</p>
+              <h2 className="text-2xl font-bold font-headline">JCW Flowers</h2>
+              <p className="text-muted-foreground">Cayambe, Ecuador</p>
             </div>
           </div>
           <Separator className="my-6" />
@@ -67,31 +67,35 @@ export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
             </div>
             <div className="text-right">
               <h3 className="font-semibold">Issue Date:</h3>
-              <p className="text-muted-foreground">{invoice.issueDate}</p>
+              <p className="text-muted-foreground">{format(parseISO(invoice.farmDepartureDate), 'PPP')}</p>
               <h3 className="font-semibold mt-2">Due Date:</h3>
-              <p className="text-muted-foreground">{invoice.dueDate}</p>
+              <p className="text-muted-foreground">{format(parseISO(invoice.flightDate), 'PPP')}</p>
             </div>
           </div>
           <div className="mt-8">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Item</TableHead>
-                  <TableHead className="text-center">Quantity</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="text-center">Cajas</TableHead>
+                  <TableHead className="text-center">Tallos</TableHead>
+                  <TableHead className="text-right">Precio Unit.</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoiceItems.map(item => (
-                  <TableRow key={item.id}>
+                {invoice.items.map((item, index) => (
+                  <TableRow key={index}>
                     <TableCell>
-                      <div className="font-medium">{item.name}</div>
-                      <div className="text-sm text-muted-foreground">{item.description}</div>
+                      <div className="font-medium">{item.description}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
+                      </div>
                     </TableCell>
-                    <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-right">${item.price?.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${item.total.toFixed(2)}</TableCell>
+                    <TableCell className="text-center">{item.boxCount}</TableCell>
+                    <TableCell className="text-center">{item.stemCount}</TableCell>
+                    <TableCell className="text-right">${item.salePrice?.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">${(item.salePrice * item.stemCount).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -105,7 +109,7 @@ export default function InvoiceDetailPage({ params }: InvoiceDetailPageProps) {
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax (8%)</span>
+                <span className="text-muted-foreground">IVA (12%)</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xl font-bold">

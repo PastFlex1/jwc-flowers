@@ -20,20 +20,37 @@ export interface InventoryItem {
   cost: number;
 }
 
-export interface InvoiceItem {
-  itemId: string;
-  quantity: number;
+export interface LineItem {
+  id?: string;
+  boxType: 'qb' | 'eb' | 'hb';
+  boxCount: number;
+  bunchCount: number;
+  bunchesPerBox: number;
+  description: string;
+  length: number;
+  stemCount: number;
+  purchasePrice: number;
+  salePrice: number;
 }
 
 export interface Invoice {
   id: string;
   invoiceNumber: string;
+  farmDepartureDate: string;
+  flightDate: string;
+  sellerId: string;
   customerId: string;
-  issueDate: string;
-  dueDate: string;
-  items: InvoiceItem[];
+  farmId: string;
+  carrierId: string;
+  countryId: string;
+  pointOfSale: string;
+  reference?: string;
+  masterAWB: string;
+  houseAWB: string;
+  items: LineItem[];
   status: 'Paid' | 'Pending' | 'Overdue';
 }
+
 
 export interface Finca {
   id:string;

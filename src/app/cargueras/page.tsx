@@ -95,7 +95,7 @@ export default function CarguerasPage() {
       try {
         await deleteCarguera(cargueraToDelete.id);
         toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
-        setFincaToDelete(null);
+        setCargueraToDelete(null);
         fetchCargueras();
       } catch (error) {
         console.error("Error deleting carguera:", error);
