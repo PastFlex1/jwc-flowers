@@ -22,9 +22,8 @@ This project uses Firebase for the database and other services.
 2.  **Create a Web App:** Inside your Firebase project, go to Project Settings (click the ⚙️ icon). In the "General" tab, under "Your apps", click the web icon (`</>`) to register a new web app.
 3.  **Get Config Keys:** After registering, Firebase will show you a `firebaseConfig` object with your project's credentials. You'll need these keys.
 4.  **Set Environment Variables:**
-    *   Find the `.env.example` file in the project.
-    *   Create a copy of it and name it `.env`.
-    *   Open the new `.env` file and paste the values from your `firebaseConfig` object.
+    *   Find the `.env` file in the project.
+    *   Open the `.env` file and paste the values from your `firebaseConfig` object.
 
 Your `.env` file should look something like this:
 
@@ -37,7 +36,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
 
 ### 3. Configure Firestore Rules
 
-For development, you need to set open access rules for your database.
+For development, you need to set rules that allow authenticated users to access your database. **This step is crucial for the app to work.**
 
 1.  In the Firebase Console, go to **Build > Cloud Firestore**.
 2.  Click the **"Rules"** tab.
@@ -46,13 +45,16 @@ For development, you need to set open access rules for your database.
     rules_version = '2';
     service cloud.firestore {
       match /databases/{database}/documents {
+        // Allow read and write access only for authenticated users
         match /{document=**} {
-          allow read, write: if true;
+          allow read, write: if request.auth != null;
         }
       }
     }
     ```
 4.  Click **Publish**.
+
+This rule ensures that only users who are signed into your app (including anonymous users) can read from or write to the database, which is a good security practice.
 
 ### 4. Run the Development Server
 

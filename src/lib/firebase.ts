@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 // For security, these values are stored in environment variables
@@ -16,6 +17,7 @@ const firebaseConfig = {
 // Initialize Firebase for SSR and SSG, preventing re-initialization
 let app;
 let db;
+let auth;
 
 // Check if all firebase config keys are provided
 const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!value && !value.includes('YOUR_'));
@@ -23,12 +25,14 @@ const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!valu
 if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
+    auth = getAuth(app);
 } else {
     console.warn("Firebase configuration is incomplete. Please check your .env file.");
     // Provide mock/dummy instances if not configured
     app = null;
     db = null;
+    auth = null;
 }
 
 
-export { app, db };
+export { app, db, auth };

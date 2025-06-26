@@ -44,14 +44,14 @@ import {
 } from '@/components/ui/menubar';
 
 const navItems = [
-  { href: '/', label: 'Invoices', icon: FileText },
+  { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/inventory', label: 'Inventory', icon: Boxes },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   return (
@@ -92,36 +92,36 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Button variant="ghost" className="justify-start gap-3 w-full px-2 h-12">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="profile user" />
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarFallback>A</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start">
-                   <span className="font-medium">Admin User</span>
-                   <span className="text-xs text-muted-foreground">admin@bloom.com</span>
+                   <span className="font-medium">Usuario Anónimo</span>
+                   <span className="text-xs text-muted-foreground truncate max-w-[120px]">{user?.uid}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Admin User</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    admin@bloom.com
+                  <p className="text-sm font-medium leading-none">Usuario Anónimo</p>
+                  <p className="text-xs leading-none text-muted-foreground truncate">
+                    {user?.uid}
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <CircleUser className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem disabled>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>Log out &amp; Reconnect</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

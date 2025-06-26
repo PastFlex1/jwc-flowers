@@ -1,10 +1,12 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { auth } from '@/lib/firebase';
+import { signInAnonymously, onAuthStateChanged, signOut, type User } from 'firebase/auth';
 
 type AuthContextType = {
+  user: User | null;
   isAuthenticated: boolean;
-  login: (user: string, pass:string) => boolean;
   logout: () => void;
   isLoading: boolean;
 };
@@ -12,46 +14,51 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedAuth = localStorage.getItem('isAuthenticated');
-      if (storedAuth === 'true') {
-        setIsAuthenticated(true);
-      }
-    } catch (error) {
-      console.error("Couldn't access localStorage", error);
-    } finally {
-      setIsLoading(false);
+    if (!auth) {
+        setIsLoading(false);
+        console.error("Firebase Auth is not configured. Check your .env file.");
+        return;
     }
+    
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setIsLoading(false);
+      } else {
+        try {
+            await signInAnonymously(auth);
+            // The listener will pick up the new user state and call this function again
+        } catch (error) {
+            console.error("Anonymous sign-in failed", error);
+            setIsLoading(false);
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = (user: string, pass: string): boolean => {
-    if (user === 'admin' && pass === 'admin123') {
-      try {
-        localStorage.setItem('isAuthenticated', 'true');
-      } catch (error) {
-         console.error("Couldn't access localStorage", error);
-      }
-      setIsAuthenticated(true);
-      return true;
+  const logout = async () => {
+    if(auth) {
+        await signOut(auth);
+        setUser(null);
+        // The onAuthStateChanged listener will automatically sign the user in again anonymously
     }
-    return false;
   };
 
-  const logout = () => {
-    try {
-      localStorage.removeItem('isAuthenticated');
-    } catch (error) {
-      console.error("Couldn't access localStorage", error);
-    }
-    setIsAuthenticated(false);
+  const value: AuthContextType = {
+    user,
+    isAuthenticated: !!user,
+    logout,
+    isLoading,
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout, isLoading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
