@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -80,7 +81,7 @@ export function PaisClient() {
         console.error("Error updating pais:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar el país.',
+          description: 'No se pudo actualizar el país. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -98,7 +99,7 @@ export function PaisClient() {
         console.error("Error adding pais:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo guardar el país.',
+          description: 'No se pudo guardar el país. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -126,7 +127,7 @@ export function PaisClient() {
       console.error("Error deleting pais:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el país.',
+        description: 'No se pudo eliminar el país. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

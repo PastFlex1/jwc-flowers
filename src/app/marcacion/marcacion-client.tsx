@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -79,7 +80,7 @@ export function MarcacionClient() {
         console.error("Error updating marcacion:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar la marcación.',
+          description: 'No se pudo actualizar la marcación. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -97,7 +98,7 @@ export function MarcacionClient() {
         console.error("Error adding marcacion:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo guardar la marcación.',
+          description: 'No se pudo guardar la marcación. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -125,7 +126,7 @@ export function MarcacionClient() {
       console.error("Error deleting marcación:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la marcación.',
+        description: 'No se pudo eliminar la marcación. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

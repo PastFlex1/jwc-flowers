@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -79,7 +80,7 @@ export function FincasClient() {
         console.error("Error updating finca:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar la finca.',
+          description: 'No se pudo actualizar la finca. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -97,7 +98,7 @@ export function FincasClient() {
         console.error("Error adding finca:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo añadir la finca.',
+          description: 'No se pudo añadir la finca. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -125,7 +126,7 @@ export function FincasClient() {
       console.error("Error deleting finca:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la finca.',
+        description: 'No se pudo eliminar la finca. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

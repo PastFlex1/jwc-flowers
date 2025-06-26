@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -78,7 +79,7 @@ export function CustomersClient() {
         console.error("Error updating customer:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar el cliente.',
+          description: 'No se pudo actualizar el cliente. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -96,7 +97,7 @@ export function CustomersClient() {
         console.error("Error adding customer:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo añadir el cliente.',
+          description: 'No se pudo añadir el cliente. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -124,7 +125,7 @@ export function CustomersClient() {
       console.error("Error deleting customer:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el cliente.',
+        description: 'No se pudo eliminar el cliente. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

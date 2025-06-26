@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -80,7 +81,7 @@ export function ProvinciasClient() {
         console.error("Error updating provincia:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar la provincia.',
+          description: 'No se pudo actualizar la provincia. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -98,7 +99,7 @@ export function ProvinciasClient() {
         console.error("Error adding provincia:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo guardar la provincia.',
+          description: 'No se pudo guardar la provincia. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -126,7 +127,7 @@ export function ProvinciasClient() {
       console.error("Error deleting provincia:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la provincia.',
+        description: 'No se pudo eliminar la provincia. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

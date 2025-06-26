@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -79,7 +80,7 @@ export function DaeClient() {
         console.error("Error updating DAE:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar el DAE.',
+          description: 'No se pudo actualizar el DAE. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -97,7 +98,7 @@ export function DaeClient() {
         console.error("Error adding DAE:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo añadir el DAE.',
+          description: 'No se pudo añadir el DAE. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -125,7 +126,7 @@ export function DaeClient() {
       console.error("Error deleting DAE:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el DAE.',
+        description: 'No se pudo eliminar el DAE. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

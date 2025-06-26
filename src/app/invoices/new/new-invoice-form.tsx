@@ -165,7 +165,7 @@ export function NewInvoiceForm() {
       console.error("Error creating invoice:", error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear la factura.',
+        description: 'No se pudo crear la factura. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

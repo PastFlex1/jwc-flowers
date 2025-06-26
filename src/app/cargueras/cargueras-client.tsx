@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -79,7 +80,7 @@ export function CarguerasClient() {
         console.error("Error updating carguera:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar la carguera.',
+          description: 'No se pudo actualizar la carguera. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -97,7 +98,7 @@ export function CarguerasClient() {
         console.error("Error adding carguera:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo añadir la carguera.',
+          description: 'No se pudo añadir la carguera. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -125,7 +126,7 @@ export function CarguerasClient() {
       console.error("Error deleting carguera:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la carguera.',
+        description: 'No se pudo eliminar la carguera. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

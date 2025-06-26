@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -78,7 +79,7 @@ export function VendedoresClient() {
         console.error("Error updating vendedor:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar el vendedor.',
+          description: 'No se pudo actualizar el vendedor. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -96,7 +97,7 @@ export function VendedoresClient() {
         console.error("Error adding vendedor:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo guardar el vendedor.',
+          description: 'No se pudo guardar el vendedor. Verifique sus reglas de seguridad de Firestore.',
           variant: 'destructive',
         });
       }
@@ -124,7 +125,7 @@ export function VendedoresClient() {
       console.error("Error deleting vendedor:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el vendedor.',
+        description: 'No se pudo eliminar el vendedor. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }

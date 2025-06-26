@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -55,7 +56,7 @@ export function InventoryClient() {
       console.error("Error adding item:", error);
       toast({
         title: 'Error al Añadir',
-        description: 'No se pudo añadir el ítem.',
+        description: 'No se pudo añadir el ítem. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }
