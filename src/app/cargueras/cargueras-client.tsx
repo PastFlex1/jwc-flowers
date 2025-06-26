@@ -24,12 +24,8 @@ import { CargueraForm } from './carguera-form';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
-type CarguerasClientProps = {
-  initialCargueras: Carguera[];
-};
-
-export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
-  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
+export function CarguerasClient() {
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
@@ -70,16 +66,15 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
     try {
       if (cargueraData.id) {
-        const { id, ...dataToUpdate } = cargueraData;
-        await updateCarguera(id, dataToUpdate);
+        await updateCarguera(cargueraData.id, cargueraData);
+        setCargueras(prev => prev.map(c => c.id === cargueraData.id ? (cargueraData as Carguera) : c));
         toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
       } else {
-        const { id, ...dataToAdd } = cargueraData;
-        await addCarguera(dataToAdd as Omit<Carguera, 'id'>);
+        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
+        setCargueras(prev => [...prev, { ...cargueraData, id: newId } as Carguera]);
         toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
       }
       handleCloseDialog();
-      fetchCargueras();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -98,9 +93,9 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
     if (cargueraToDelete) {
       try {
         await deleteCarguera(cargueraToDelete.id);
+        setCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
         toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
         setCargueraToDelete(null);
-        fetchCargueras();
       } catch (error) {
         console.error("Error deleting carguera:", error);
         toast({

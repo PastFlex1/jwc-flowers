@@ -23,12 +23,8 @@ import { CustomerForm } from './customer-form';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
-type CustomersClientProps = {
-  initialCustomers: Customer[];
-};
-
-export function CustomersClient({ initialCustomers }: CustomersClientProps) {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+export function CustomersClient() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -69,16 +65,15 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
   const handleFormSubmit = async (customerData: CustomerFormData) => {
     try {
       if (customerData.id) {
-        const { id, ...dataToUpdate } = customerData;
-        await updateCustomer(id, dataToUpdate);
+        await updateCustomer(customerData.id, customerData);
+        setCustomers(prev => prev.map(c => c.id === customerData.id ? (customerData as Customer) : c));
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
       } else {
-        const { id, ...dataToAdd } = customerData;
-        await addCustomer(dataToAdd as Omit<Customer, 'id'>);
+        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
+        setCustomers(prev => [...prev, { ...customerData, id: newId } as Customer]);
         toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
       }
       handleCloseDialog();
-      fetchCustomers();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -97,9 +92,9 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
     if (customerToDelete) {
        try {
         await deleteCustomer(customerToDelete.id);
+        setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
         toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
         setCustomerToDelete(null);
-        fetchCustomers();
       } catch (error) {
         console.error("Error deleting customer:", error);
         toast({

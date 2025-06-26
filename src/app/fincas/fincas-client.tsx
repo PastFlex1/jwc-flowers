@@ -24,12 +24,8 @@ import { FincaForm } from './finca-form';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
-type FincasClientProps = {
-  initialFincas: Finca[];
-};
-
-export function FincasClient({ initialFincas }: FincasClientProps) {
-  const [fincas, setFincas] = useState<Finca[]>(initialFincas);
+export function FincasClient() {
+  const [fincas, setFincas] = useState<Finca[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
@@ -70,16 +66,15 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
   const handleFormSubmit = async (fincaData: FincaFormData) => {
     try {
       if (fincaData.id) {
-        const { id, ...dataToUpdate } = fincaData;
-        await updateFinca(id, dataToUpdate);
+        await updateFinca(fincaData.id, fincaData);
+        setFincas(prev => prev.map(f => f.id === fincaData.id ? (fincaData as Finca) : f));
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
       } else {
-        const { id, ...dataToAdd } = fincaData;
-        await addFinca(dataToAdd);
+        const newId = await addFinca(fincaData);
+        setFincas(prev => [...prev, { ...fincaData, id: newId } as Finca]);
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
       }
       handleCloseDialog();
-      fetchFincas();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -98,9 +93,9 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
     if (fincaToDelete) {
       try {
         await deleteFinca(fincaToDelete.id);
+        setFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
         toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
         setFincaToDelete(null);
-        fetchFincas();
       } catch (error) {
         console.error("Error deleting finca:", error);
         toast({

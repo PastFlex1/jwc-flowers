@@ -24,12 +24,8 @@ import { ProvinciaForm } from './provincia-form';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
-type ProvinciasClientProps = {
-  initialProvincias: Provincia[];
-};
-
-export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
-  const [provincias, setProvincias] = useState<Provincia[]>(initialProvincias);
+export function ProvinciasClient() {
+  const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
@@ -71,16 +67,15 @@ export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
     try {
       if (provinciaData.id) {
-        const { id, ...dataToUpdate } = provinciaData;
-        await updateProvincia(id, dataToUpdate);
+        await updateProvincia(provinciaData.id, provinciaData);
+        setProvincias(prev => prev.map(p => p.id === provinciaData.id ? (provinciaData as Provincia) : p));
         toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
       } else {
-        const { id, ...dataToAdd } = provinciaData;
-        await addProvincia(dataToAdd as Omit<Provincia, 'id'>);
+        const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
+        setProvincias(prev => [...prev, { ...provinciaData, id: newId } as Provincia]);
         toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
       }
       handleCloseDialog();
-      fetchProvincias();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -99,9 +94,9 @@ export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
     if (provinciaToDelete) {
       try {
         await deleteProvincia(provinciaToDelete.id);
+        setProvincias(prev => prev.filter(p => p.id !== provinciaToDelete.id));
         toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
         setProvinciaToDelete(null);
-        fetchProvincias();
       } catch (error) {
         console.error("Error deleting provincia:", error);
         toast({

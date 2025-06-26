@@ -24,12 +24,8 @@ import { DaeForm } from './dae-form';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
-type DaeClientProps = {
-  initialDaes: Dae[];
-};
-
-export function DaeClient({ initialDaes }: DaeClientProps) {
-  const [daes, setDaes] = useState<Dae[]>(initialDaes);
+export function DaeClient() {
+  const [daes, setDaes] = useState<Dae[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
@@ -70,16 +66,15 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
   const handleFormSubmit = async (daeData: DaeFormData) => {
     try {
       if (daeData.id) {
-        const { id, ...dataToUpdate } = daeData;
-        await updateDae(id, dataToUpdate);
+        await updateDae(daeData.id, daeData);
+        setDaes(prev => prev.map(d => d.id === daeData.id ? (daeData as Dae) : d));
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
       } else {
-        const { id, ...dataToAdd } = daeData;
-        await addDae(dataToAdd as Omit<Dae, 'id'>);
+        const newId = await addDae(daeData as Omit<Dae, 'id'>);
+        setDaes(prev => [...prev, { ...daeData, id: newId } as Dae]);
         toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
       }
       handleCloseDialog();
-      fetchDaes();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -98,9 +93,9 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
     if (daeToDelete) {
       try {
         await deleteDae(daeToDelete.id);
+        setDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
         toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
         setDaeToDelete(null);
-        fetchDaes();
       } catch (error) {
         console.error("Error deleting DAE:", error);
         toast({

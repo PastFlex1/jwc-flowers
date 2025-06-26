@@ -24,12 +24,8 @@ import { MarcacionForm } from './marcacion-form';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
-type MarcacionClientProps = {
-  initialMarcaciones: Marcacion[];
-};
-
-export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>(initialMarcaciones);
+export function MarcacionClient() {
+  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
@@ -70,16 +66,15 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
     try {
       if (marcacionData.id) {
-        const { id, ...dataToUpdate } = marcacionData;
-        await updateMarcacion(id, dataToUpdate);
+        await updateMarcacion(marcacionData.id, marcacionData);
+        setMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? (marcacionData as Marcacion) : m));
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
       } else {
-        const { id, ...dataToAdd } = marcacionData;
-        await addMarcacion(dataToAdd as Omit<Marcacion, 'id'>);
+        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
+        setMarcaciones(prev => [...prev, { ...marcacionData, id: newId } as Marcacion]);
         toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
       }
       handleCloseDialog();
-      fetchMarcaciones();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -98,9 +93,9 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
     if (marcacionToDelete) {
       try {
         await deleteMarcacion(marcacionToDelete.id);
+        setMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
         toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
         setMarcacionToDelete(null);
-        fetchMarcaciones();
       } catch (error) {
         console.error("Error deleting marcación:", error);
         toast({

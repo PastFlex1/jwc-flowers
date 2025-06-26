@@ -24,12 +24,8 @@ import { PaisForm } from './pais-form';
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
-type PaisClientProps = {
-  initialPaises: Pais[];
-};
-
-export function PaisClient({ initialPaises }: PaisClientProps) {
-  const [paises, setPaises] = useState<Pais[]>(initialPaises);
+export function PaisClient() {
+  const [paises, setPaises] = useState<Pais[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
@@ -71,16 +67,15 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
   const handleFormSubmit = async (paisData: PaisFormData) => {
     try {
       if (paisData.id) {
-        const { id, ...dataToUpdate } = paisData;
-        await updatePais(id, dataToUpdate);
+        await updatePais(paisData.id, paisData);
+        setPaises(prev => prev.map(p => p.id === paisData.id ? (paisData as Pais) : p));
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
       } else {
-        const { id, ...dataToAdd } = paisData;
-        await addPais(dataToAdd as Omit<Pais, 'id'>);
+        const newId = await addPais(paisData as Omit<Pais, 'id'>);
+        setPaises(prev => [...prev, { ...paisData, id: newId } as Pais]);
         toast({ title: 'Éxito', description: 'País añadido correctamente.' });
       }
       handleCloseDialog();
-      fetchPaises();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -99,9 +94,9 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
     if (paisToDelete) {
       try {
         await deletePais(paisToDelete.id);
+        setPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
         toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
         setPaisToDelete(null);
-        fetchPaises();
       } catch (error) {
         console.error("Error deleting pais:", error);
         toast({

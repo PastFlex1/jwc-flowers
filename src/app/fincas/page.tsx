@@ -1,5 +1,5 @@
 import { FincasClient } from './fincas-client';
 
 export default function FincasPage() {
-  return <FincasClient initialFincas={[]} />;
+  return <FincasClient />;
 }

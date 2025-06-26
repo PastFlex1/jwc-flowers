@@ -12,12 +12,8 @@ import { getInventoryItems, addInventoryItem } from '@/services/inventory';
 import type { InventoryItem } from '@/lib/types';
 import { ItemForm } from './item-form';
 
-type InventoryClientProps = {
-  initialInventory: InventoryItem[];
-};
-
-export function InventoryClient({ initialInventory }: InventoryClientProps) {
-  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
+export function InventoryClient() {
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -46,10 +42,10 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
 
   const handleAddItem = async (newItemData: Omit<InventoryItem, 'id'>) => {
     try {
-      await addInventoryItem(newItemData);
+      const newId = await addInventoryItem(newItemData);
+      setInventory(prev => [...prev, { ...newItemData, id: newId }]);
       toast({ title: 'Éxito', description: 'Ítem añadido correctamente.' });
       setIsDialogOpen(false);
-      fetchItems();
     } catch (error) {
       console.error("Error adding item:", error);
       toast({

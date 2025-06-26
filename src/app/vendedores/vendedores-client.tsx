@@ -23,12 +23,8 @@ import { VendedorForm } from './vendedor-form';
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 
-type VendedoresClientProps = {
-  initialVendedores: Vendedor[];
-};
-
-export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
-  const [vendedores, setVendedores] = useState<Vendedor[]>(initialVendedores);
+export function VendedoresClient() {
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
@@ -69,16 +65,15 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
     try {
       if (vendedorData.id) {
-        const { id, ...dataToUpdate } = vendedorData;
-        await updateVendedor(id, dataToUpdate);
+        await updateVendedor(vendedorData.id, vendedorData);
+        setVendedores(prev => prev.map(v => v.id === vendedorData.id ? (vendedorData as Vendedor) : v));
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
       } else {
-        const { id, ...dataToAdd } = vendedorData;
-        await addVendedor(dataToAdd as Omit<Vendedor, 'id'>);
+        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
+        setVendedores(prev => [...prev, { ...vendedorData, id: newId } as Vendedor]);
         toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
       }
       handleCloseDialog();
-      fetchVendedores();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -97,9 +92,9 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
     if (vendedorToDelete) {
       try {
         await deleteVendedor(vendedorToDelete.id);
+        setVendedores(prev => prev.filter(v => v.id !== vendedorToDelete.id));
         toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
         setVendedorToDelete(null);
-        fetchVendedores();
       } catch (error) {
         console.error("Error deleting vendedor:", error);
         toast({
