@@ -17,7 +17,7 @@ import { format, parseISO } from 'date-fns';
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -29,7 +29,13 @@ export default function InvoicesPage() {
         getCustomers(),
       ]);
       setInvoices(invoicesData);
-      setCustomers(customersData);
+      
+      const customerMap = customersData.reduce((acc, customer) => {
+        acc[customer.id] = customer.name;
+        return acc;
+      }, {} as Record<string, string>);
+      setCustomers(customerMap);
+
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -47,15 +53,17 @@ export default function InvoicesPage() {
   }, [fetchData]);
 
   const getCustomerName = (customerId: string) => {
-    return customers.find(c => c.id === customerId)?.name || 'Cliente Desconocido';
+    return customers[customerId] || 'Cliente Desconocido';
   };
 
   const getInvoiceTotal = (invoice: Invoice) => {
     if (!invoice.items) return 0;
-    return invoice.items.reduce((total, item) => {
+    const subtotal = invoice.items.reduce((total, item) => {
       const itemTotal = (item.salePrice || 0) * (item.stemCount || 0);
       return total + itemTotal;
     }, 0);
+    const tax = subtotal * 0.12;
+    return subtotal + tax;
   };
   
   const renderSkeleton = () => (

@@ -11,6 +11,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
   type DocumentSnapshot,
+  Timestamp,
 } from 'firebase/firestore';
 
 const invoicesCollection = collection(db, 'invoices');
@@ -19,9 +20,13 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
   const data = snapshot.data();
   if (!data) throw new Error("Document data not found");
   
-  // Handle Firestore Timestamps by converting them to ISO strings
-  const farmDepartureDate = data.farmDepartureDate?.toDate ? data.farmDepartureDate.toDate().toISOString() : data.farmDepartureDate;
-  const flightDate = data.flightDate?.toDate ? data.flightDate.toDate().toISOString() : data.flightDate;
+  const farmDepartureDate = data.farmDepartureDate instanceof Timestamp 
+    ? data.farmDepartureDate.toDate().toISOString() 
+    : data.farmDepartureDate;
+    
+  const flightDate = data.flightDate instanceof Timestamp 
+    ? data.flightDate.toDate().toISOString() 
+    : data.flightDate;
 
   return {
     id: snapshot.id,
@@ -59,6 +64,8 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
 export async function addInvoice(invoiceData: Omit<Invoice, 'id' | 'status'>): Promise<string> {
    const dataWithStatus = {
     ...invoiceData,
+    farmDepartureDate: new Date(invoiceData.farmDepartureDate),
+    flightDate: new Date(invoiceData.flightDate),
     status: 'Pending' as const,
   };
   const docRef = await addDoc(invoicesCollection, dataWithStatus);
