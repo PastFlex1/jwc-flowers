@@ -14,24 +14,21 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase for SSR and SSG, preventing re-initialization
+// Check if all firebase config keys are provided
+const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!value && !value.includes('YOUR_'));
+
 let app;
 let db;
 let auth;
 
-// Check if all firebase config keys are provided
-const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!value && !value.includes('YOUR_'));
-
+// This check is now more strict. If the configuration is incomplete,
+// the app will stop immediately with a clear error message.
 if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
     auth = getAuth(app);
 } else {
-    console.warn("Firebase configuration is incomplete. Please check your .env file.");
-    // Provide mock/dummy instances if not configured
-    app = null;
-    db = null;
-    auth = null;
+    throw new Error("La configuración de Firebase está incompleta o es incorrecta. Por favor, verifique que todas las variables NEXT_PUBLIC_FIREBASE_* estén correctamente establecidas en su archivo .env y que no contengan valores de ejemplo.");
 }
 
 
