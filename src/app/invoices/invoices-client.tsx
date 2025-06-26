@@ -8,15 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Invoice, Customer } from '@/lib/types';
+import type { Invoice } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { getInvoices } from '@/services/invoices';
-import { getCustomers } from '@/services/customers';
 import { useToast } from '@/hooks/use-toast';
+import { useAppData } from '@/context/app-data-context';
 
 export function InvoicesClient() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { customers } = useAppData();
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -27,17 +27,13 @@ export function InvoicesClient() {
     }, {} as Record<string, string>);
   }, [customers]);
 
-  const fetchData = useCallback(async () => {
+  const fetchInvoices = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [invoicesData, customersData] = await Promise.all([
-        getInvoices(),
-        getCustomers(),
-      ]);
+      const invoicesData = await getInvoices();
       setInvoices(invoicesData);
-      setCustomers(customersData);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error fetching invoices:", error);
       toast({
         title: 'Error de Carga',
         description: 'No se pudieron cargar las facturas.',
@@ -49,8 +45,8 @@ export function InvoicesClient() {
   }, [toast]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchInvoices();
+  }, [fetchInvoices]);
 
   const getCustomerName = (customerId: string) => {
     return customerMap[customerId] || 'Cliente Desconocido';

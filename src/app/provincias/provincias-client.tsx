@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,41 +17,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addProvincia, updateProvincia, deleteProvincia, getProvincias } from '@/services/provincias';
+import { addProvincia, updateProvincia, deleteProvincia } from '@/services/provincias';
 import type { Provincia } from '@/lib/types';
 import { ProvinciaForm } from './provincia-form';
+import { useAppData } from '@/context/app-data-context';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
 export function ProvinciasClient() {
-  const [provincias, setProvincias] = useState<Provincia[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { provincias, refreshData } = useAppData();
+  const [localProvincias, setLocalProvincias] = useState<Provincia[]>([]);
+  
+  useEffect(() => {
+    setLocalProvincias(provincias);
+  }, [provincias]);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
   const { toast } = useToast();
-
-  const fetchProvincias = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getProvincias();
-      setProvincias(data);
-    } catch (error) {
-       console.error("Error fetching provincias:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las provincias.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchProvincias();
-  }, [fetchProvincias]);
 
   const handleOpenDialog = (provincia: Provincia | null = null) => {
     setEditingProvincia(provincia);
@@ -66,13 +51,13 @@ export function ProvinciasClient() {
 
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
     setIsSubmitting(true);
-    const originalData = [...provincias];
+    const originalData = [...localProvincias];
 
     if (provinciaData.id) {
-        setProvincias(prev => prev.map(p => p.id === provinciaData.id ? { ...p, ...provinciaData } as Provincia : p));
+        setLocalProvincias(prev => prev.map(p => p.id === provinciaData.id ? { ...p, ...provinciaData } as Provincia : p));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setProvincias(prev => [...prev, { ...provinciaData, id: tempId } as Provincia]);
+        setLocalProvincias(prev => [...prev, { ...provinciaData, id: tempId } as Provincia]);
     }
 
     handleCloseDialog();
@@ -82,13 +67,12 @@ export function ProvinciasClient() {
             await updateProvincia(provinciaData.id, provinciaData as Provincia);
             toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
         } else {
-            const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
-            setProvincias(prev => prev.map(p => p.id.startsWith('temp-') ? { ...p, id: newId } : p));
+            await addProvincia(provinciaData as Omit<Provincia, 'id'>);
             toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
         }
-        await fetchProvincias();
+        await refreshData();
     } catch (error) {
-        setProvincias(originalData);
+        setLocalProvincias(originalData);
         console.error("Error submitting provincia:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -109,14 +93,15 @@ export function ProvinciasClient() {
   const handleDeleteConfirm = async () => {
     if (!provinciaToDelete) return;
     
-    const originalData = [...provincias];
-    setProvincias(prev => prev.filter(p => p.id !== provinciaToDelete.id));
+    const originalData = [...localProvincias];
+    setLocalProvincias(prev => prev.filter(p => p.id !== provinciaToDelete.id));
 
     try {
       await deleteProvincia(provinciaToDelete.id);
       toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
+      await refreshData();
     } catch (error) {
-        setProvincias(originalData);
+        setLocalProvincias(originalData);
         console.error("Error deleting provincia:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -171,7 +156,7 @@ export function ProvinciasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {provincias.map((provincia) => (
+                {localProvincias.map((provincia) => (
                   <TableRow key={provincia.id}>
                     <TableCell className="font-medium">{provincia.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">

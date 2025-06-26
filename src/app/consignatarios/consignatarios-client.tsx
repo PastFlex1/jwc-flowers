@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,19 +17,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addConsignatario, updateConsignatario, deleteConsignatario, getConsignatarios } from '@/services/consignatarios';
-import { getPaises } from '@/services/paises';
-import { getCustomers } from '@/services/customers';
-import type { Consignatario, Pais, Customer } from '@/lib/types';
+import { addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
+import type { Consignatario } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
+import { useAppData } from '@/context/app-data-context';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
 export function ConsignatariosClient() {
-  const [consignatarios, setConsignatarios] = useState<Consignatario[]>([]);
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { consignatarios, paises, customers, refreshData } = useAppData();
+  const [localConsignatarios, setLocalConsignatarios] = useState<Consignatario[]>([]);
+  
+  useEffect(() => {
+    setLocalConsignatarios(consignatarios);
+  }, [consignatarios]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
@@ -42,33 +44,6 @@ export function ConsignatariosClient() {
       return acc;
     }, {} as Record<string, string>);
   }, [customers]);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [consignatariosData, paisesData, customersData] = await Promise.all([
-        getConsignatarios(),
-        getPaises(),
-        getCustomers(),
-      ]);
-      setConsignatarios(consignatariosData);
-      setPaises(paisesData);
-      setCustomers(customersData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos necesarios para esta sección.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleOpenDialog = (consignatario: Consignatario | null = null) => {
     setEditingConsignatario(consignatario);
@@ -83,14 +58,14 @@ export function ConsignatariosClient() {
 
   const handleFormSubmit = async (formData: ConsignatarioFormData) => {
     setIsSubmitting(true);
-    const originalData = [...consignatarios];
+    const originalData = [...localConsignatarios];
     
     // Optimistic Update
     if (formData.id) {
-        setConsignatarios(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } as Consignatario : c));
+        setLocalConsignatarios(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } as Consignatario : c));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setConsignatarios(prev => [...prev, { ...formData, id: tempId } as Consignatario]);
+        setLocalConsignatarios(prev => [...prev, { ...formData, id: tempId } as Consignatario]);
     }
     
     handleCloseDialog();
@@ -100,13 +75,12 @@ export function ConsignatariosClient() {
         await updateConsignatario(formData.id, formData as Consignatario);
         toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
       } else {
-        const newId = await addConsignatario(formData as Omit<Consignatario, 'id'>);
-        setConsignatarios(prev => prev.map(c => c.id.startsWith('temp-') ? { ...c, id: newId } : c));
+        await addConsignatario(formData as Omit<Consignatario, 'id'>);
         toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
       }
-      await fetchData(); // Re-sync
+      await refreshData();
     } catch (error) {
-      setConsignatarios(originalData); // Revert
+      setLocalConsignatarios(originalData); // Revert
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -127,15 +101,15 @@ export function ConsignatariosClient() {
   const handleDeleteConfirm = async () => {
     if (!consignatarioToDelete) return;
 
-    const originalData = [...consignatarios];
-    // Optimistic Delete
-    setConsignatarios(prev => prev.filter(c => c.id !== consignatarioToDelete.id));
+    const originalData = [...localConsignatarios];
+    setLocalConsignatarios(prev => prev.filter(c => c.id !== consignatarioToDelete.id));
 
     try {
       await deleteConsignatario(consignatarioToDelete.id);
       toast({ title: 'Éxito', description: 'Consignatario eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
-        setConsignatarios(originalData);
+        setLocalConsignatarios(originalData);
         console.error("Error deleting consignatario:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -194,7 +168,7 @@ export function ConsignatariosClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {consignatarios.map((consignatario) => (
+                {localConsignatarios.map((consignatario) => (
                   <TableRow key={consignatario.id}>
                     <TableCell className="font-medium">{consignatario.nombreConsignatario}</TableCell>
                     <TableCell>{customerMap[consignatario.customerId] || 'N/A'}</TableCell>

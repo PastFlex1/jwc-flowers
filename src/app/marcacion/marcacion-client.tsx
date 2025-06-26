@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,41 +17,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addMarcacion, updateMarcacion, deleteMarcacion, getMarcaciones } from '@/services/marcaciones';
+import { addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
+import { useAppData } from '@/context/app-data-context';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
 export function MarcacionClient() {
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { marcaciones, refreshData } = useAppData();
+  const [localMarcaciones, setLocalMarcaciones] = useState<Marcacion[]>([]);
+  
+  useEffect(() => {
+    setLocalMarcaciones(marcaciones);
+  }, [marcaciones]);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
-
-  const fetchMarcaciones = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getMarcaciones();
-      setMarcaciones(data);
-    } catch (error) {
-       console.error("Error fetching marcaciones:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las marcaciones.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchMarcaciones();
-  }, [fetchMarcaciones]);
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);
@@ -66,13 +51,13 @@ export function MarcacionClient() {
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
     setIsSubmitting(true);
-    const originalData = [...marcaciones];
+    const originalData = [...localMarcaciones];
 
     if (marcacionData.id) {
-        setMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } as Marcacion : m));
+        setLocalMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } as Marcacion : m));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setMarcaciones(prev => [...prev, { ...marcacionData, id: tempId } as Marcacion]);
+        setLocalMarcaciones(prev => [...prev, { ...marcacionData, id: tempId } as Marcacion]);
     }
 
     handleCloseDialog();
@@ -82,13 +67,12 @@ export function MarcacionClient() {
         await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
       } else {
-        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        setMarcaciones(prev => prev.map(m => m.id.startsWith('temp-') ? { ...m, id: newId } : m));
+        await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
         toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
       }
-      await fetchMarcaciones(); // Re-sync
+      await refreshData();
     } catch (error) {
-      setMarcaciones(originalData); // Revert
+      setLocalMarcaciones(originalData); // Revert
       console.error("Error submitting marcacion:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -109,14 +93,15 @@ export function MarcacionClient() {
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
 
-    const originalData = [...marcaciones];
-    setMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
+    const originalData = [...localMarcaciones];
+    setLocalMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
 
     try {
       await deleteMarcacion(marcacionToDelete.id);
       toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+      await refreshData();
     } catch (error) {
-      setMarcaciones(originalData);
+      setLocalMarcaciones(originalData);
       console.error("Error deleting marcación:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -172,7 +157,7 @@ export function MarcacionClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {marcaciones.map((marcacion) => (
+                {localMarcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
                     <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
                     <TableCell>{marcacion.cliente}</TableCell>

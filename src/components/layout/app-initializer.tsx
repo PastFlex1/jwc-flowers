@@ -5,6 +5,7 @@ import { useAuth } from '@/context/auth-context';
 import { useEffect } from 'react';
 import { AppShell } from './app-shell';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AppDataProvider } from '@/context/app-data-context';
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -37,5 +38,9 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
       return null;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AppDataProvider>
+      <AppShell>{children}</AppShell>
+    </AppDataProvider>
+  );
 }

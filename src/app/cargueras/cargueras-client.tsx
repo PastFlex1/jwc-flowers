@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,41 +17,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addCarguera, updateCarguera, deleteCarguera, getCargueras } from '@/services/cargueras';
+import { addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
-import { cargueras as defaultCargueras } from '@/lib/mock-data';
+import { useAppData } from '@/context/app-data-context';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
-  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
+  const { cargueras, refreshData } = useAppData();
+  const [localCargueras, setLocalCargueras] = useState<Carguera[]>([]);
+
+  useEffect(() => {
+    setLocalCargueras(cargueras);
+  }, [cargueras]);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
-  
-  const fetchCargueras = useCallback(async () => {
-    try {
-      const dbCargueras = await getCargueras();
-      // Only update if firestore has data, otherwise keep defaults
-      if (dbCargueras.length > 0) {
-        setCargueras(dbCargueras);
-      }
-    } catch (error) {
-      console.error("Error fetching cargueras:", error);
-      toast({
-        title: 'Error de Sincronización',
-        description: 'No se pudieron cargar las cargueras desde la base de datos. Se muestra la lista por defecto.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchCargueras();
-  }, [fetchCargueras]);
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);
@@ -66,16 +51,14 @@ export function CarguerasClient() {
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
     setIsSubmitting(true);
-    const originalCargueras = [...cargueras];
+    const originalCargueras = [...localCargueras];
     
     // Optimistic Update
     if (cargueraData.id) {
-        // Editing
-        setCargueras(prev => prev.map(c => c.id === cargueraData.id ? { ...c, ...cargueraData } as Carguera : c));
+        setLocalCargueras(prev => prev.map(c => c.id === cargueraData.id ? { ...c, ...cargueraData } as Carguera : c));
     } else {
-        // Adding
         const tempId = `temp-${Date.now()}`;
-        setCargueras(prev => [...prev, { ...cargueraData, id: tempId } as Carguera]);
+        setLocalCargueras(prev => [...prev, { ...cargueraData, id: tempId } as Carguera]);
     }
     
     handleCloseDialog();
@@ -85,15 +68,12 @@ export function CarguerasClient() {
             await updateCarguera(cargueraData.id, cargueraData as Carguera);
             toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
         } else {
-            const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-            // Update temp id with real id
-            setCargueras(prev => prev.map(c => c.id.startsWith('temp-') ? { ...c, id: newId } : c));
+            await addCarguera(cargueraData as Omit<Carguera, 'id'>);
             toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
         }
-        await fetchCargueras(); // Re-sync with db state
+        await refreshData();
     } catch (error) {
-        // Revert on error
-        setCargueras(originalCargueras);
+        setLocalCargueras(originalCargueras);
         console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -114,16 +94,15 @@ export function CarguerasClient() {
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
     
-    const originalCargueras = [...cargueras];
-    // Optimistic Deletion
-    setCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
+    const originalCargueras = [...localCargueras];
+    setLocalCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
     
     try {
       await deleteCarguera(cargueraToDelete.id);
       toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
+      await refreshData();
     } catch (error) {
-      // Revert on error
-      setCargueras(originalCargueras);
+      setLocalCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -179,7 +158,7 @@ export function CarguerasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {cargueras.map((carguera) => (
+                {localCargueras.map((carguera) => (
                   <TableRow key={carguera.id}>
                     <TableCell className="font-medium">{carguera.nombreCarguera}</TableCell>
                     <TableCell>{carguera.pais}</TableCell>

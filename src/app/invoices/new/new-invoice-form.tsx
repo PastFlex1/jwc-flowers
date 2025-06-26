@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,14 +20,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import { addInvoice } from '@/services/invoices';
-import { getCustomers } from '@/services/customers';
-import { getFincas } from '@/services/fincas';
-import { getVendedores } from '@/services/vendedores';
-import { getCargueras } from '@/services/cargueras';
-import { getPaises } from '@/services/paises';
-import { cargueras as defaultCargueras } from '@/lib/mock-data';
-
-import type { Customer, Finca, Vendedor, Carguera, Pais, Invoice } from '@/lib/types';
+import type { Invoice } from '@/lib/types';
+import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
@@ -63,15 +57,10 @@ type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { customers, fincas, vendedores, cargueras, paises } = useAppData();
+
   const [isHeaderSet, setIsHeaderSet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Data for dropdowns
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [fincas, setFincas] = useState<Finca[]>([]);
-  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
-  const [paises, setPaises] = useState<Pais[]>([]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -86,37 +75,6 @@ export function NewInvoiceForm() {
     control: form.control,
     name: 'items',
   });
-
-  const fetchData = useCallback(async () => {
-    try {
-      const [customersData, fincasData, vendedoresData, dbCargueras, paisesData] = await Promise.all([
-        getCustomers(),
-        getFincas(),
-        getVendedores(),
-        getCargueras(),
-        getPaises(),
-      ]);
-      setCustomers(customersData);
-      setFincas(fincasData);
-      setVendedores(vendedoresData);
-      if (dbCargueras.length > 0) {
-        setCargueras(dbCargueras);
-      }
-      setPaises(paisesData);
-    } catch (error) {
-       console.error("Error fetching data for new invoice:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos necesarios para crear una factura.',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
 
   async function handleHeaderSubmit() {
     const headerFields: (keyof InvoiceFormValues)[] = [

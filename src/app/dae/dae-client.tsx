@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,41 +17,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addDae, updateDae, deleteDae, getDaes } from '@/services/daes';
+import { addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
+import { useAppData } from '@/context/app-data-context';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
 export function DaeClient() {
-  const [daes, setDaes] = useState<Dae[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { daes, refreshData } = useAppData();
+  const [localDaes, setLocalDaes] = useState<Dae[]>([]);
+  
+  useEffect(() => {
+    setLocalDaes(daes);
+  }, [daes]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
-
-  const fetchDaes = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const daesData = await getDaes();
-      setDaes(daesData);
-    } catch (error) {
-       console.error("Error fetching DAEs:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los DAEs.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchDaes();
-  }, [fetchDaes]);
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);
@@ -66,13 +51,13 @@ export function DaeClient() {
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
     setIsSubmitting(true);
-    const originalData = [...daes];
+    const originalData = [...localDaes];
 
     if (daeData.id) {
-        setDaes(prev => prev.map(d => d.id === daeData.id ? { ...d, ...daeData } as Dae : d));
+        setLocalDaes(prev => prev.map(d => d.id === daeData.id ? { ...d, ...daeData } as Dae : d));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setDaes(prev => [...prev, { ...daeData, id: tempId } as Dae]);
+        setLocalDaes(prev => [...prev, { ...daeData, id: tempId } as Dae]);
     }
     
     handleCloseDialog();
@@ -82,13 +67,12 @@ export function DaeClient() {
         await updateDae(daeData.id, daeData as Dae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
       } else {
-        const newId = await addDae(daeData as Omit<Dae, 'id'>);
-        setDaes(prev => prev.map(d => d.id.startsWith('temp-') ? { ...d, id: newId } : d));
+        await addDae(daeData as Omit<Dae, 'id'>);
         toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
       }
-      await fetchDaes(); // Re-sync
+      await refreshData();
     } catch (error) {
-      setDaes(originalData); // Revert
+      setLocalDaes(originalData); // Revert
       console.error("Error submitting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -109,14 +93,15 @@ export function DaeClient() {
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
 
-    const originalData = [...daes];
-    setDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
+    const originalData = [...localDaes];
+    setLocalDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
 
     try {
       await deleteDae(daeToDelete.id);
       toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
-      setDaes(originalData);
+      setLocalDaes(originalData);
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -172,7 +157,7 @@ export function DaeClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {daes.map((dae) => (
+                {localDaes.map((dae) => (
                   <TableRow key={dae.id}>
                     <TableCell className="font-medium">{dae.pais}</TableCell>
                     <TableCell>{dae.numeroDae}</TableCell>

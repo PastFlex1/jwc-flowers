@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,41 +17,26 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { addFinca, updateFinca, deleteFinca, getFincas } from '@/services/fincas';
+import { addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
+import { useAppData } from '@/context/app-data-context';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
 export function FincasClient() {
-  const [fincas, setFincas] = useState<Finca[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { fincas, refreshData } = useAppData();
+  const [localFincas, setLocalFincas] = useState<Finca[]>([]);
+  
+  useEffect(() => {
+    setLocalFincas(fincas);
+  }, [fincas]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
-
-  const fetchFincas = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const fincasData = await getFincas();
-      setFincas(fincasData);
-    } catch (error) {
-      console.error("Error fetching fincas:", error);
-      toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las fincas.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchFincas();
-  }, [fetchFincas]);
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);
@@ -66,14 +51,14 @@ export function FincasClient() {
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
     setIsSubmitting(true);
-    const originalFincas = [...fincas];
+    const originalFincas = [...localFincas];
 
     // Optimistic Update
     if (fincaData.id) {
-        setFincas(prev => prev.map(f => f.id === fincaData.id ? { ...f, ...fincaData } as Finca : f));
+        setLocalFincas(prev => prev.map(f => f.id === fincaData.id ? { ...f, ...fincaData } as Finca : f));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setFincas(prev => [...prev, { ...fincaData, id: tempId } as Finca]);
+        setLocalFincas(prev => [...prev, { ...fincaData, id: tempId } as Finca]);
     }
 
     handleCloseDialog();
@@ -83,13 +68,12 @@ export function FincasClient() {
         await updateFinca(fincaData.id, fincaData as Finca);
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
       } else {
-        const newId = await addFinca(fincaData);
-        setFincas(prev => prev.map(f => f.id.startsWith('temp-') ? { ...f, id: newId } : f));
+        await addFinca(fincaData);
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
       }
-      await fetchFincas(); // Refresh data
+      await refreshData();
     } catch (error) {
-      setFincas(originalFincas); // Revert on failure
+      setLocalFincas(originalFincas); // Revert on failure
       console.error("Error submitting finca:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -110,15 +94,15 @@ export function FincasClient() {
   const handleDeleteConfirm = async () => {
     if (!fincaToDelete) return;
 
-    const originalFincas = [...fincas];
-    // Optimistic deletion
-    setFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
+    const originalFincas = [...localFincas];
+    setLocalFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
     
     try {
       await deleteFinca(fincaToDelete.id);
       toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+      await refreshData();
     } catch (error) {
-      setFincas(originalFincas); // Revert
+      setLocalFincas(originalFincas); // Revert
       console.error("Error deleting finca:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -177,7 +161,7 @@ export function FincasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fincas.map((finca) => (
+                {localFincas.map((finca) => (
                   <TableRow key={finca.id}>
                     <TableCell className="font-medium">{finca.name}</TableCell>
                     <TableCell>{finca.address}</TableCell>

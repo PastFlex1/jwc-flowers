@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,42 +17,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addPais, updatePais, deletePais, getPaises } from '@/services/paises';
+import { addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
+import { useAppData } from '@/context/app-data-context';
 
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
 export function PaisClient() {
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { paises, refreshData } = useAppData();
+  const [localPaises, setLocalPaises] = useState<Pais[]>([]);
+  
+  useEffect(() => {
+    setLocalPaises(paises);
+  }, [paises]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
-
-  const fetchPaises = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getPaises();
-      setPaises(data);
-    } catch (error) {
-       console.error("Error fetching paises:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los países.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-  
-  useEffect(() => {
-    fetchPaises();
-  }, [fetchPaises]);
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);
@@ -67,13 +52,13 @@ export function PaisClient() {
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
     setIsSubmitting(true);
-    const originalData = [...paises];
+    const originalData = [...localPaises];
 
     if (paisData.id) {
-        setPaises(prev => prev.map(p => p.id === paisData.id ? { ...p, ...paisData } as Pais : p));
+        setLocalPaises(prev => prev.map(p => p.id === paisData.id ? { ...p, ...paisData } as Pais : p));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setPaises(prev => [...prev, { ...paisData, id: tempId } as Pais]);
+        setLocalPaises(prev => [...prev, { ...paisData, id: tempId } as Pais]);
     }
 
     handleCloseDialog();
@@ -83,13 +68,12 @@ export function PaisClient() {
         await updatePais(paisData.id, paisData as Pais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
       } else {
-        const newId = await addPais(paisData as Omit<Pais, 'id'>);
-        setPaises(prev => prev.map(p => p.id.startsWith('temp-') ? { ...p, id: newId } : p));
+        await addPais(paisData as Omit<Pais, 'id'>);
         toast({ title: 'Éxito', description: 'País añadido correctamente.' });
       }
-      await fetchPaises();
+      await refreshData();
     } catch (error) {
-      setPaises(originalData);
+      setLocalPaises(originalData);
       console.error("Error submitting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -110,14 +94,15 @@ export function PaisClient() {
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
     
-    const originalData = [...paises];
-    setPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
+    const originalData = [...localPaises];
+    setLocalPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
 
     try {
       await deletePais(paisToDelete.id);
       toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
-      setPaises(originalData);
+      setLocalPaises(originalData);
       console.error("Error deleting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -172,7 +157,7 @@ export function PaisClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paises.map((pais) => (
+                {localPaises.map((pais) => (
                   <TableRow key={pais.id}>
                     <TableCell className="font-medium">{pais.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">

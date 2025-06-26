@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,42 +16,27 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addVendedor, updateVendedor, deleteVendedor, getVendedores } from '@/services/vendedores';
+import { addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
+import { useAppData } from '@/context/app-data-context';
 
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 
 export function VendedoresClient() {
-  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { vendedores, refreshData } = useAppData();
+  const [localVendedores, setLocalVendedores] = useState<Vendedor[]>([]);
+
+  useEffect(() => {
+    setLocalVendedores(vendedores);
+  }, [vendedores]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
   const { toast } = useToast();
-
-  const fetchVendedores = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await getVendedores();
-      setVendedores(data);
-    } catch(error) {
-       console.error("Error fetching vendedores:", error);
-       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar los vendedores.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchVendedores();
-  }, [fetchVendedores]);
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);
@@ -66,13 +51,13 @@ export function VendedoresClient() {
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
     setIsSubmitting(true);
-    const originalData = [...vendedores];
+    const originalData = [...localVendedores];
 
     if (vendedorData.id) {
-        setVendedores(prev => prev.map(v => v.id === vendedorData.id ? { ...v, ...vendedorData } as Vendedor : v));
+        setLocalVendedores(prev => prev.map(v => v.id === vendedorData.id ? { ...v, ...vendedorData } as Vendedor : v));
     } else {
         const tempId = `temp-${Date.now()}`;
-        setVendedores(prev => [...prev, { ...vendedorData, id: tempId } as Vendedor]);
+        setLocalVendedores(prev => [...prev, { ...vendedorData, id: tempId } as Vendedor]);
     }
 
     handleCloseDialog();
@@ -82,13 +67,12 @@ export function VendedoresClient() {
         await updateVendedor(vendedorData.id, vendedorData as Vendedor);
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
       } else {
-        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        setVendedores(prev => prev.map(v => v.id.startsWith('temp-') ? { ...v, id: newId } : v));
+        await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
         toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
       }
-      await fetchVendedores();
+      await refreshData();
     } catch (error) {
-      setVendedores(originalData);
+      setLocalVendedores(originalData);
       console.error("Error submitting vendedor:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -109,14 +93,15 @@ export function VendedoresClient() {
   const handleDeleteConfirm = async () => {
     if (!vendedorToDelete) return;
     
-    const originalData = [...vendedores];
-    setVendedores(prev => prev.filter(v => v.id !== vendedorToDelete.id));
+    const originalData = [...localVendedores];
+    setLocalVendedores(prev => prev.filter(v => v.id !== vendedorToDelete.id));
 
     try {
       await deleteVendedor(vendedorToDelete.id);
       toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
-      setVendedores(originalData);
+      setLocalVendedores(originalData);
       console.error("Error deleting vendedor:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -158,7 +143,7 @@ export function VendedoresClient() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {vendedores.map((vendedor) => (
+          {localVendedores.map((vendedor) => (
             <Card key={vendedor.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{vendedor.nombre}</h3>
