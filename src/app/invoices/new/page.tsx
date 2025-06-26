@@ -22,7 +22,6 @@ import { customers, fincas, vendedores, cargueras, paises } from '@/lib/mock-dat
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
-  invoiceNumber: z.string().min(1, "Requerido"),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().positive("Debe ser > 0"),
   bunchCount: z.coerce.number().positive("Debe ser > 0"),
@@ -35,6 +34,7 @@ const lineItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
+  invoiceNumber: z.string().min(1, "Número de factura requerido."),
   farmDepartureDate: z.date({ required_error: "Fecha de salida requerida." }),
   flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
   sellerId: z.string().min(1, 'Seleccione un vendedor.'),
@@ -61,6 +61,7 @@ export default function NewInvoicePage() {
     defaultValues: {
       items: [],
       reference: '',
+      invoiceNumber: '',
     },
   });
 
@@ -71,6 +72,7 @@ export default function NewInvoicePage() {
 
   async function handleHeaderSubmit() {
     const headerFields: (keyof InvoiceFormValues)[] = [
+      'invoiceNumber',
       'farmDepartureDate', 'flightDate', 'sellerId', 'consigneeId', 
       'farmId', 'carrierId', 'countryId', 'pointOfSale', 
       'masterAWB', 'houseAWB'
@@ -138,6 +140,12 @@ export default function NewInvoicePage() {
               <CardTitle>Datos de la Factura</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número de Factura</FormLabel>
+                  <FormControl><Input placeholder="FACT-001" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                </FormItem>
+              )}/>
               <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>Fecha Salida Finca</FormLabel>
@@ -266,7 +274,6 @@ export default function NewInvoicePage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50px]">N°</TableHead>
-                        <TableHead># Invoice</TableHead>
                         <TableHead>Tipo Caja</TableHead>
                         <TableHead>N° Cajas</TableHead>
                         <TableHead>N° Bunches</TableHead>
@@ -287,7 +294,6 @@ export default function NewInvoicePage() {
                          return (
                           <TableRow key={field.id}>
                             <TableCell>{index + 1}</TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.invoiceNumber`} render={({ field }) => <Input {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                   <FormControl><SelectTrigger className="min-w-[80px]"><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
@@ -314,7 +320,7 @@ export default function NewInvoicePage() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ invoiceNumber: '', boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0})}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0})}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                 </Button>
               </CardContent>
