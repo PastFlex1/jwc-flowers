@@ -21,11 +21,12 @@ import { useToast } from '@/hooks/use-toast';
 import { getCargueras, addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
+import { cargueras as initialCargueras } from '@/lib/mock-data';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
@@ -34,12 +35,14 @@ export function CarguerasClient() {
   const fetchCargueras = useCallback(async () => {
     try {
       const carguerasData = await getCargueras();
-      setCargueras(carguerasData);
+      if (carguerasData.length > 0) {
+        setCargueras(carguerasData);
+      }
     } catch (error) {
       console.error("Error fetching cargueras:", error);
       toast({
         title: 'Error de Carga',
-        description: 'No se pudieron cargar las cargueras. Verifique sus reglas de seguridad de Firestore.',
+        description: 'No se pudieron cargar las cargueras desde la base de datos. Mostrando lista por defecto.',
         variant: 'destructive',
       });
     }
