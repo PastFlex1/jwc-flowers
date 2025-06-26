@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ type ProvinciasClientProps = {
 
 export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
   const [provincias, setProvincias] = useState<Provincia[]>(initialProvincias);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
@@ -44,14 +44,18 @@ export function ProvinciasClient({ initialProvincias }: ProvinciasClientProps) {
     } catch (error) {
       console.error("Error fetching provincias:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las provincias.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las provincias. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchProvincias();
+  }, [fetchProvincias]);
 
 
   const handleOpenDialog = (provincia: Provincia | null = null) => {

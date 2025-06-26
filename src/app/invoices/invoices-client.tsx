@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ type InvoicesClientProps = {
 export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientProps) {
   const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
   const [customers, setCustomers] = useState<Record<string, string>>(customerMap);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -44,14 +44,19 @@ export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientP
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las facturas o clientes.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
 
   const getCustomerName = (customerId: string) => {
     return customers[customerId] || 'Cliente Desconocido';

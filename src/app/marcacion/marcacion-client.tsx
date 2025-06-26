@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ type MarcacionClientProps = {
 
 export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
   const [marcaciones, setMarcaciones] = useState<Marcacion[]>(initialMarcaciones);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
@@ -44,14 +44,18 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
     } catch (error) {
       console.error("Error fetching marcaciones:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las marcaciones.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las marcaciones. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchMarcaciones();
+  }, [fetchMarcaciones]);
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);

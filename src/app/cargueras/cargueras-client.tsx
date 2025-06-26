@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ type CarguerasClientProps = {
 
 export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
   const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
@@ -44,14 +44,18 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
     } catch (error) {
       console.error("Error fetching cargueras:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las cargueras.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las cargueras. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchCargueras();
+  }, [fetchCargueras]);
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);

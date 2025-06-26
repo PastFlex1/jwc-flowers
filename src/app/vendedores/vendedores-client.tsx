@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ type VendedoresClientProps = {
 
 export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
   const [vendedores, setVendedores] = useState<Vendedor[]>(initialVendedores);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
@@ -43,14 +43,18 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
     } catch (error) {
       console.error("Error fetching vendedores:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los vendedores.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los vendedores. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+
+  useEffect(() => {
+    fetchVendedores();
+  }, [fetchVendedores]);
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);

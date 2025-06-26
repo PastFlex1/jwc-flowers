@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,8 +19,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { addInvoice } from '@/services/invoices';
+import { getCustomers } from '@/services/customers';
+import { getFincas } from '@/services/fincas';
+import { getVendedores } from '@/services/vendedores';
+import { getCargueras } from '@/services/cargueras';
+import { getPaises } from '@/services/paises';
 
 import type { Customer, Finca, Vendedor, Carguera, Pais, Invoice } from '@/lib/types';
 
@@ -55,24 +61,49 @@ const invoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-type NewInvoiceFormProps = {
-  customers: Customer[];
-  fincas: Finca[];
-  vendedores: Vendedor[];
-  cargueras: Carguera[];
-  paises: Pais[];
-};
 
-export function NewInvoiceForm({
-  customers,
-  fincas,
-  vendedores,
-  cargueras,
-  paises,
-}: NewInvoiceFormProps) {
+export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isHeaderSet, setIsHeaderSet] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [fincas, setFincas] = useState<Finca[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
+
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [customersData, fincasData, vendedoresData, carguerasData, paisesData] = await Promise.all([
+          getCustomers(),
+          getFincas(),
+          getVendedores(),
+          getCargueras(),
+          getPaises(),
+        ]);
+        setCustomers(customersData);
+        setFincas(fincasData);
+        setVendedores(vendedoresData);
+        setCargueras(carguerasData);
+        setPaises(paisesData);
+      } catch (error) {
+        console.error("Error fetching form data:", error);
+        toast({
+          title: 'Error de Carga',
+          description: "No se pudieron cargar los datos para los selectores. Verifique las reglas de Firestore.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchData();
+  }, [toast]);
+
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -157,6 +188,30 @@ export function NewInvoiceForm({
         title: 'Edición en línea',
         description: 'Puede editar los valores directamente en la fila.',
       });
+  }
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">Nueva Venta</h2>
+          <p className="text-muted-foreground">Crear una nueva factura de venta.</p>
+        </div>
+         <Card>
+            <CardHeader>
+              <CardTitle>Datos de la Factura</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+      </div>
+    )
   }
 
   return (

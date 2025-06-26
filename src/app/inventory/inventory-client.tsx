@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,7 +18,7 @@ type InventoryClientProps = {
 
 export function InventoryClient({ initialInventory }: InventoryClientProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -30,14 +30,19 @@ export function InventoryClient({ initialInventory }: InventoryClientProps) {
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudo cargar el inventario.',
+        title: 'Error de Carga',
+        description: 'No se pudo cargar el inventario. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
 
   const handleAddItem = async (newItemData: Omit<InventoryItem, 'id'>) => {
     try {

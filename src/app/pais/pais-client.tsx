@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ type PaisClientProps = {
 
 export function PaisClient({ initialPaises }: PaisClientProps) {
   const [paises, setPaises] = useState<Pais[]>(initialPaises);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
@@ -44,14 +44,19 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
     } catch (error) {
       console.error("Error fetching paises:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los países.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los países. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchPaises();
+  }, [fetchPaises]);
+
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);

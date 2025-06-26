@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,7 +30,7 @@ type DaeClientProps = {
 
 export function DaeClient({ initialDaes }: DaeClientProps) {
   const [daes, setDaes] = useState<Dae[]>(initialDaes);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
@@ -44,14 +44,18 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
     } catch (error) {
       console.error("Error fetching DAEs:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los DAEs.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los DAEs. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+  
+  useEffect(() => {
+    fetchDaes();
+  }, [fetchDaes]);
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);

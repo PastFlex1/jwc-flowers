@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ type CustomersClientProps = {
 
 export function CustomersClient({ initialCustomers }: CustomersClientProps) {
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
@@ -43,14 +43,18 @@ export function CustomersClient({ initialCustomers }: CustomersClientProps) {
     } catch (error) {
       console.error("Error fetching customers:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los clientes.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los clientes. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);

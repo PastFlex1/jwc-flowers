@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-
 import { getFincas, addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
@@ -31,7 +30,7 @@ type FincasClientProps = {
 
 export function FincasClient({ initialFincas }: FincasClientProps) {
   const [fincas, setFincas] = useState<Finca[]>(initialFincas);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
@@ -45,14 +44,18 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
     } catch (error) {
       console.error("Error fetching fincas:", error);
       toast({
-        title: 'Error',
-        description: 'No se pudieron cargar las fincas. Verifique la configuración de Firebase.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las fincas. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
+
+  useEffect(() => {
+    fetchFincas();
+  }, [fetchFincas]);
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);
@@ -76,7 +79,7 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
       }
       handleCloseDialog();
-      fetchFincas(); // Refresh data from Firestore
+      fetchFincas();
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -97,7 +100,7 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
         await deleteFinca(fincaToDelete.id);
         toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
         setFincaToDelete(null);
-        fetchFincas(); // Refresh data from Firestore
+        fetchFincas();
       } catch (error) {
         console.error("Error deleting finca:", error);
         toast({
