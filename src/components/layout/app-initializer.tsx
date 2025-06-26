@@ -33,10 +33,15 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
   
   // This state is reached if auth fails. It's a fallback.
   return (
-       <div className="flex h-screen w-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
+       <div className="flex h-screen w-screen items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-destructive font-semibold">Error de Autenticación</p>
-            <p className="text-muted-foreground">No se pudo conectar a Firebase. Por favor, recargue la página.</p>
+            <p className="text-muted-foreground max-w-md">
+                No se pudo iniciar sesión. Asegúrate de que la <strong>Autenticación Anónima</strong> esté habilitada en tu consola de Firebase.
+            </p>
+             <p className="text-sm text-muted-foreground max-w-md">
+              Ve a Build &gt; Authentication &gt; Sign-in method, y activa "Anonymous".
+            </p>
         </div>
       </div>
   );
