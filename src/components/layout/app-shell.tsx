@@ -19,22 +19,25 @@ import {
   Flower2,
   FileText,
   Users,
-  Boxes,
+  Leaf,
   Database,
+  Settings,
+  Plus,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import {
   Menubar,
   MenubarContent,
   MenubarItem,
+  MenubarLabel,
   MenubarMenu,
+  MenubarSeparator,
   MenubarTrigger,
 } from '@/components/ui/menubar';
 
 const navItems = [
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/inventory', label: 'Inventory', icon: Boxes },
+  { href: '/inventory', label: 'Inventory', icon: Leaf },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -61,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={pathname.startsWith(item.href)}
                 className="gap-3"
               >
                 <Link href={item.href}>
@@ -85,37 +88,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
            <SidebarTrigger className="md:hidden" />
-           <h1 className="text-xl font-bold whitespace-nowrap">JCW FLOWERS</h1>
-           <Menubar className="p-0 bg-transparent border-none">
-            <MenubarMenu>
-              <MenubarTrigger>Archivo</MenubarTrigger>
-              <MenubarContent>
-                <MenubarItem onClick={() => router.push('/fincas')}>Fincas</MenubarItem>
-                <MenubarItem onClick={() => router.push('/customers')}>Clientes</MenubarItem>
-                <MenubarItem onClick={() => router.push('/consignatarios')}>Consignatarios</MenubarItem>
-                <MenubarItem onClick={() => router.push('/vendedores')}>Vendedores</MenubarItem>
-                <MenubarItem onClick={() => router.push('/marcacion')}>Marcacion</MenubarItem>
-                <MenubarItem onClick={() => router.push('/pais')}>Pais</MenubarItem>
-                <MenubarItem onClick={() => router.push('/provincias')}>Provincias</MenubarItem>
-                <MenubarItem onClick={() => router.push('/dae')}>Dae</MenubarItem>
-                <MenubarItem onClick={() => router.push('/cargueras')}>Carguera</MenubarItem>
-                <MenubarItem>Notas de credito</MenubarItem>
-                <MenubarItem>Notas de debito</MenubarItem>
-              </MenubarContent>
-            </MenubarMenu>
-            <MenubarMenu>
-              <MenubarTrigger className="cursor-pointer" onClick={() => router.push('/invoices/new')}>
-                Nueva Venta
-              </MenubarTrigger>
-            </MenubarMenu>
-            <MenubarMenu>
-              <MenubarTrigger className="cursor-pointer" onClick={() => router.push('/inventory')}>
-                Inventario
-              </MenubarTrigger>
-            </MenubarMenu>
-           </Menubar>
+           <div className="flex-1">
+             {/* This can be a breadcrumb or page title */}
+           </div>
+           <div className="ml-auto flex items-center gap-2">
+              <Button onClick={() => router.push('/invoices/new')}>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nueva Venta</span>
+              </Button>
+              <Menubar className="p-0 bg-transparent border-none">
+                <MenubarMenu>
+                  <MenubarTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Settings className="h-5 w-5" />
+                      <span className="sr-only">Mantenimiento</span>
+                    </Button>
+                  </MenubarTrigger>
+                  <MenubarContent align="end">
+                    <MenubarLabel>Tablas Maestras</MenubarLabel>
+                    <MenubarSeparator />
+                    <MenubarItem onClick={() => router.push('/fincas')}>Fincas</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/customers')}>Clientes</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/consignatarios')}>Consignatarios</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/vendedores')}>Vendedores</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/marcacion')}>Marcacion</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/pais')}>Pais</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/provincias')}>Provincias</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/dae')}>Dae</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/cargueras')}>Carguera</MenubarItem>
+                    <MenubarSeparator />
+                    <MenubarLabel>Documentos</MenubarLabel>
+                     <MenubarSeparator />
+                    <MenubarItem>Notas de crédito</MenubarItem>
+                    <MenubarItem>Notas de débito</MenubarItem>
+                  </MenubarContent>
+                </MenubarMenu>
+              </Menubar>
+           </div>
         </header>
         <main className="p-4 md:p-6 lg:p-8">
           {children}

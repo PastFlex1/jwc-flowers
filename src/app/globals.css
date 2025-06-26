@@ -3,52 +3,84 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Alegreya', serif;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 94.1%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 240 67% 97%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 300 26.5% 85.7%;
-    --primary-foreground: 224 71.4% 4.1%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 300 26.5% 85.7%;
-    --accent-foreground: 0 0% 9%;
+    --background: 48 83% 97%; /* Parchment */
+    --foreground: 140 40% 10%; /* Dark Forest Green */
+    
+    --card: 48 50% 95%; /* Lighter Parchment */
+    --card-foreground: 140 40% 10%;
+    
+    --popover: 48 83% 97%;
+    --popover-foreground: 140 40% 10%;
+    
+    --primary: 142 76% 36%; /* Lush Green */
+    --primary-foreground: 140 25% 98%; /* Light Mint */
+    
+    --secondary: 140 20% 90%; /* Light Sage */
+    --secondary-foreground: 140 40% 10%;
+    
+    --muted: 140 20% 90%;
+    --muted-foreground: 140 20% 45%;
+    
+    --accent: 140 20% 93%; /* Lighter Sage */
+    --accent-foreground: 140 40% 10%;
+    
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 300 26.5% 85.7%;
+    
+    --border: 140 15% 85%; /* Sage Border */
+    --input: 140 15% 90%; /* Sage Input */
+    --ring: 142 76% 36%;
+    
     --radius: 0.5rem;
+
+    /* Chart Colors */
+    --chart-1: 142 76% 36%; /* Green */
+    --chart-2: 45 90% 55%; /* Yellow */
+    --chart-3: 25 80% 50%; /* Orange */
+    --chart-4: 160 70% 40%; /* Teal */
+    --chart-5: 350 80% 60%; /* Rose */
   }
+
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 4% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 300 26.5% 85.7%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 140 15% 8%; /* Dark Forest Night */
+    --foreground: 140 25% 95%; /* Light Mint */
+    
+    --card: 140 15% 12%;
+    --card-foreground: 140 25% 95%;
+    
+    --popover: 140 15% 8%;
+    --popover-foreground: 140 25% 95%;
+    
+    --primary: 142 76% 46%; /* Brighter Green */
+    --primary-foreground: 140 40% 10%;
+    
+    --secondary: 140 10% 20%;
+    --secondary-foreground: 140 25% 95%;
+    
+    --muted: 140 10% 20%;
+    --muted-foreground: 140 10% 65%;
+    
+    --accent: 140 10% 20%;
+    --accent-foreground: 140 25% 95%;
+    
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 300 26.5% 85.7%;
+    
+    --border: 140 10% 25%;
+    --input: 140 10% 25%;
+    --ring: 142 76% 46%;
+
+    /* Chart Colors */
+    --chart-1: 142 76% 46%;
+    --chart-2: 45 90% 65%;
+    --chart-3: 25 80% 60%;
+    --chart-4: 160 70% 50%;
+    --chart-5: 350 80% 70%;
   }
 }
 
