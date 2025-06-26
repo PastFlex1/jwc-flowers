@@ -22,13 +22,14 @@ import { getCargueras } from '@/services/cargueras';
 import { getVendedores } from '@/services/vendedores';
 import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 import { CustomerForm } from './customer-form';
+import { cargueras as initialCargueras } from '@/lib/mock-data';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
 export function CustomersClient() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [paises, setPaises] = useState<Pais[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -45,7 +46,9 @@ export function CustomersClient() {
       ]);
       setCustomers(customersData);
       setPaises(paisesData);
-      setCargueras(carguerasData);
+      if (carguerasData.length > 0) {
+        setCargueras(carguerasData);
+      }
       setVendedores(vendedoresData);
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -72,24 +75,24 @@ export function CustomersClient() {
   };
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
+    const isEditing = !!customerData.id;
     handleCloseDialog();
-
-    if (customerData.id) {
-      const originalCustomers = [...customers];
+    
+    if (isEditing) {
       const updatedCustomer = customerData as Customer;
       setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
-
+      
       try {
         await updateCustomer(updatedCustomer.id, updatedCustomer);
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
       } catch (error) {
-        setCustomers(originalCustomers);
         console.error("Error updating customer:", error);
         toast({
           title: 'Error de Actualización',
           description: 'No se pudo actualizar el cliente. Revise la consola para más detalles.',
           variant: 'destructive',
         });
+        fetchData(); // Re-fetch to revert optimistic update
       }
     } else {
       const tempId = `temp-${Date.now()}`;
@@ -101,13 +104,13 @@ export function CustomersClient() {
         setCustomers(prev => prev.map(c => c.id === tempId ? { ...newCustomer, id: newId } : c));
         toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
       } catch (error) {
-        setCustomers(prev => prev.filter(c => c.id !== tempId));
         console.error("Error adding customer:", error);
         toast({
           title: 'Error al Añadir',
           description: 'No se pudo añadir el cliente. Revise la consola para más detalles.',
           variant: 'destructive',
         });
+        setCustomers(prev => prev.filter(c => c.id !== tempId)); // Revert optimistic update
       }
     }
   };
@@ -118,10 +121,9 @@ export function CustomersClient() {
 
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
-
-    const originalCustomers = [...customers];
     const idToDelete = customerToDelete.id;
-
+    const originalCustomers = [...customers];
+    
     setCustomers(prev => prev.filter(c => c.id !== idToDelete));
     setCustomerToDelete(null);
     
@@ -129,13 +131,13 @@ export function CustomersClient() {
       await deleteCustomer(idToDelete);
       toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
     } catch (error) {
-      setCustomers(originalCustomers);
       console.error("Error deleting customer:", error);
       toast({
         title: 'Error al Eliminar',
         description: 'No se pudo eliminar el cliente. Revise la consola para más detalles.',
         variant: 'destructive',
       });
+      setCustomers(originalCustomers); // Revert optimistic update
     }
   };
   
