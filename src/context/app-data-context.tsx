@@ -30,6 +30,20 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
+function AppDataLoadingScreen() {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
+             <div className="flex flex-col items-center gap-4">
+                <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-muted-foreground">Sincronizando datos...</p>
+            </div>
+        </div>
+    );
+}
+
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [paises, setPaises] = useState<Pais[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -44,7 +58,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
+    // We don't set isLoading to true here on purpose, so that refreshes don't show the main loading screen.
     try {
       const [
         paisesData,
@@ -77,10 +91,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setMarcaciones(marcacionesData);
       setProvincias(provinciasData);
       
+      // Only override the default cargueras if there's data in the DB
       if (dbCargueras.length > 0) {
         setCargueras(dbCargueras);
-      } else {
-        setCargueras(defaultCargueras);
       }
 
     } catch (error) {
@@ -92,6 +105,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         duration: 10000,
       });
     } finally {
+      // This will only be set to false once on initial load, hiding the loading screen.
       setIsLoading(false);
     }
   }, [toast]);
@@ -116,7 +130,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppDataContext.Provider value={value}>
-      {children}
+      {isLoading ? <AppDataLoadingScreen /> : children}
     </AppDataContext.Provider>
   );
 }
