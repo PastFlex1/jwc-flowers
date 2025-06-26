@@ -20,21 +20,9 @@ import {
   FileText,
   Users,
   Boxes,
-  Settings,
-  CircleUser,
-  LogOut,
+  Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { useAuth } from '@/context/auth-context';
 import {
   Menubar,
   MenubarContent,
@@ -51,7 +39,6 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
   const router = useRouter();
 
   return (
@@ -87,44 +74,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarMenu>
 
         <SidebarFooter className="p-4 mt-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="justify-start gap-3 w-full px-2 h-12">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="profile user" />
-                  <AvatarFallback>A</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                   <span className="font-medium">Usuario Anónimo</span>
-                   <span className="text-xs text-muted-foreground truncate max-w-[120px]">{user?.uid}</span>
-                </div>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Usuario Anónimo</p>
-                  <p className="text-xs leading-none text-muted-foreground truncate">
-                    {user?.uid}
-                  </p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>
-                <CircleUser className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => logout()}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out &amp; Reconnect</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+           <div className="flex items-center gap-3 w-full px-2 h-12">
+              <Database className="h-6 w-6 text-muted-foreground" />
+              <div className="flex flex-col items-start">
+                 <span className="font-medium">Modo Desarrollo</span>
+                 <span className="text-xs text-muted-foreground">Acceso Directo a DB</span>
+              </div>
+            </div>
         </SidebarFooter>
       </Sidebar>
 

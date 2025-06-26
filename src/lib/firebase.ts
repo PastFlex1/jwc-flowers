@@ -1,7 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 // For security, these values are stored in environment variables
@@ -19,17 +18,15 @@ const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!valu
 
 let app;
 let db;
-let auth;
 
 // This check is now more strict. If the configuration is incomplete,
 // the app will stop immediately with a clear error message.
 if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
-    auth = getAuth(app);
 } else {
-    throw new Error("La configuración de Firebase está incompleta o es incorrecta. Por favor, verifique que todas las variables NEXT_PUBLIC_FIREBASE_* estén correctamente establecidas en su archivo .env y que no contengan valores de ejemplo.");
+    throw new Error("La configuración de Firebase está incompleta. Por favor, verifique que todas las variables NEXT_PUBLIC_FIREBASE_* estén correctamente establecidas en su archivo .env.");
 }
 
 
-export { app, db, auth };
+export { app, db };

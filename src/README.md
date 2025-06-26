@@ -34,20 +34,9 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
 # ...and so on
 ```
 
-### 2.5 Enable Anonymous Authentication
-
-This application uses anonymous sign-in so you don't have to create user accounts. You must enable this feature in Firebase.
-
-1.  In the Firebase Console, go to **Build > Authentication**.
-2.  Click the **"Get started"** button if you haven't set up Authentication before.
-3.  Go to the **"Sign-in method"** tab.
-4.  In the list of providers, click on **"Anonymous"**.
-5.  Flick the **"Enable"** switch and click **"Save"**.
-
-
 ### 3. Configure Firestore Rules
 
-For development, you need to set rules that allow authenticated users to access your database. **This step is crucial for the app to work.**
+For development, you need to set rules that allow open access to your database. **This step is crucial for the app to work.**
 
 1.  In the Firebase Console, go to **Build > Cloud Firestore**.
 2.  Click the **"Rules"** tab.
@@ -56,16 +45,17 @@ For development, you need to set rules that allow authenticated users to access 
     rules_version = '2';
     service cloud.firestore {
       match /databases/{database}/documents {
-        // Allow read and write access only for authenticated users
+        // Allow read and write access for development purposes.
+        // WARNING: This is insecure and should not be used in production.
         match /{document=**} {
-          allow read, write: if request.auth != null;
+          allow read, write: if true;
         }
       }
     }
     ```
 4.  Click **Publish**.
 
-This rule ensures that only users who are signed into your app (including anonymous users) can read from or write to the database, which is a good security practice.
+This rule allows anyone to read from or write to your database. This is necessary for development since authentication has been removed, but you **must** secure your database before going to production.
 
 ### 4. Run the Development Server
 

@@ -5,24 +5,11 @@ import { AppShell } from './app-shell';
 import { AppDataProvider } from '@/context/app-data-context';
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-     return (
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
-             <div className="flex flex-col items-center gap-4">
-                <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-muted-foreground">Autenticando y conectando...</p>
-            </div>
-        </div>
-    );
-  }
-
-  // Once Firebase Auth is initialized and the user is signed in (anonymously),
-  // we render the main application layout.
+  const { isAuthenticated } = useAuth();
+  
+  // Since the mock AuthProvider always sets isAuthenticated to true and isLoading to false,
+  // this will always render the main application immediately.
+  // The loading and error states for authentication are no longer needed.
   if (isAuthenticated) {
      return (
         <AppDataProvider>
@@ -30,19 +17,7 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
         </AppDataProvider>
       );
   }
-  
-  // This state is reached if auth fails. It's a fallback.
-  return (
-       <div className="flex h-screen w-screen items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-4 text-center">
-            <p className="text-destructive font-semibold">Error de Autenticación</p>
-            <p className="text-muted-foreground max-w-md">
-                No se pudo iniciar sesión. Asegúrate de que la <strong>Autenticación Anónima</strong> esté habilitada en tu consola de Firebase.
-            </p>
-             <p className="text-sm text-muted-foreground max-w-md">
-              Ve a Build &gt; Authentication &gt; Sign-in method, y activa "Anonymous".
-            </p>
-        </div>
-      </div>
-  );
+
+  // This part should theoretically never be reached with the mock provider.
+  return null;
 }
