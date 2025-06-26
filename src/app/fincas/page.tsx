@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,16 +15,44 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { fincas as initialFincas } from '@/lib/mock-data';
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+
+import { getFincas, addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
 
+type FincaFormData = Omit<Finca, 'id'> & { id?: string };
+
 export default function FincasPage() {
-  const [fincas, setFincas] = useState<Finca[]>(initialFincas);
+  const [fincas, setFincas] = useState<Finca[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
+  const { toast } = useToast();
+
+  const fetchFincas = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const fincasData = await getFincas();
+      setFincas(fincasData);
+    } catch (error) {
+      console.error("Error fetching fincas:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudieron cargar las fincas. Verifique la configuración de Firebase.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchFincas();
+  }, [fetchFincas]);
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);
@@ -36,29 +64,66 @@ export default function FincasPage() {
     setEditingFinca(null);
   };
 
-  const handleFormSubmit = (fincaData: Omit<Finca, 'id'> & { id?: string }) => {
-    if (fincaData.id) {
-      setFincas(fincas.map(f => f.id === fincaData.id ? (fincaData as Finca) : f));
-    } else {
-      const newFinca: Finca = {
-        id: `finca_${Date.now()}`,
-        ...(fincaData as Omit<Finca, 'id'>),
-      };
-      setFincas(prev => [...prev, newFinca]);
+  const handleFormSubmit = async (fincaData: FincaFormData) => {
+    try {
+      if (fincaData.id) {
+        const { id, ...dataToUpdate } = fincaData;
+        await updateFinca(id, dataToUpdate);
+        toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
+      } else {
+        const { id, ...dataToAdd } = fincaData;
+        await addFinca(dataToAdd);
+        toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
+      }
+      handleCloseDialog();
+      fetchFincas(); // Refresh data from Firestore
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo guardar la finca.',
+        variant: 'destructive',
+      });
     }
-    handleCloseDialog();
   };
 
   const handleDeleteClick = (finca: Finca) => {
     setFincaToDelete(finca);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (fincaToDelete) {
-      setFincas(fincas.filter(f => f.id !== fincaToDelete.id));
-      setFincaToDelete(null);
+      try {
+        await deleteFinca(fincaToDelete.id);
+        toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+        setFincaToDelete(null);
+        fetchFincas(); // Refresh data from Firestore
+      } catch (error) {
+        console.error("Error deleting finca:", error);
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar la finca.',
+          variant: 'destructive',
+        });
+      }
     }
   };
+
+  const renderSkeleton = () => (
+    Array.from({ length: 3 }).map((_, index) => (
+      <TableRow key={`skeleton-${index}`}>
+        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
+        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+        <TableCell className="text-right space-x-0">
+          <Skeleton className="h-8 w-8 inline-block" />
+          <Skeleton className="h-8 w-8 inline-block ml-2" />
+        </TableCell>
+      </TableRow>
+    ))
+  );
 
   return (
     <>
@@ -91,7 +156,7 @@ export default function FincasPage() {
         <Card>
           <CardHeader>
             <CardTitle>Lista de Fincas</CardTitle>
-            <CardDescription>Un listado de todas tus fincas.</CardDescription>
+            <CardDescription>Un listado de todas tus fincas guardadas en la base de datos.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -106,7 +171,7 @@ export default function FincasPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fincas.map((finca) => (
+                {isLoading ? renderSkeleton() : fincas.map((finca) => (
                   <TableRow key={finca.id}>
                     <TableCell className="font-medium">{finca.name}</TableCell>
                     <TableCell>{finca.address}</TableCell>
