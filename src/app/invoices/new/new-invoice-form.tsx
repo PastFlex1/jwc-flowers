@@ -25,6 +25,7 @@ import { getFincas } from '@/services/fincas';
 import { getVendedores } from '@/services/vendedores';
 import { getCargueras } from '@/services/cargueras';
 import { getPaises } from '@/services/paises';
+import { cargueras as defaultCargueras } from '@/lib/mock-data';
 
 import type { Customer, Finca, Vendedor, Carguera, Pais, Invoice } from '@/lib/types';
 
@@ -69,7 +70,7 @@ export function NewInvoiceForm() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [fincas, setFincas] = useState<Finca[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
   const [paises, setPaises] = useState<Pais[]>([]);
 
   const form = useForm<InvoiceFormValues>({
@@ -88,7 +89,7 @@ export function NewInvoiceForm() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [customersData, fincasData, vendedoresData, carguerasData, paisesData] = await Promise.all([
+      const [customersData, fincasData, vendedoresData, dbCargueras, paisesData] = await Promise.all([
         getCustomers(),
         getFincas(),
         getVendedores(),
@@ -98,7 +99,9 @@ export function NewInvoiceForm() {
       setCustomers(customersData);
       setFincas(fincasData);
       setVendedores(vendedoresData);
-      setCargueras(carguerasData);
+      if (dbCargueras.length > 0) {
+        setCargueras(dbCargueras);
+      }
       setPaises(paisesData);
     } catch (error) {
        console.error("Error fetching data for new invoice:", error);

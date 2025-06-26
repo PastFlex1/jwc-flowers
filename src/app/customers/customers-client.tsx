@@ -29,9 +29,8 @@ type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 export function CustomersClient() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [paises, setPaises] = useState<Pais[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -39,23 +38,20 @@ export function CustomersClient() {
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
     try {
-      let carguerasData = await getCargueras();
-      if (carguerasData.length === 0) {
-        carguerasData = defaultCargueras;
-      }
-      
-      const [customersData, paisesData, vendedoresData] = await Promise.all([
+      const [customersData, paisesData, vendedoresData, dbCargueras] = await Promise.all([
         getCustomers(),
         getPaises(),
         getVendedores(),
+        getCargueras(),
       ]);
 
       setCustomers(customersData);
       setPaises(paisesData);
-      setCargueras(carguerasData);
       setVendedores(vendedoresData);
+      if (dbCargueras.length > 0) {
+        setCargueras(dbCargueras);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -64,8 +60,6 @@ export function CustomersClient() {
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 

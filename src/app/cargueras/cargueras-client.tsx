@@ -25,8 +25,7 @@ import { cargueras as defaultCargueras } from '@/lib/mock-data';
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
-  const [cargueras, setCargueras] = useState<Carguera[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
@@ -34,26 +33,19 @@ export function CarguerasClient() {
   const { toast } = useToast();
   
   const fetchCargueras = useCallback(async () => {
-    setIsLoading(true);
     try {
-      let data = await getCargueras();
-      if (data.length === 0) {
-        // If firestore is empty, seed with mock data.
-        // In a real app, this might be a one-time migration.
-        data = defaultCargueras;
+      const dbCargueras = await getCargueras();
+      // Only update if firestore has data, otherwise keep defaults
+      if (dbCargueras.length > 0) {
+        setCargueras(dbCargueras);
       }
-      setCargueras(data);
     } catch (error) {
       console.error("Error fetching cargueras:", error);
       toast({
-        title: 'Error de Carga',
-        description: 'No se pudieron cargar las cargueras.',
+        title: 'Error de Sincronización',
+        description: 'No se pudieron cargar las cargueras desde la base de datos. Se muestra la lista por defecto.',
         variant: 'destructive',
       });
-      // Fallback to mock data on error
-      setCargueras(defaultCargueras);
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 
