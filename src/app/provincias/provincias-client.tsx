@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getProvincias, addProvincia, updateProvincia, deleteProvincia } from '@/services/provincias';
 import type { Provincia } from '@/lib/types';
@@ -27,14 +26,12 @@ type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
 export function ProvinciasClient() {
   const [provincias, setProvincias] = useState<Provincia[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
   const { toast } = useToast();
 
   const fetchProvincias = useCallback(async () => {
-    setIsLoading(true);
     try {
       const data = await getProvincias();
       setProvincias(data);
@@ -45,8 +42,6 @@ export function ProvinciasClient() {
         description: 'No se pudieron cargar las provincias. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -133,18 +128,6 @@ export function ProvinciasClient() {
     }
   };
   
-  const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -187,7 +170,7 @@ export function ProvinciasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : provincias.map((provincia) => (
+                {provincias.map((provincia) => (
                   <TableRow key={provincia.id}>
                     <TableCell className="font-medium">{provincia.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">

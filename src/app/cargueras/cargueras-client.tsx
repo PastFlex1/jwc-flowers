@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getCargueras, addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
@@ -27,14 +26,12 @@ type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
   const [cargueras, setCargueras] = useState<Carguera[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
 
   const fetchCargueras = useCallback(async () => {
-    setIsLoading(true);
     try {
       const carguerasData = await getCargueras();
       setCargueras(carguerasData);
@@ -45,8 +42,6 @@ export function CarguerasClient() {
         description: 'No se pudieron cargar las cargueras. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -132,19 +127,6 @@ export function CarguerasClient() {
     }
   };
 
-  const renderSkeleton = () => (
-    Array.from({ length: 5 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -188,7 +170,7 @@ export function CarguerasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : cargueras.map((carguera) => (
+                {cargueras.map((carguera) => (
                   <TableRow key={carguera.id}>
                     <TableCell className="font-medium">{carguera.nombreCarguera}</TableCell>
                     <TableCell>{carguera.pais}</TableCell>

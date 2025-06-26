@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getFincas, addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
@@ -27,14 +26,12 @@ type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
 export function FincasClient() {
   const [fincas, setFincas] = useState<Finca[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
 
   const fetchFincas = useCallback(async () => {
-    setIsLoading(true);
     try {
       const fincasData = await getFincas();
       setFincas(fincasData);
@@ -45,8 +42,6 @@ export function FincasClient() {
         description: 'No se pudieron cargar las fincas. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 
@@ -132,22 +127,6 @@ export function FincasClient() {
     }
   };
 
-  const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -194,7 +173,7 @@ export function FincasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : fincas.map((finca) => (
+                {fincas.map((finca) => (
                   <TableRow key={finca.id}>
                     <TableCell className="font-medium">{finca.name}</TableCell>
                     <TableCell>{finca.address}</TableCell>

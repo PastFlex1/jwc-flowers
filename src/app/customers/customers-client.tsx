@@ -16,7 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
 import type { Customer } from '@/lib/types';
@@ -26,14 +25,12 @@ type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
 export function CustomersClient() {
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { toast } = useToast();
 
   const fetchCustomers = useCallback(async () => {
-    setIsLoading(true);
     try {
       const customersData = await getCustomers();
       setCustomers(customersData);
@@ -44,8 +41,6 @@ export function CustomersClient() {
         description: 'No se pudieron cargar los clientes. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
 
@@ -131,20 +126,6 @@ export function CustomersClient() {
     }
   };
   
-  const renderSkeleton = () => (
-    Array.from({ length: 5 }).map((_, index) => (
-      <Card key={`skeleton-${index}`}>
-         <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
-            <Skeleton className="h-6 w-32 mb-2" />
-          </CardContent>
-          <div className="p-4 border-t flex justify-center gap-2">
-            <Skeleton className="h-9 w-16" />
-            <Skeleton className="h-9 w-9" />
-          </div>
-      </Card>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -172,7 +153,7 @@ export function CustomersClient() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {isLoading ? renderSkeleton() : customers.map((customer) => (
+          {customers.map((customer) => (
             <Card key={customer.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{customer.name}</h3>

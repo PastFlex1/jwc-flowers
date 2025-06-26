@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getInventoryItems, addInventoryItem } from '@/services/inventory';
 import type { InventoryItem } from '@/lib/types';
@@ -15,12 +14,10 @@ import { ItemForm } from './item-form';
 
 export function InventoryClient() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchItems = useCallback(async () => {
-    setIsLoading(true);
     try {
       const items = await getInventoryItems();
       setInventory(items);
@@ -31,8 +28,6 @@ export function InventoryClient() {
         description: 'No se pudo cargar el inventario. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -61,18 +56,6 @@ export function InventoryClient() {
       });
     }
   };
-
-  const renderSkeleton = () => (
-    Array.from({ length: 5 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-      </TableRow>
-    ))
-  );
 
   return (
     <div className="space-y-6">
@@ -113,7 +96,7 @@ export function InventoryClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? renderSkeleton() : inventory.map((item) => (
+              {inventory.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.description}</TableCell>

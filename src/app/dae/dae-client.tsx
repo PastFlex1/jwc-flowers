@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getDaes, addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
@@ -27,14 +26,12 @@ type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
 export function DaeClient() {
   const [daes, setDaes] = useState<Dae[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
 
   const fetchDaes = useCallback(async () => {
-    setIsLoading(true);
     try {
       const daesData = await getDaes();
       setDaes(daesData);
@@ -45,8 +42,6 @@ export function DaeClient() {
         description: 'No se pudieron cargar los DAEs. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -132,19 +127,6 @@ export function DaeClient() {
     }
   };
 
-  const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -188,7 +170,7 @@ export function DaeClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : daes.map((dae) => (
+                {daes.map((dae) => (
                   <TableRow key={dae.id}>
                     <TableCell className="font-medium">{dae.pais}</TableCell>
                     <TableCell>{dae.numeroDae}</TableCell>

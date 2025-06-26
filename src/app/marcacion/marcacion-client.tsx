@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getMarcaciones, addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
@@ -27,14 +26,12 @@ type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
 export function MarcacionClient() {
   const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
 
   const fetchMarcaciones = useCallback(async () => {
-    setIsLoading(true);
     try {
       const data = await getMarcaciones();
       setMarcaciones(data);
@@ -45,8 +42,6 @@ export function MarcacionClient() {
         description: 'No se pudieron cargar las marcaciones. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -132,19 +127,6 @@ export function MarcacionClient() {
     }
   };
   
-  const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -188,7 +170,7 @@ export function MarcacionClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : marcaciones.map((marcacion) => (
+                {marcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
                     <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
                     <TableCell>{marcacion.cliente}</TableCell>

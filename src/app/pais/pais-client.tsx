@@ -17,7 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { getPaises, addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
@@ -27,14 +26,12 @@ type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
 export function PaisClient() {
   const [paises, setPaises] = useState<Pais[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
 
   const fetchPaises = useCallback(async () => {
-    setIsLoading(true);
     try {
       const data = await getPaises();
       setPaises(data);
@@ -45,8 +42,6 @@ export function PaisClient() {
         description: 'No se pudieron cargar los países. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   }, [toast]);
   
@@ -133,18 +128,6 @@ export function PaisClient() {
     }
   };
 
-  const renderSkeleton = () => (
-    Array.from({ length: 3 }).map((_, index) => (
-      <TableRow key={`skeleton-${index}`}>
-        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-        <TableCell className="text-right space-x-0">
-          <Skeleton className="h-8 w-8 inline-block" />
-          <Skeleton className="h-8 w-8 inline-block ml-2" />
-        </TableCell>
-      </TableRow>
-    ))
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -187,7 +170,7 @@ export function PaisClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? renderSkeleton() : paises.map((pais) => (
+                {paises.map((pais) => (
                   <TableRow key={pais.id}>
                     <TableCell className="font-medium">{pais.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">
