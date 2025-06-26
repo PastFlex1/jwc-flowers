@@ -63,24 +63,43 @@ export function VendedoresClient() {
   };
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
-    try {
-      if (vendedorData.id) {
-        await updateVendedor(vendedorData.id, vendedorData);
-        setVendedores(prev => prev.map(v => v.id === vendedorData.id ? (vendedorData as Vendedor) : v));
+    handleCloseDialog();
+    
+    if (vendedorData.id) {
+      const originalVendedores = [...vendedores];
+      const updatedVendedor = vendedorData as Vendedor;
+      setVendedores(prev => prev.map(v => v.id === updatedVendedor.id ? updatedVendedor : v));
+
+      try {
+        await updateVendedor(updatedVendedor.id, updatedVendedor);
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
-      } else {
-        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        setVendedores(prev => [...prev, { ...vendedorData, id: newId } as Vendedor]);
-        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+      } catch (error) {
+        setVendedores(originalVendedores);
+        console.error("Error updating vendedor:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar el vendedor.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el vendedor.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newVendedor = { ...vendedorData, id: tempId } as Vendedor;
+      setVendedores(prev => [...prev, newVendedor]);
+
+      try {
+        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
+        setVendedores(prev => prev.map(v => v.id === tempId ? { ...newVendedor, id: newId } : v));
+        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+      } catch (error) {
+        setVendedores(prev => prev.filter(v => v.id !== tempId));
+        console.error("Error adding vendedor:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo guardar el vendedor.',
+          variant: 'destructive',
+        });
+      }
     }
   };
   
@@ -89,20 +108,25 @@ export function VendedoresClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (vendedorToDelete) {
-      try {
-        await deleteVendedor(vendedorToDelete.id);
-        setVendedores(prev => prev.filter(v => v.id !== vendedorToDelete.id));
-        toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
-        setVendedorToDelete(null);
-      } catch (error) {
-        console.error("Error deleting vendedor:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar el vendedor.',
-          variant: 'destructive',
-        });
-      }
+    if (!vendedorToDelete) return;
+
+    const originalVendedores = [...vendedores];
+    const idToDelete = vendedorToDelete.id;
+
+    setVendedores(prev => prev.filter(v => v.id !== idToDelete));
+    setVendedorToDelete(null);
+
+    try {
+      await deleteVendedor(idToDelete);
+      toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+    } catch (error) {
+      setVendedores(originalVendedores);
+      console.error("Error deleting vendedor:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar el vendedor.',
+        variant: 'destructive',
+      });
     }
   };
   

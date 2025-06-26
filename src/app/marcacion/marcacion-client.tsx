@@ -64,24 +64,43 @@ export function MarcacionClient() {
   };
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
-    try {
-      if (marcacionData.id) {
-        await updateMarcacion(marcacionData.id, marcacionData);
-        setMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? (marcacionData as Marcacion) : m));
+    handleCloseDialog();
+
+    if (marcacionData.id) {
+      const originalMarcaciones = [...marcaciones];
+      const updatedMarcacion = marcacionData as Marcacion;
+      setMarcaciones(prev => prev.map(m => m.id === updatedMarcacion.id ? updatedMarcacion : m));
+      
+      try {
+        await updateMarcacion(updatedMarcacion.id, updatedMarcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
-      } else {
-        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        setMarcaciones(prev => [...prev, { ...marcacionData, id: newId } as Marcacion]);
-        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+      } catch (error) {
+        setMarcaciones(originalMarcaciones);
+        console.error("Error updating marcacion:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar la marcación.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar la marcación.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newMarcacion = { ...marcacionData, id: tempId } as Marcacion;
+      setMarcaciones(prev => [...prev, newMarcacion]);
+      
+      try {
+        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
+        setMarcaciones(prev => prev.map(m => m.id === tempId ? { ...newMarcacion, id: newId } : m));
+        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+      } catch (error) {
+        setMarcaciones(prev => prev.filter(m => m.id !== tempId));
+        console.error("Error adding marcacion:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo guardar la marcación.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -90,20 +109,25 @@ export function MarcacionClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (marcacionToDelete) {
-      try {
-        await deleteMarcacion(marcacionToDelete.id);
-        setMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
-        toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
-        setMarcacionToDelete(null);
-      } catch (error) {
-        console.error("Error deleting marcación:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la marcación.',
-          variant: 'destructive',
-        });
-      }
+    if (!marcacionToDelete) return;
+
+    const originalMarcaciones = [...marcaciones];
+    const idToDelete = marcacionToDelete.id;
+
+    setMarcaciones(prev => prev.filter(m => m.id !== idToDelete));
+    setMarcacionToDelete(null);
+
+    try {
+      await deleteMarcacion(idToDelete);
+      toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+    } catch (error) {
+      setMarcaciones(originalMarcaciones);
+      console.error("Error deleting marcación:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar la marcación.',
+        variant: 'destructive',
+      });
     }
   };
   

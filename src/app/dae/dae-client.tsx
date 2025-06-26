@@ -64,24 +64,43 @@ export function DaeClient() {
   };
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
-    try {
-      if (daeData.id) {
-        await updateDae(daeData.id, daeData);
-        setDaes(prev => prev.map(d => d.id === daeData.id ? (daeData as Dae) : d));
+    handleCloseDialog();
+    
+    if (daeData.id) {
+      const originalDaes = [...daes];
+      const updatedDae = daeData as Dae;
+      setDaes(prev => prev.map(d => d.id === updatedDae.id ? updatedDae : d));
+
+      try {
+        await updateDae(updatedDae.id, updatedDae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
-      } else {
-        const newId = await addDae(daeData as Omit<Dae, 'id'>);
-        setDaes(prev => [...prev, { ...daeData, id: newId } as Dae]);
-        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+      } catch (error) {
+        setDaes(originalDaes);
+        console.error("Error updating DAE:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar el DAE.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el DAE.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newDae = { ...daeData, id: tempId } as Dae;
+      setDaes(prev => [...prev, newDae]);
+
+      try {
+        const newId = await addDae(daeData as Omit<Dae, 'id'>);
+        setDaes(prev => prev.map(d => d.id === tempId ? { ...newDae, id: newId } : d));
+        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+      } catch (error) {
+        setDaes(prev => prev.filter(d => d.id !== tempId));
+        console.error("Error adding DAE:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo añadir el DAE.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -90,20 +109,25 @@ export function DaeClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (daeToDelete) {
-      try {
-        await deleteDae(daeToDelete.id);
-        setDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
-        toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
-        setDaeToDelete(null);
-      } catch (error) {
-        console.error("Error deleting DAE:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar el DAE.',
-          variant: 'destructive',
-        });
-      }
+    if (!daeToDelete) return;
+
+    const originalDaes = [...daes];
+    const idToDelete = daeToDelete.id;
+
+    setDaes(prev => prev.filter(d => d.id !== idToDelete));
+    setDaeToDelete(null);
+
+    try {
+      await deleteDae(idToDelete);
+      toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+    } catch (error) {
+      setDaes(originalDaes);
+      console.error("Error deleting DAE:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar el DAE.',
+        variant: 'destructive',
+      });
     }
   };
 

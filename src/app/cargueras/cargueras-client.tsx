@@ -64,24 +64,43 @@ export function CarguerasClient() {
   };
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
-    try {
-      if (cargueraData.id) {
-        await updateCarguera(cargueraData.id, cargueraData);
-        setCargueras(prev => prev.map(c => c.id === cargueraData.id ? (cargueraData as Carguera) : c));
+    handleCloseDialog();
+    
+    if (cargueraData.id) {
+      const originalCargueras = [...cargueras];
+      const updatedCarguera = cargueraData as Carguera;
+      setCargueras(prev => prev.map(c => c.id === updatedCarguera.id ? updatedCarguera : c));
+
+      try {
+        await updateCarguera(updatedCarguera.id, updatedCarguera);
         toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
-      } else {
-        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-        setCargueras(prev => [...prev, { ...cargueraData, id: newId } as Carguera]);
-        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+      } catch (error) {
+        setCargueras(originalCargueras);
+        console.error("Error updating carguera:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar la carguera.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar la carguera.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newCarguera = { ...cargueraData, id: tempId } as Carguera;
+      setCargueras(prev => [...prev, newCarguera]);
+
+      try {
+        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
+        setCargueras(prev => prev.map(c => c.id === tempId ? { ...newCarguera, id: newId } : c));
+        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+      } catch (error) {
+        setCargueras(prev => prev.filter(c => c.id !== tempId));
+        console.error("Error adding carguera:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo añadir la carguera.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -90,20 +109,25 @@ export function CarguerasClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (cargueraToDelete) {
-      try {
-        await deleteCarguera(cargueraToDelete.id);
-        setCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
-        toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
-        setCargueraToDelete(null);
-      } catch (error) {
-        console.error("Error deleting carguera:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la carguera.',
-          variant: 'destructive',
-        });
-      }
+    if (!cargueraToDelete) return;
+
+    const originalCargueras = [...cargueras];
+    const idToDelete = cargueraToDelete.id;
+
+    setCargueras(prev => prev.filter(c => c.id !== idToDelete));
+    setCargueraToDelete(null);
+
+    try {
+      await deleteCarguera(idToDelete);
+      toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
+    } catch (error) {
+      setCargueras(originalCargueras);
+      console.error("Error deleting carguera:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar la carguera.',
+        variant: 'destructive',
+      });
     }
   };
 

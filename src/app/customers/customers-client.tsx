@@ -63,24 +63,43 @@ export function CustomersClient() {
   };
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
-    try {
-      if (customerData.id) {
-        await updateCustomer(customerData.id, customerData);
-        setCustomers(prev => prev.map(c => c.id === customerData.id ? (customerData as Customer) : c));
+    handleCloseDialog();
+
+    if (customerData.id) {
+      const originalCustomers = [...customers];
+      const updatedCustomer = customerData as Customer;
+      setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+
+      try {
+        await updateCustomer(updatedCustomer.id, updatedCustomer);
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
-      } else {
-        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
-        setCustomers(prev => [...prev, { ...customerData, id: newId } as Customer]);
-        toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
+      } catch (error) {
+        setCustomers(originalCustomers);
+        console.error("Error updating customer:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar el cliente.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el cliente.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newCustomer = { ...customerData, id: tempId } as Customer;
+      setCustomers(prev => [...prev, newCustomer]);
+
+      try {
+        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
+        setCustomers(prev => prev.map(c => c.id === tempId ? { ...newCustomer, id: newId } : c));
+        toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
+      } catch (error) {
+        setCustomers(prev => prev.filter(c => c.id !== tempId));
+        console.error("Error adding customer:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo añadir el cliente.',
+          variant: 'destructive',
+        });
+      }
     }
   };
   
@@ -89,20 +108,25 @@ export function CustomersClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (customerToDelete) {
-       try {
-        await deleteCustomer(customerToDelete.id);
-        setCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
-        toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
-        setCustomerToDelete(null);
-      } catch (error) {
-        console.error("Error deleting customer:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar el cliente.',
-          variant: 'destructive',
-        });
-      }
+    if (!customerToDelete) return;
+
+    const originalCustomers = [...customers];
+    const idToDelete = customerToDelete.id;
+
+    setCustomers(prev => prev.filter(c => c.id !== idToDelete));
+    setCustomerToDelete(null);
+    
+    try {
+      await deleteCustomer(idToDelete);
+      toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
+    } catch (error) {
+      setCustomers(originalCustomers);
+      console.error("Error deleting customer:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar el cliente.',
+        variant: 'destructive',
+      });
     }
   };
   

@@ -64,24 +64,43 @@ export function FincasClient() {
   };
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
-    try {
-      if (fincaData.id) {
-        await updateFinca(fincaData.id, fincaData);
-        setFincas(prev => prev.map(f => f.id === fincaData.id ? (fincaData as Finca) : f));
+    handleCloseDialog();
+    
+    if (fincaData.id) {
+      const originalFincas = [...fincas];
+      const updatedFinca = fincaData as Finca;
+      setFincas(prev => prev.map(f => f.id === updatedFinca.id ? updatedFinca : f));
+
+      try {
+        await updateFinca(updatedFinca.id, updatedFinca);
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
-      } else {
-        const newId = await addFinca(fincaData);
-        setFincas(prev => [...prev, { ...fincaData, id: newId } as Finca]);
-        toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
+      } catch (error) {
+        setFincas(originalFincas);
+        console.error("Error updating finca:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar la finca.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar la finca.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newFinca = { ...fincaData, id: tempId } as Finca;
+      setFincas(prev => [...prev, newFinca]);
+
+      try {
+        const newId = await addFinca(fincaData);
+        setFincas(prev => prev.map(f => f.id === tempId ? { ...newFinca, id: newId } : f));
+        toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
+      } catch (error) {
+        setFincas(prev => prev.filter(f => f.id !== tempId));
+        console.error("Error adding finca:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo añadir la finca.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -90,20 +109,25 @@ export function FincasClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (fincaToDelete) {
-      try {
-        await deleteFinca(fincaToDelete.id);
-        setFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
-        toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
-        setFincaToDelete(null);
-      } catch (error) {
-        console.error("Error deleting finca:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la finca.',
-          variant: 'destructive',
-        });
-      }
+    if (!fincaToDelete) return;
+
+    const originalFincas = [...fincas];
+    const idToDelete = fincaToDelete.id;
+
+    setFincas(prev => prev.filter(f => f.id !== idToDelete));
+    setFincaToDelete(null);
+
+    try {
+      await deleteFinca(idToDelete);
+      toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+    } catch (error) {
+      setFincas(originalFincas);
+      console.error("Error deleting finca:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar la finca.',
+        variant: 'destructive',
+      });
     }
   };
 

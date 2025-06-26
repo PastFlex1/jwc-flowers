@@ -65,24 +65,43 @@ export function PaisClient() {
   };
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
-    try {
-      if (paisData.id) {
-        await updatePais(paisData.id, paisData);
-        setPaises(prev => prev.map(p => p.id === paisData.id ? (paisData as Pais) : p));
+    handleCloseDialog();
+
+    if (paisData.id) {
+      const originalPaises = [...paises];
+      const updatedPais = paisData as Pais;
+      setPaises(prev => prev.map(p => p.id === updatedPais.id ? updatedPais : p));
+
+      try {
+        await updatePais(updatedPais.id, updatedPais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
-      } else {
-        const newId = await addPais(paisData as Omit<Pais, 'id'>);
-        setPaises(prev => [...prev, { ...paisData, id: newId } as Pais]);
-        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+      } catch (error) {
+        setPaises(originalPaises);
+        console.error("Error updating pais:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar el país.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar el país.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newPais = { ...paisData, id: tempId } as Pais;
+      setPaises(prev => [...prev, newPais]);
+
+      try {
+        const newId = await addPais(paisData as Omit<Pais, 'id'>);
+        setPaises(prev => prev.map(p => p.id === tempId ? { ...newPais, id: newId } : p));
+        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+      } catch (error) {
+        setPaises(prev => prev.filter(p => p.id !== tempId));
+        console.error("Error adding pais:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo guardar el país.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -91,20 +110,25 @@ export function PaisClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (paisToDelete) {
-      try {
-        await deletePais(paisToDelete.id);
-        setPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
-        toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
-        setPaisToDelete(null);
-      } catch (error) {
-        console.error("Error deleting pais:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar el país.',
-          variant: 'destructive',
-        });
-      }
+    if (!paisToDelete) return;
+
+    const originalPaises = [...paises];
+    const idToDelete = paisToDelete.id;
+
+    setPaises(prev => prev.filter(p => p.id !== idToDelete));
+    setPaisToDelete(null);
+
+    try {
+      await deletePais(idToDelete);
+      toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+    } catch (error) {
+      setPaises(originalPaises);
+      console.error("Error deleting pais:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar el país.',
+        variant: 'destructive',
+      });
     }
   };
 

@@ -41,15 +41,20 @@ export function InventoryClient() {
 
 
   const handleAddItem = async (newItemData: Omit<InventoryItem, 'id'>) => {
+    setIsDialogOpen(false);
+    const tempId = `temp-${Date.now()}`;
+    const newItem = { ...newItemData, id: tempId };
+    setInventory(prev => [...prev, newItem]);
+
     try {
       const newId = await addInventoryItem(newItemData);
-      setInventory(prev => [...prev, { ...newItemData, id: newId }]);
+      setInventory(prev => prev.map(item => item.id === tempId ? { ...newItem, id: newId } : item));
       toast({ title: 'Éxito', description: 'Ítem añadido correctamente.' });
-      setIsDialogOpen(false);
     } catch (error) {
+      setInventory(prev => prev.filter(item => item.id !== tempId));
       console.error("Error adding item:", error);
       toast({
-        title: 'Error',
+        title: 'Error al Añadir',
         description: 'No se pudo añadir el ítem.',
         variant: 'destructive',
       });
@@ -85,7 +90,7 @@ export function InventoryClient() {
             <DialogHeader>
               <DialogTitle>Add New Inventory Item</DialogTitle>
             </DialogHeader>
-            <ItemForm onSubmit={handleAddItem} />
+            <ItemForm onSubmit={handleAddItem} onClose={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>

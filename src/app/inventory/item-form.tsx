@@ -18,9 +18,10 @@ const formSchema = z.object({
 
 type ItemFormProps = {
   onSubmit: (data: Omit<InventoryItem, 'id'>) => void;
+  onClose: () => void;
 };
 
-export function ItemForm({ onSubmit }: ItemFormProps) {
+export function ItemForm({ onSubmit, onClose }: ItemFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -93,7 +94,14 @@ export function ItemForm({ onSubmit }: ItemFormProps) {
             )}
           />
         </div>
-        <Button type="submit" className="w-full">Add Item</Button>
+        <div className="flex justify-end gap-2 pt-4">
+           <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+            </Button>
+            <Button type="submit">
+                Añadir Item
+            </Button>
+        </div>
       </form>
     </Form>
   );

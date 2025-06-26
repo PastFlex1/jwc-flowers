@@ -65,24 +65,43 @@ export function ProvinciasClient() {
   };
 
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
-    try {
-      if (provinciaData.id) {
-        await updateProvincia(provinciaData.id, provinciaData);
-        setProvincias(prev => prev.map(p => p.id === provinciaData.id ? (provinciaData as Provincia) : p));
+    handleCloseDialog();
+
+    if (provinciaData.id) {
+      const originalProvincias = [...provincias];
+      const updatedProvincia = provinciaData as Provincia;
+      setProvincias(prev => prev.map(p => p.id === updatedProvincia.id ? updatedProvincia : p));
+
+      try {
+        await updateProvincia(updatedProvincia.id, updatedProvincia);
         toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
-      } else {
-        const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
-        setProvincias(prev => [...prev, { ...provinciaData, id: newId } as Provincia]);
-        toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
+      } catch (error) {
+        setProvincias(originalProvincias);
+        console.error("Error updating provincia:", error);
+        toast({
+          title: 'Error de Actualización',
+          description: 'No se pudo actualizar la provincia.',
+          variant: 'destructive',
+        });
       }
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo guardar la provincia.',
-        variant: 'destructive',
-      });
+    } else {
+      const tempId = `temp-${Date.now()}`;
+      const newProvincia = { ...provinciaData, id: tempId } as Provincia;
+      setProvincias(prev => [...prev, newProvincia]);
+
+      try {
+        const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
+        setProvincias(prev => prev.map(p => p.id === tempId ? { ...newProvincia, id: newId } : p));
+        toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
+      } catch (error) {
+        setProvincias(prev => prev.filter(p => p.id !== tempId));
+        console.error("Error adding provincia:", error);
+        toast({
+          title: 'Error al Añadir',
+          description: 'No se pudo guardar la provincia.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -91,20 +110,25 @@ export function ProvinciasClient() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (provinciaToDelete) {
-      try {
-        await deleteProvincia(provinciaToDelete.id);
-        setProvincias(prev => prev.filter(p => p.id !== provinciaToDelete.id));
-        toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
-        setProvinciaToDelete(null);
-      } catch (error) {
-        console.error("Error deleting provincia:", error);
-        toast({
-          title: 'Error',
-          description: 'No se pudo eliminar la provincia.',
-          variant: 'destructive',
-        });
-      }
+    if (!provinciaToDelete) return;
+
+    const originalProvincias = [...provincias];
+    const idToDelete = provinciaToDelete.id;
+
+    setProvincias(prev => prev.filter(p => p.id !== idToDelete));
+    setProvinciaToDelete(null);
+
+    try {
+      await deleteProvincia(idToDelete);
+      toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
+    } catch (error) {
+      setProvincias(originalProvincias);
+      console.error("Error deleting provincia:", error);
+      toast({
+        title: 'Error al Eliminar',
+        description: 'No se pudo eliminar la provincia.',
+        variant: 'destructive',
+      });
     }
   };
   
