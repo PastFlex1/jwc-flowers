@@ -1,5 +1,6 @@
 import type {NextConfig} from 'next';
 
+// Cache-busting comment to force a reload of environment variables.
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
