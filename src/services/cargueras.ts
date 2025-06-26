@@ -11,8 +11,6 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
-const carguerasCollection = collection(db, 'cargueras');
-
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Carguera => {
   const data = snapshot.data();
   return {
@@ -23,21 +21,27 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Carguera 
 };
 
 export async function getCargueras(): Promise<Carguera[]> {
+  if (!db) return [];
+  const carguerasCollection = collection(db, 'cargueras');
   const snapshot = await getDocs(carguerasCollection);
   return snapshot.docs.map(fromFirestore);
 }
 
 export async function addCarguera(cargueraData: Omit<Carguera, 'id'>): Promise<string> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+  const carguerasCollection = collection(db, 'cargueras');
   const docRef = await addDoc(carguerasCollection, cargueraData);
   return docRef.id;
 }
 
 export async function updateCarguera(id: string, cargueraData: Partial<Omit<Carguera, 'id'>>): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const cargueraDoc = doc(db, 'cargueras', id);
   await updateDoc(cargueraDoc, cargueraData);
 }
 
 export async function deleteCarguera(id: string): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const cargueraDoc = doc(db, 'cargueras', id);
   await deleteDoc(cargueraDoc);
 }

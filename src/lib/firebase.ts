@@ -14,7 +14,21 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase for SSR and SSG, preventing re-initialization
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+let app;
+let db;
+
+// Check if all firebase config keys are provided
+const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!value && !value.includes('YOUR_'));
+
+if (isFirebaseConfigured) {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    db = getFirestore(app);
+} else {
+    console.warn("Firebase configuration is incomplete. Please check your .env file.");
+    // Provide mock/dummy instances if not configured
+    app = null;
+    db = null;
+}
+
 
 export { app, db };

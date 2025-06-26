@@ -11,8 +11,6 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
-const consignatariosCollection = collection(db, 'consignatarios');
-
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Consignatario => {
   const data = snapshot.data();
   return {
@@ -24,21 +22,27 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Consignat
 };
 
 export async function getConsignatarios(): Promise<Consignatario[]> {
+  if (!db) return [];
+  const consignatariosCollection = collection(db, 'consignatarios');
   const snapshot = await getDocs(consignatariosCollection);
   return snapshot.docs.map(fromFirestore);
 }
 
 export async function addConsignatario(consignatarioData: Omit<Consignatario, 'id'>): Promise<string> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+  const consignatariosCollection = collection(db, 'consignatarios');
   const docRef = await addDoc(consignatariosCollection, consignatarioData);
   return docRef.id;
 }
 
 export async function updateConsignatario(id: string, consignatarioData: Partial<Omit<Consignatario, 'id'>>): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const consignatarioDoc = doc(db, 'consignatarios', id);
   await updateDoc(consignatarioDoc, consignatarioData);
 }
 
 export async function deleteConsignatario(id: string): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const consignatarioDoc = doc(db, 'consignatarios', id);
   await deleteDoc(consignatarioDoc);
 }

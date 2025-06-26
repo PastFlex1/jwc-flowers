@@ -11,8 +11,6 @@ import {
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 
-const fincasCollection = collection(db, 'fincas');
-
 // Helper function to convert a Firestore document to our Finca type
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Finca => {
   const data = snapshot.data();
@@ -31,6 +29,8 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Finca => 
  * @returns A promise that resolves to an array of Finca objects.
  */
 export async function getFincas(): Promise<Finca[]> {
+  if (!db) return [];
+  const fincasCollection = collection(db, 'fincas');
   const snapshot = await getDocs(fincasCollection);
   return snapshot.docs.map(fromFirestore);
 }
@@ -41,6 +41,8 @@ export async function getFincas(): Promise<Finca[]> {
  * @returns A promise that resolves to the new document's id.
  */
 export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+  const fincasCollection = collection(db, 'fincas');
   const docRef = await addDoc(fincasCollection, fincaData);
   return docRef.id;
 }
@@ -52,6 +54,7 @@ export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
  * @returns A promise that resolves when the update is complete.
  */
 export async function updateFinca(id: string, fincaData: Partial<Omit<Finca, 'id'>>): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const fincaDoc = doc(db, 'fincas', id);
   await updateDoc(fincaDoc, fincaData);
 }
@@ -62,6 +65,7 @@ export async function updateFinca(id: string, fincaData: Partial<Omit<Finca, 'id
  * @returns A promise that resolves when the deletion is complete.
  */
 export async function deleteFinca(id: string): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const fincaDoc = doc(db, 'fincas', id);
   await deleteDoc(fincaDoc);
 }

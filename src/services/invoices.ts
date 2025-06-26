@@ -14,8 +14,6 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 
-const invoicesCollection = collection(db, 'invoices');
-
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Invoice => {
   const data = snapshot.data();
   if (!data) throw new Error("Document data not found");
@@ -48,11 +46,14 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
 };
 
 export async function getInvoices(): Promise<Invoice[]> {
+  if (!db) return [];
+  const invoicesCollection = collection(db, 'invoices');
   const snapshot = await getDocs(invoicesCollection);
   return snapshot.docs.map(fromFirestore);
 }
 
 export async function getInvoiceById(id: string): Promise<Invoice | null> {
+  if (!db) return null;
   const invoiceDoc = doc(db, 'invoices', id);
   const snapshot = await getDoc(invoiceDoc);
   if (snapshot.exists()) {
@@ -62,6 +63,8 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
 }
 
 export async function addInvoice(invoiceData: Omit<Invoice, 'id' | 'status'>): Promise<string> {
+   if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+   const invoicesCollection = collection(db, 'invoices');
    const dataWithStatus = {
     ...invoiceData,
     farmDepartureDate: new Date(invoiceData.farmDepartureDate),
@@ -73,11 +76,13 @@ export async function addInvoice(invoiceData: Omit<Invoice, 'id' | 'status'>): P
 }
 
 export async function updateInvoice(id: string, invoiceData: Partial<Omit<Invoice, 'id'>>): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const invoiceDoc = doc(db, 'invoices', id);
   await updateDoc(invoiceDoc, invoiceData);
 }
 
 export async function deleteInvoice(id: string): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const invoiceDoc = doc(db, 'invoices', id);
   await deleteDoc(invoiceDoc);
 }
