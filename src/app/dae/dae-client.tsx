@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -29,7 +28,6 @@ export function DaeClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchDaes = useCallback(async () => {
@@ -56,34 +54,54 @@ export function DaeClient() {
   };
 
   const handleCloseDialog = () => {
-    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingDae(null);
   };
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (daeData.id) {
+    handleCloseDialog();
+    const originalDaes = [...daes];
+
+    if (daeData.id) {
+      // Optimistic update
+      const updatedDaes = daes.map(d => d.id === daeData.id ? { ...d, ...daeData } : d);
+      setDaes(updatedDaes as Dae[]);
+
+      try {
         await updateDae(daeData.id, daeData as Dae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
-      } else {
-        await addDae(daeData as Omit<Dae, 'id'>);
-        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+      } catch (error) {
+        setDaes(originalDaes);
+        console.error("Error updating DAE:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Actualizar',
+          description: `No se pudo actualizar el DAE: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
       }
-      await fetchDaes();
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error saving DAE:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el DAE: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Optimistic add
+      const tempId = `temp-${Date.now()}`;
+      const newDae = { ...daeData, id: tempId } as Dae;
+      setDaes(prev => [...prev, newDae]);
+
+      try {
+        const newId = await addDae(daeData as Omit<Dae, 'id'>);
+        setDaes(prev => prev.map(d => d.id === tempId ? { ...newDae, id: newId } : d));
+        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+      } catch (error) {
+        setDaes(originalDaes);
+        console.error("Error adding DAE:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Añadir',
+          description: `No se pudo añadir el DAE: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     }
   };
 
@@ -93,23 +111,27 @@ export function DaeClient() {
 
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
+
+    const originalDaes = [...daes];
     const idToDelete = daeToDelete.id;
+
+    // Optimistic delete
+    setDaes(prev => prev.filter(d => d.id !== idToDelete));
+    setDaeToDelete(null);
 
     try {
       await deleteDae(idToDelete);
       toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
-      await fetchDaes();
     } catch (error) {
+      setDaes(originalDaes);
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar el DAE: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        description: `No se pudo eliminar el DAE: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-      setDaeToDelete(null);
     }
   };
 
@@ -127,9 +149,7 @@ export function DaeClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              if (isSubmitting) e.preventDefault();
-            }}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingDae ? 'Editar DAE' : 'Añadir Nuevo DAE'}</DialogTitle>
             </DialogHeader>
@@ -137,7 +157,6 @@ export function DaeClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingDae}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

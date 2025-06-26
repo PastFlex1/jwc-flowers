@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -29,7 +28,6 @@ export function MarcacionClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchMarcaciones = useCallback(async () => {
@@ -56,34 +54,54 @@ export function MarcacionClient() {
   };
 
   const handleCloseDialog = () => {
-    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingMarcacion(null);
   };
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (marcacionData.id) {
+    handleCloseDialog();
+    const originalMarcaciones = [...marcaciones];
+
+    if (marcacionData.id) {
+      // Optimistic update
+      const updatedMarcaciones = marcaciones.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } : m);
+      setMarcaciones(updatedMarcaciones as Marcacion[]);
+
+      try {
         await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
-      } else {
-        await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+      } catch (error) {
+        setMarcaciones(originalMarcaciones);
+        console.error("Error updating marcacion:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Actualizar',
+          description: `No se pudo actualizar la marcación: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
       }
-      await fetchMarcaciones();
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error saving marcacion:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la marcación: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Optimistic add
+      const tempId = `temp-${Date.now()}`;
+      const newMarcacion = { ...marcacionData, id: tempId } as Marcacion;
+      setMarcaciones(prev => [...prev, newMarcacion]);
+
+      try {
+        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
+        setMarcaciones(prev => prev.map(m => m.id === tempId ? { ...newMarcacion, id: newId } : m));
+        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+      } catch (error) {
+        setMarcaciones(originalMarcaciones);
+        console.error("Error adding marcacion:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Añadir',
+          description: `No se pudo añadir la marcación: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     }
   };
 
@@ -93,23 +111,27 @@ export function MarcacionClient() {
 
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
+    
+    const originalMarcaciones = [...marcaciones];
     const idToDelete = marcacionToDelete.id;
+
+    // Optimistic delete
+    setMarcaciones(prev => prev.filter(m => m.id !== idToDelete));
+    setMarcacionToDelete(null);
 
     try {
       await deleteMarcacion(idToDelete);
       toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
-      await fetchMarcaciones();
     } catch (error) {
+      setMarcaciones(originalMarcaciones);
       console.error("Error deleting marcación:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar la marcación: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        description: `No se pudo eliminar la marcación: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-      setMarcacionToDelete(null);
     }
   };
   
@@ -127,9 +149,7 @@ export function MarcacionClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              if (isSubmitting) e.preventDefault();
-            }}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingMarcacion ? 'Editar Marcación' : 'Añadir Nueva Marcación'}</DialogTitle>
             </DialogHeader>
@@ -137,7 +157,6 @@ export function MarcacionClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingMarcacion}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

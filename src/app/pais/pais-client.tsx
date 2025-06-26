@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -29,7 +28,6 @@ export function PaisClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchPaises = useCallback(async () => {
@@ -50,41 +48,59 @@ export function PaisClient() {
     fetchPaises();
   }, [fetchPaises]);
 
-
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);
     setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
-    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingPais(null);
   };
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (paisData.id) {
+    handleCloseDialog();
+    const originalPaises = [...paises];
+
+    if (paisData.id) {
+      // Optimistic update
+      const updatedPaises = paises.map(p => p.id === paisData.id ? { ...p, ...paisData } : p);
+      setPaises(updatedPaises as Pais[]);
+      try {
         await updatePais(paisData.id, paisData as Pais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
-      } else {
-        await addPais(paisData as Omit<Pais, 'id'>);
-        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+      } catch (error) {
+        setPaises(originalPaises);
+        console.error("Error updating pais:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Actualizar',
+          description: `No se pudo actualizar el país: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
       }
-      await fetchPaises();
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error saving pais:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el país: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Optimistic add
+      const tempId = `temp-${Date.now()}`;
+      const newPais = { ...paisData, id: tempId } as Pais;
+      setPaises(prev => [...prev, newPais]);
+
+      try {
+        const newId = await addPais(paisData as Omit<Pais, 'id'>);
+        setPaises(prev => prev.map(p => p.id === tempId ? { ...newPais, id: newId } : p));
+        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+      } catch (error) {
+        setPaises(originalPaises);
+        console.error("Error adding pais:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Añadir',
+          description: `No se pudo añadir el país: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     }
   };
 
@@ -94,23 +110,27 @@ export function PaisClient() {
 
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
+    
+    const originalPaises = [...paises];
     const idToDelete = paisToDelete.id;
+
+    // Optimistic delete
+    setPaises(prev => prev.filter(p => p.id !== idToDelete));
+    setPaisToDelete(null);
 
     try {
       await deletePais(idToDelete);
       toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
-      await fetchPaises();
     } catch (error) {
+      setPaises(originalPaises);
       console.error("Error deleting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar el país: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        description: `No se pudo eliminar el país: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-        setPaisToDelete(null);
     }
   };
 
@@ -128,9 +148,7 @@ export function PaisClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              if (isSubmitting) e.preventDefault();
-            }}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingPais ? 'Editar País' : 'Añadir Nuevo País'}</DialogTitle>
             </DialogHeader>
@@ -138,7 +156,6 @@ export function PaisClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingPais}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

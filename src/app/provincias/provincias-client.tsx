@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -29,7 +28,6 @@ export function ProvinciasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchProvincias = useCallback(async () => {
@@ -50,41 +48,60 @@ export function ProvinciasClient() {
     fetchProvincias();
   }, [fetchProvincias]);
 
-
   const handleOpenDialog = (provincia: Provincia | null = null) => {
     setEditingProvincia(provincia);
     setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
-    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingProvincia(null);
   };
 
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (provinciaData.id) {
-        await updateProvincia(provinciaData.id, provinciaData as Provincia);
-        toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
-      } else {
-        await addProvincia(provinciaData as Omit<Provincia, 'id'>);
-        toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
-      }
-      await fetchProvincias();
-      handleCloseDialog();
-    } catch (error) {
-       console.error("Error saving provincia:", error);
-       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la provincia: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    handleCloseDialog();
+    const originalProvincias = [...provincias];
+
+    if (provinciaData.id) {
+        // Optimistic update
+        const updatedProvincias = provincias.map(p => p.id === provinciaData.id ? { ...p, ...provinciaData } : p);
+        setProvincias(updatedProvincias as Provincia[]);
+
+        try {
+            await updateProvincia(provinciaData.id, provinciaData as Provincia);
+            toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
+        } catch (error) {
+            setProvincias(originalProvincias);
+            console.error("Error updating provincia:", error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            toast({
+                title: 'Error al Actualizar',
+                description: `No se pudo actualizar la provincia: ${errorMessage}.`,
+                variant: 'destructive',
+                duration: 10000,
+            });
+        }
+    } else {
+        // Optimistic add
+        const tempId = `temp-${Date.now()}`;
+        const newProvincia = { ...provinciaData, id: tempId } as Provincia;
+        setProvincias(prev => [...prev, newProvincia]);
+
+        try {
+            const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
+            setProvincias(prev => prev.map(p => p.id === tempId ? { ...newProvincia, id: newId } : p));
+            toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
+        } catch (error) {
+            setProvincias(originalProvincias);
+            console.error("Error adding provincia:", error);
+            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+            toast({
+                title: 'Error al Añadir',
+                description: `No se pudo añadir la provincia: ${errorMessage}.`,
+                variant: 'destructive',
+                duration: 10000,
+            });
+        }
     }
   };
 
@@ -94,23 +111,27 @@ export function ProvinciasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!provinciaToDelete) return;
+    
+    const originalProvincias = [...provincias];
     const idToDelete = provinciaToDelete.id;
+
+    // Optimistic delete
+    setProvincias(prev => prev.filter(p => p.id !== idToDelete));
+    setProvinciaToDelete(null);
 
     try {
       await deleteProvincia(idToDelete);
       toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
-      await fetchProvincias();
     } catch (error) {
-      console.error("Error deleting provincia:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar la provincia: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setProvinciaToDelete(null);
+        setProvincias(originalProvincias);
+        console.error("Error deleting provincia:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+            title: 'Error al Eliminar',
+            description: `No se pudo eliminar la provincia: ${errorMessage}.`,
+            variant: 'destructive',
+            duration: 10000,
+        });
     }
   };
   
@@ -128,9 +149,7 @@ export function ProvinciasClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              if (isSubmitting) e.preventDefault();
-            }}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingProvincia ? 'Editar Provincia' : 'Añadir Nueva Provincia'}</DialogTitle>
             </DialogHeader>
@@ -138,7 +157,6 @@ export function ProvinciasClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingProvincia}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

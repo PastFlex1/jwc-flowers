@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -26,28 +25,29 @@ import { cargueras as initialCargueras } from '@/lib/mock-data';
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
-  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchCargueras = useCallback(async () => {
     try {
       const carguerasData = await getCargueras();
-      if (carguerasData.length > 0) {
+       if (carguerasData.length > 0) {
         setCargueras(carguerasData);
       } else {
+        // If DB is empty, use the initial mock data
         setCargueras(initialCargueras);
       }
     } catch (error) {
       console.error("Error fetching cargueras:", error);
       toast({
         title: 'Error de Carga',
-        description: 'No se pudieron cargar las cargueras desde la base de datos. Mostrando lista por defecto.',
+        description: 'No se pudieron cargar las cargueras. Mostrando lista por defecto.',
         variant: 'destructive',
       });
+      setCargueras(initialCargueras);
     }
   }, [toast]);
   
@@ -61,34 +61,56 @@ export function CarguerasClient() {
   };
 
   const handleCloseDialog = () => {
-    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingCarguera(null);
   };
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (cargueraData.id) {
+    handleCloseDialog();
+    const originalCargueras = [...cargueras];
+    
+    if (cargueraData.id) {
+      // Optimistic update
+      const updatedCargueras = cargueras.map((c) =>
+        c.id === cargueraData.id ? { ...c, ...(cargueraData as Carguera) } : c
+      );
+      setCargueras(updatedCargueras);
+
+      try {
         await updateCarguera(cargueraData.id, cargueraData as Carguera);
         toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
-      } else {
-        await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+      } catch (error) {
+        setCargueras(originalCargueras);
+        console.error("Error updating carguera:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Actualizar',
+          description: `No se pudo actualizar la carguera: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
       }
-      await fetchCargueras();
-      handleCloseDialog();
-    } catch (error) {
-       console.error("Error saving carguera:", error);
-       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la carguera: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Optimistic add
+      const tempId = `temp-${Date.now()}`;
+      const newCarguera = { ...cargueraData, id: tempId } as Carguera;
+      setCargueras((prev) => [...prev, newCarguera]);
+
+      try {
+        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
+        setCargueras((prev) => prev.map((c) => (c.id === tempId ? { ...newCarguera, id: newId } : c)));
+        toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
+      } catch (error) {
+        setCargueras(originalCargueras);
+        console.error("Error adding carguera:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Añadir',
+          description: `No se pudo añadir la carguera: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     }
   };
 
@@ -98,23 +120,27 @@ export function CarguerasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
+    
+    const originalCargueras = [...cargueras];
     const idToDelete = cargueraToDelete.id;
+
+    // Optimistic delete
+    setCargueras((prev) => prev.filter((c) => c.id !== idToDelete));
+    setCargueraToDelete(null);
 
     try {
       await deleteCarguera(idToDelete);
       toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
-      await fetchCargueras();
     } catch (error) {
+      setCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar la carguera: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        description: `No se pudo eliminar la carguera: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-      setCargueraToDelete(null);
     }
   };
 
@@ -132,9 +158,7 @@ export function CarguerasClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-             if (isSubmitting) e.preventDefault();
-            }}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingCarguera ? 'Editar Carguera' : 'Añadir Nueva Carguera'}</DialogTitle>
             </DialogHeader>
@@ -142,7 +166,6 @@ export function CarguerasClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingCarguera}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

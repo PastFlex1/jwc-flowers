@@ -23,10 +23,9 @@ type CargueraFormProps = {
   onSubmit: (data: CargueraFormData) => void;
   onClose: () => void;
   initialData?: Carguera | null;
-  isSubmitting: boolean;
 };
 
-export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: CargueraFormProps) {
+export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -88,12 +87,11 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Carguera')}
+            <Button type="submit">
+                {initialData ? 'Guardar Cambios' : 'Añadir Carguera'}
             </Button>
         </div>
       </form>

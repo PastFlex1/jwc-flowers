@@ -20,10 +20,9 @@ type PaisFormProps = {
   onSubmit: (data: PaisFormData) => void;
   onClose: () => void;
   initialData?: Pais | null;
-  isSubmitting: boolean;
 };
 
-export function PaisForm({ onSubmit, onClose, initialData, isSubmitting }: PaisFormProps) {
+export function PaisForm({ onSubmit, onClose, initialData }: PaisFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -59,12 +58,11 @@ export function PaisForm({ onSubmit, onClose, initialData, isSubmitting }: PaisF
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir País')}
+            <Button type="submit">
+                {initialData ? 'Guardar Cambios' : 'Añadir País'}
             </Button>
         </div>
       </form>

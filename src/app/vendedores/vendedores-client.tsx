@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -28,7 +27,6 @@ export function VendedoresClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchVendedores = useCallback(async () => {
@@ -55,34 +53,54 @@ export function VendedoresClient() {
   };
 
   const handleCloseDialog = () => {
-    if(isSubmitting) return;
     setIsDialogOpen(false);
     setEditingVendedor(null);
   };
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (vendedorData.id) {
+    handleCloseDialog();
+    const originalVendedores = [...vendedores];
+
+    if (vendedorData.id) {
+      // Optimistic update
+      const updatedVendedores = vendedores.map(v => v.id === vendedorData.id ? { ...v, ...vendedorData } : v);
+      setVendedores(updatedVendedores as Vendedor[]);
+
+      try {
         await updateVendedor(vendedorData.id, vendedorData as Vendedor);
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
-      } else {
-        await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+      } catch (error) {
+        setVendedores(originalVendedores);
+        console.error("Error updating vendedor:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Actualizar',
+          description: `No se pudo actualizar el vendedor: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
       }
-      await fetchVendedores();
-      handleCloseDialog();
-    } catch (error) {
-      console.error("Error saving vendedor:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el vendedor: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      // Optimistic add
+      const tempId = `temp-${Date.now()}`;
+      const newVendedor = { ...vendedorData, id: tempId } as Vendedor;
+      setVendedores(prev => [...prev, newVendedor]);
+      
+      try {
+        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
+        setVendedores(prev => prev.map(v => v.id === tempId ? { ...newVendedor, id: newId } : v));
+        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+      } catch (error) {
+        setVendedores(originalVendedores);
+        console.error("Error adding vendedor:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Añadir',
+          description: `No se pudo añadir el vendedor: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     }
   };
   
@@ -92,23 +110,27 @@ export function VendedoresClient() {
 
   const handleDeleteConfirm = async () => {
     if (!vendedorToDelete) return;
+
+    const originalVendedores = [...vendedores];
     const idToDelete = vendedorToDelete.id;
     
+    // Optimistic delete
+    setVendedores(prev => prev.filter(v => v.id !== idToDelete));
+    setVendedorToDelete(null);
+
     try {
       await deleteVendedor(idToDelete);
       toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
-      await fetchVendedores();
     } catch (error) {
+      setVendedores(originalVendedores);
       console.error("Error deleting vendedor:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar el vendedor: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        description: `No se pudo eliminar el vendedor: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
-    } finally {
-        setVendedorToDelete(null);
     }
   };
   
@@ -126,7 +148,7 @@ export function VendedoresClient() {
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {if(isSubmitting) e.preventDefault()}}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingVendedor ? 'Editar Vendedor' : 'Añadir Nuevo Vendedor'}</DialogTitle>
             </DialogHeader>
@@ -134,7 +156,6 @@ export function VendedoresClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingVendedor}
-              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

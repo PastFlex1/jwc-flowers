@@ -34,10 +34,9 @@ type CustomerFormProps = {
   paises: Pais[];
   cargueras: Carguera[];
   vendedores: Vendedor[];
-  isSubmitting: boolean;
 };
 
-export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, isSubmitting }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -262,12 +261,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             )}
           />
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Cliente')}
+          <Button type="submit">
+              {initialData ? 'Guardar Cambios' : 'Añadir Cliente'}
           </Button>
         </div>
       </form>
