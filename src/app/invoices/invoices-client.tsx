@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,20 +8,53 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, Customer } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
+import { getInvoices } from '@/services/invoices';
+import { getCustomers } from '@/services/customers';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-type InvoicesClientProps = {
-  initialInvoices: Invoice[];
-  customerMap: Record<string, string>;
-};
+export function InvoicesClient() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientProps) {
-  const [invoices] = useState<Invoice[]>(initialInvoices);
-  const [customers] = useState<Record<string, string>>(customerMap);
+  const customerMap = useMemo(() => {
+    return customers.reduce((acc, customer) => {
+      acc[customer.id] = customer.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [customers]);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [invoicesData, customersData] = await Promise.all([
+        getInvoices(),
+        getCustomers(),
+      ]);
+      setInvoices(invoicesData);
+      setCustomers(customersData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las facturas.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getCustomerName = (customerId: string) => {
-    return customers[customerId] || 'Cliente Desconocido';
+    return customerMap[customerId] || 'Cliente Desconocido';
   };
 
   const getInvoiceTotal = (invoice: Invoice) => {
@@ -34,6 +67,30 @@ export function InvoicesClient({ initialInvoices, customerMap }: InvoicesClientP
     return subtotal + tax;
   };
   
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

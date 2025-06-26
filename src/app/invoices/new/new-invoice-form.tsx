@@ -1,13 +1,12 @@
-
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Edit } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, Edit, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -19,8 +18,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { addInvoice } from '@/services/invoices';
+import { getCustomers } from '@/services/customers';
+import { getFincas } from '@/services/fincas';
+import { getVendedores } from '@/services/vendedores';
+import { getCargueras } from '@/services/cargueras';
+import { getPaises } from '@/services/paises';
 
 import type { Customer, Finca, Vendedor, Carguera, Pais, Invoice } from '@/lib/types';
 
@@ -55,18 +60,19 @@ const invoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-type NewInvoiceFormProps = {
-  customers: Customer[];
-  fincas: Finca[];
-  vendedores: Vendedor[];
-  cargueras: Carguera[];
-  paises: Pais[];
-};
-
-export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paises }: NewInvoiceFormProps) {
+export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isHeaderSet, setIsHeaderSet] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Data for dropdowns
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [fincas, setFincas] = useState<Finca[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -81,6 +87,38 @@ export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paise
     control: form.control,
     name: 'items',
   });
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [customersData, fincasData, vendedoresData, carguerasData, paisesData] = await Promise.all([
+        getCustomers(),
+        getFincas(),
+        getVendedores(),
+        getCargueras(),
+        getPaises(),
+      ]);
+      setCustomers(customersData);
+      setFincas(fincasData);
+      setVendedores(vendedoresData);
+      setCargueras(carguerasData);
+      setPaises(paisesData);
+    } catch (error) {
+       console.error("Error fetching data for new invoice:", error);
+       toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos necesarios para crear una factura.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
 
   async function handleHeaderSubmit() {
     const headerFields: (keyof InvoiceFormValues)[] = [
@@ -111,6 +149,7 @@ export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paise
       return;
     }
     
+    setIsSubmitting(true);
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
       ...values,
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -131,6 +170,8 @@ export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paise
         description: 'No se pudo crear la factura. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -151,6 +192,23 @@ export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paise
         title: 'Edición en línea',
         description: 'Puede editar los valores directamente en la fila.',
       });
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-10 w-1/3 mb-2" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <Card>
+          <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(12)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
   
   return (
@@ -358,8 +416,11 @@ export function NewInvoiceForm({ customers, fincas, vendedores, cargueras, paise
 
           {isHeaderSet && (
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => router.push('/invoices')}>Cancelar</Button>
-              <Button type="submit">Guardar Factura</Button>
+              <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando Factura...' : 'Guardar Factura'}
+              </Button>
             </div>
           )}
         </form>

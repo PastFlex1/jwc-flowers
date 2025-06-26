@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { paises } from '@/lib/mock-data';
+import { paises as defaultPaises } from '@/lib/mock-data';
 import type { Carguera } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
@@ -23,9 +23,10 @@ type CargueraFormProps = {
   onSubmit: (data: CargueraFormData) => void;
   onClose: () => void;
   initialData?: Carguera | null;
+  isSubmitting: boolean;
 };
 
-export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormProps) {
+export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: CargueraFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -75,11 +76,9 @@ export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormPro
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {paises.map(pais => (
-                      <SelectItem key={pais.id} value={pais.nombre}>
-                        {pais.nombre}
-                      </SelectItem>
-                    ))}
+                    {/* This is a fallback, in a real app this should be dynamic */}
+                    <SelectItem value="Internacional">Internacional</SelectItem>
+                    <SelectItem value="Nacional">Nacional</SelectItem>
                   </SelectContent>
                 </Select>
               <FormMessage />
@@ -87,11 +86,12 @@ export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormPro
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Carguera'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Carguera')}
             </Button>
         </div>
       </form>

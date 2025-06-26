@@ -21,9 +21,10 @@ type MarcacionFormProps = {
   onSubmit: (data: MarcacionFormData) => void;
   onClose: () => void;
   initialData?: Marcacion | null;
+  isSubmitting: boolean;
 };
 
-export function MarcacionForm({ onSubmit, onClose, initialData }: MarcacionFormProps) {
+export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting }: MarcacionFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -74,11 +75,12 @@ export function MarcacionForm({ onSubmit, onClose, initialData }: MarcacionFormP
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Marcación'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Marcación')}
             </Button>
         </div>
       </form>

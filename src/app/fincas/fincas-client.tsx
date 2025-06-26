@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,22 +17,42 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { addFinca, updateFinca, deleteFinca } from '@/services/fincas';
+import { addFinca, updateFinca, deleteFinca, getFincas } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
-type FincasClientProps = {
-  initialFincas: Finca[];
-};
-
-export function FincasClient({ initialFincas }: FincasClientProps) {
-  const [fincas, setFincas] = useState<Finca[]>(initialFincas);
+export function FincasClient() {
+  const [fincas, setFincas] = useState<Finca[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
+
+  const fetchFincas = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const fincasData = await getFincas();
+      setFincas(fincasData);
+    } catch (error) {
+      console.error("Error fetching fincas:", error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las fincas.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchFincas();
+  }, [fetchFincas]);
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);
@@ -40,54 +60,34 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingFinca(null);
   };
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
-    handleCloseDialog();
-    const originalFincas = [...fincas];
-
-    if (fincaData.id) {
-      // Optimistic update
-      const updatedFincas = fincas.map(f => f.id === fincaData.id ? { ...f, ...fincaData } : f);
-      setFincas(updatedFincas as Finca[]);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (fincaData.id) {
         await updateFinca(fincaData.id, fincaData as Finca);
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
-      } catch (error) {
-        setFincas(originalFincas);
-        console.error("Error updating finca:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar la finca: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newFinca = { ...fincaData, id: tempId } as Finca;
-      setFincas(prev => [...prev, newFinca]);
-
-      try {
-        const newId = await addFinca(fincaData);
-        setFincas(prev => prev.map(f => f.id === tempId ? { ...newFinca, id: newId } : f));
+      } else {
+        await addFinca(fincaData);
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
-      } catch (error) {
-        setFincas(originalFincas);
-        console.error("Error adding finca:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir la finca: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchFincas(); // Refresh data
+    } catch (error) {
+      console.error("Error submitting finca:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la finca: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -98,18 +98,11 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
   const handleDeleteConfirm = async () => {
     if (!fincaToDelete) return;
     
-    const originalFincas = [...fincas];
-    const idToDelete = fincaToDelete.id;
-    
-    // Optimistic delete
-    setFincas(prev => prev.filter(f => f.id !== idToDelete));
-    setFincaToDelete(null);
-
     try {
-      await deleteFinca(idToDelete);
+      await deleteFinca(fincaToDelete.id);
       toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+      await fetchFincas(); // Refresh data
     } catch (error) {
-      setFincas(originalFincas);
       console.error("Error deleting finca:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -118,8 +111,34 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+        setFincaToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -143,6 +162,7 @@ export function FincasClient({ initialFincas }: FincasClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingFinca}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

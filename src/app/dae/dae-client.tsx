@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,22 +17,42 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addDae, updateDae, deleteDae } from '@/services/daes';
+import { addDae, updateDae, deleteDae, getDaes } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
-type DaeClientProps = {
-  initialDaes: Dae[];
-};
-
-export function DaeClient({ initialDaes }: DaeClientProps) {
-  const [daes, setDaes] = useState<Dae[]>(initialDaes);
+export function DaeClient() {
+  const [daes, setDaes] = useState<Dae[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
+
+  const fetchDaes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const daesData = await getDaes();
+      setDaes(daesData);
+    } catch (error) {
+       console.error("Error fetching DAEs:", error);
+       toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los DAEs.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchDaes();
+  }, [fetchDaes]);
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);
@@ -40,54 +60,34 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingDae(null);
   };
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
-    handleCloseDialog();
-    const originalDaes = [...daes];
-
-    if (daeData.id) {
-      // Optimistic update
-      const updatedDaes = daes.map(d => d.id === daeData.id ? { ...d, ...daeData } : d);
-      setDaes(updatedDaes as Dae[]);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (daeData.id) {
         await updateDae(daeData.id, daeData as Dae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
-      } catch (error) {
-        setDaes(originalDaes);
-        console.error("Error updating DAE:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar el DAE: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newDae = { ...daeData, id: tempId } as Dae;
-      setDaes(prev => [...prev, newDae]);
-
-      try {
-        const newId = await addDae(daeData as Omit<Dae, 'id'>);
-        setDaes(prev => prev.map(d => d.id === tempId ? { ...newDae, id: newId } : d));
+      } else {
+        await addDae(daeData as Omit<Dae, 'id'>);
         toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
-      } catch (error) {
-        setDaes(originalDaes);
-        console.error("Error adding DAE:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir el DAE: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchDaes();
+    } catch (error) {
+      console.error("Error submitting DAE:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el DAE: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,19 +97,11 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
 
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
-
-    const originalDaes = [...daes];
-    const idToDelete = daeToDelete.id;
-
-    // Optimistic delete
-    setDaes(prev => prev.filter(d => d.id !== idToDelete));
-    setDaeToDelete(null);
-
     try {
-      await deleteDae(idToDelete);
+      await deleteDae(daeToDelete.id);
       toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+      await fetchDaes();
     } catch (error) {
-      setDaes(originalDaes);
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -118,8 +110,34 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+        setDaeToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -143,6 +161,7 @@ export function DaeClient({ initialDaes }: DaeClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingDae}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

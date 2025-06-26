@@ -25,9 +25,10 @@ type ConsignatarioFormProps = {
   initialData?: Consignatario | null;
   paises: Pais[];
   customers: Customer[];
+  isSubmitting: boolean;
 };
 
-export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, customers }: ConsignatarioFormProps) {
+export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, customers, isSubmitting }: ConsignatarioFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -115,11 +116,12 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Consignatario'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Consignatario')}
             </Button>
         </div>
       </form>

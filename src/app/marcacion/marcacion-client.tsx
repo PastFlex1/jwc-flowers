@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,22 +17,42 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
+import { addMarcacion, updateMarcacion, deleteMarcacion, getMarcaciones } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
-type MarcacionClientProps = {
-  initialMarcaciones: Marcacion[];
-};
-
-export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>(initialMarcaciones);
+export function MarcacionClient() {
+  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
+
+  const fetchMarcaciones = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMarcaciones();
+      setMarcaciones(data);
+    } catch (error) {
+       console.error("Error fetching marcaciones:", error);
+       toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las marcaciones.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchMarcaciones();
+  }, [fetchMarcaciones]);
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);
@@ -40,54 +60,34 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingMarcacion(null);
   };
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
-    handleCloseDialog();
-    const originalMarcaciones = [...marcaciones];
-
-    if (marcacionData.id) {
-      // Optimistic update
-      const updatedMarcaciones = marcaciones.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } : m);
-      setMarcaciones(updatedMarcaciones as Marcacion[]);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (marcacionData.id) {
         await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
-      } catch (error) {
-        setMarcaciones(originalMarcaciones);
-        console.error("Error updating marcacion:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar la marcación: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newMarcacion = { ...marcacionData, id: tempId } as Marcacion;
-      setMarcaciones(prev => [...prev, newMarcacion]);
-
-      try {
-        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        setMarcaciones(prev => prev.map(m => m.id === tempId ? { ...newMarcacion, id: newId } : m));
+      } else {
+        await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
         toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
-      } catch (error) {
-        setMarcaciones(originalMarcaciones);
-        console.error("Error adding marcacion:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir la marcación: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchMarcaciones();
+    } catch (error) {
+      console.error("Error submitting marcacion:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la marcación: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,19 +97,11 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
 
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
-    
-    const originalMarcaciones = [...marcaciones];
-    const idToDelete = marcacionToDelete.id;
-
-    // Optimistic delete
-    setMarcaciones(prev => prev.filter(m => m.id !== idToDelete));
-    setMarcacionToDelete(null);
-
     try {
-      await deleteMarcacion(idToDelete);
+      await deleteMarcacion(marcacionToDelete.id);
       toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+      await fetchMarcaciones();
     } catch (error) {
-      setMarcaciones(originalMarcaciones);
       console.error("Error deleting marcación:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -118,9 +110,35 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+      setMarcacionToDelete(null);
     }
   };
   
+  if (isLoading) {
+     return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -143,6 +161,7 @@ export function MarcacionClient({ initialMarcaciones }: MarcacionClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingMarcacion}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

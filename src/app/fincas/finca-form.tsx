@@ -25,9 +25,10 @@ type FincaFormProps = {
   onSubmit: (data: FincaFormData) => void;
   onClose: () => void;
   initialData?: Finca | null;
+  isSubmitting: boolean;
 };
 
-export function FincaForm({ onSubmit, onClose, initialData }: FincaFormProps) {
+export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: FincaFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -123,11 +124,12 @@ export function FincaForm({ onSubmit, onClose, initialData }: FincaFormProps) {
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Finca'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Finca')}
             </Button>
         </div>
       </form>

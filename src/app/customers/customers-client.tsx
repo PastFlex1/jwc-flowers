@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,25 +16,64 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
+import { addCustomer, updateCustomer, deleteCustomer, getCustomers } from '@/services/customers';
+import { getPaises } from '@/services/paises';
+import { getCargueras } from '@/services/cargueras';
+import { getVendedores } from '@/services/vendedores';
+import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 import { CustomerForm } from './customer-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
-type CustomersClientProps = {
-  initialCustomers: Customer[];
-  paises: Pais[];
-  cargueras: Carguera[];
-  vendedores: Vendedor[];
-};
-
-export function CustomersClient({ initialCustomers, paises, cargueras, vendedores }: CustomersClientProps) {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+export function CustomersClient() {
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { toast } = useToast();
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let carguerasData = await getCargueras();
+      if (carguerasData.length === 0) {
+        carguerasData = defaultCargueras;
+      }
+      
+      const [customersData, paisesData, vendedoresData] = await Promise.all([
+        getCustomers(),
+        getPaises(),
+        getVendedores(),
+      ]);
+
+      setCustomers(customersData);
+      setPaises(paisesData);
+      setCargueras(carguerasData);
+      setVendedores(vendedoresData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos. Verifique sus reglas de seguridad de Firestore.',
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -42,56 +81,34 @@ export function CustomersClient({ initialCustomers, paises, cargueras, vendedore
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingCustomer(null);
   };
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
-    handleCloseDialog();
-    const originalCustomers = [...customers];
-
-    if (customerData.id) {
-      // Optimistic update
-      const updatedCustomers = customers.map(c => 
-        c.id === customerData.id ? { ...c, ...(customerData as Customer) } : c
-      );
-      setCustomers(updatedCustomers);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (customerData.id) {
         await updateCustomer(customerData.id, customerData as Customer);
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
-      } catch (error) {
-        setCustomers(originalCustomers);
-        console.error("Error updating customer:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-            title: 'Error al Actualizar',
-            description: `No se pudo actualizar el cliente: ${errorMessage}.`,
-            variant: 'destructive',
-            duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newCustomer = { ...customerData, id: tempId } as Customer;
-      setCustomers(prev => [...prev, newCustomer]);
-
-      try {
-        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
-        setCustomers(prev => prev.map(c => c.id === tempId ? { ...newCustomer, id: newId } : c));
+      } else {
+        await addCustomer(customerData as Omit<Customer, 'id'>);
         toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
-      } catch (error) {
-        setCustomers(originalCustomers);
-        console.error("Error adding customer:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-            title: 'Error al Añadir',
-            description: `No se pudo añadir el cliente: ${errorMessage}.`,
-            variant: 'destructive',
-            duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchData();
+    } catch (error) {
+      console.error("Error submitting customer:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+          title: 'Error al Guardar',
+          description: `No se pudo guardar el cliente: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -102,18 +119,11 @@ export function CustomersClient({ initialCustomers, paises, cargueras, vendedore
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
 
-    const originalCustomers = [...customers];
-    const idToDelete = customerToDelete.id;
-    
-    // Optimistic delete
-    setCustomers(prev => prev.filter(c => c.id !== idToDelete));
-    setCustomerToDelete(null);
-
     try {
-      await deleteCustomer(idToDelete);
+      await deleteCustomer(customerToDelete.id);
       toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
+      await fetchData();
     } catch (error) {
-      setCustomers(originalCustomers);
       console.error("Error deleting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -122,8 +132,26 @@ export function CustomersClient({ initialCustomers, paises, cargueras, vendedore
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+      setCustomerToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
+             <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <>
@@ -150,6 +178,7 @@ export function CustomersClient({ initialCustomers, paises, cargueras, vendedore
               paises={paises}
               cargueras={cargueras}
               vendedores={vendedores}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

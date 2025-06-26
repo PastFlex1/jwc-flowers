@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,22 +17,46 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
+import { addCarguera, updateCarguera, deleteCarguera, getCargueras } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cargueras as defaultCargueras } from '@/lib/mock-data';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
-type CarguerasClientProps = {
-  initialCargueras: Carguera[];
-};
-
-export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
-  const [cargueras, setCargueras] = useState<Carguera[]>(initialCargueras);
+export function CarguerasClient() {
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
+  
+  const fetchCargueras = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let data = await getCargueras();
+      if (data.length === 0) {
+        data = defaultCargueras;
+      }
+      setCargueras(data);
+    } catch (error) {
+      console.error("Error fetching cargueras:", error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar las cargueras.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchCargueras();
+  }, [fetchCargueras]);
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);
@@ -40,56 +64,34 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingCarguera(null);
   };
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
-    handleCloseDialog();
-    const originalCargueras = [...cargueras];
-    
-    if (cargueraData.id) {
-      // Optimistic update
-      const updatedCargueras = cargueras.map((c) =>
-        c.id === cargueraData.id ? { ...c, ...(cargueraData as Carguera) } : c
-      );
-      setCargueras(updatedCargueras);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (cargueraData.id) {
         await updateCarguera(cargueraData.id, cargueraData as Carguera);
         toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
-      } catch (error) {
-        setCargueras(originalCargueras);
-        console.error("Error updating carguera:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar la carguera: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newCarguera = { ...cargueraData, id: tempId } as Carguera;
-      setCargueras((prev) => [...prev, newCarguera]);
-
-      try {
-        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-        setCargueras((prev) => prev.map((c) => (c.id === tempId ? { ...newCarguera, id: newId } : c)));
+      } else {
+        await addCarguera(cargueraData as Omit<Carguera, 'id'>);
         toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
-      } catch (error) {
-        setCargueras(originalCargueras);
-        console.error("Error adding carguera:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir la carguera: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchCargueras();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la carguera: ${errorMessage}. Por favor, revise su conexión y la configuración de Firestore.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -100,18 +102,11 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
     
-    const originalCargueras = [...cargueras];
-    const idToDelete = cargueraToDelete.id;
-
-    // Optimistic delete
-    setCargueras((prev) => prev.filter((c) => c.id !== idToDelete));
-    setCargueraToDelete(null);
-
     try {
-      await deleteCarguera(idToDelete);
+      await deleteCarguera(cargueraToDelete.id);
       toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
+      await fetchCargueras();
     } catch (error) {
-      setCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -120,8 +115,34 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+      setCargueraToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -145,6 +166,7 @@ export function CarguerasClient({ initialCargueras }: CarguerasClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingCarguera}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

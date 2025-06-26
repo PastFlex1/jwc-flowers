@@ -21,9 +21,10 @@ type DaeFormProps = {
   onSubmit: (data: DaeFormData) => void;
   onClose: () => void;
   initialData?: Dae | null;
+  isSubmitting: boolean;
 };
 
-export function DaeForm({ onSubmit, onClose, initialData }: DaeFormProps) {
+export function DaeForm({ onSubmit, onClose, initialData, isSubmitting }: DaeFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -74,11 +75,12 @@ export function DaeForm({ onSubmit, onClose, initialData }: DaeFormProps) {
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir DAE'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir DAE')}
             </Button>
         </div>
       </form>

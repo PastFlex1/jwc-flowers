@@ -20,9 +20,10 @@ type ProvinciaFormProps = {
   onSubmit: (data: ProvinciaFormData) => void;
   onClose: () => void;
   initialData?: Provincia | null;
+  isSubmitting: boolean;
 };
 
-export function ProvinciaForm({ onSubmit, onClose, initialData }: ProvinciaFormProps) {
+export function ProvinciaForm({ onSubmit, onClose, initialData, isSubmitting }: ProvinciaFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -58,11 +59,12 @@ export function ProvinciaForm({ onSubmit, onClose, initialData }: ProvinciaFormP
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Provincia'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Provincia')}
             </Button>
         </div>
       </form>

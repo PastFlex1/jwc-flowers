@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,31 +17,59 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
+import { addConsignatario, updateConsignatario, deleteConsignatario, getConsignatarios } from '@/services/consignatarios';
+import { getPaises } from '@/services/paises';
+import { getCustomers } from '@/services/customers';
 import type { Consignatario, Pais, Customer } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
-type ConsignatariosClientProps = {
-  initialConsignatarios: Consignatario[];
-  paises: Pais[];
-  customers: Customer[];
-  customerMap: Record<string, string>;
-};
-
-export function ConsignatariosClient({
-  initialConsignatarios,
-  paises,
-  customers,
-  customerMap: initialCustomerMap
-}: ConsignatariosClientProps) {
-  const [consignatarios, setConsignatarios] = useState<Consignatario[]>(initialConsignatarios);
-  const [customerMap, setCustomerMap] = useState<Record<string, string>>(initialCustomerMap);
+export function ConsignatariosClient() {
+  const [consignatarios, setConsignatarios] = useState<Consignatario[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
   const { toast } = useToast();
+
+  const customerMap = useMemo(() => {
+    return customers.reduce((acc, customer) => {
+      acc[customer.id] = customer.name;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [customers]);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [consignatariosData, paisesData, customersData] = await Promise.all([
+        getConsignatarios(),
+        getPaises(),
+        getCustomers(),
+      ]);
+      setConsignatarios(consignatariosData);
+      setPaises(paisesData);
+      setCustomers(customersData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos necesarios para esta sección.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenDialog = (consignatario: Consignatario | null = null) => {
     setEditingConsignatario(consignatario);
@@ -49,56 +77,34 @@ export function ConsignatariosClient({
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingConsignatario(null);
   };
 
   const handleFormSubmit = async (formData: ConsignatarioFormData) => {
-    handleCloseDialog();
-    const originalConsignatarios = [...consignatarios];
-
-    if (formData.id) {
-        // Optimistic update
-        const updatedConsignatarios = consignatarios.map((c) =>
-            c.id === formData.id ? { ...c, ...(formData as Consignatario) } : c
-        );
-        setConsignatarios(updatedConsignatarios);
-        
-        try {
-            await updateConsignatario(formData.id, formData as Consignatario);
-            toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
-        } catch (error) {
-            setConsignatarios(originalConsignatarios);
-            console.error("Error updating consignatario:", error);
-            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-            toast({
-                title: 'Error al Actualizar',
-                description: `No se pudo actualizar el consignatario: ${errorMessage}.`,
-                variant: 'destructive',
-                duration: 10000,
-            });
-        }
-    } else {
-        // Optimistic add
-        const tempId = `temp-${Date.now()}`;
-        const newConsignatario = { ...formData, id: tempId } as Consignatario;
-        setConsignatarios(prev => [...prev, newConsignatario]);
-
-        try {
-            const newId = await addConsignatario(formData as Omit<Consignatario, 'id'>);
-            setConsignatarios(prev => prev.map(c => c.id === tempId ? { ...newConsignatario, id: newId } : c));
-            toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
-        } catch (error) {
-            setConsignatarios(originalConsignatarios);
-            console.error("Error adding consignatario:", error);
-            const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-            toast({
-                title: 'Error al Añadir',
-                description: `No se pudo añadir el consignatario: ${errorMessage}.`,
-                variant: 'destructive',
-                duration: 10000,
-            });
-        }
+    setIsSubmitting(true);
+    try {
+      if (formData.id) {
+        await updateConsignatario(formData.id, formData as Consignatario);
+        toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
+      } else {
+        await addConsignatario(formData as Omit<Consignatario, 'id'>);
+        toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
+      }
+      handleCloseDialog();
+      await fetchData();
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el consignatario: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -108,19 +114,11 @@ export function ConsignatariosClient({
 
   const handleDeleteConfirm = async () => {
     if (!consignatarioToDelete) return;
-
-    const originalConsignatarios = [...consignatarios];
-    const idToDelete = consignatarioToDelete.id;
-
-    // Optimistic delete
-    setConsignatarios(prev => prev.filter(c => c.id !== idToDelete));
-    setConsignatarioToDelete(null);
-
     try {
-      await deleteConsignatario(idToDelete);
+      await deleteConsignatario(consignatarioToDelete.id);
       toast({ title: 'Éxito', description: 'Consignatario eliminado correctamente.' });
+      await fetchData();
     } catch (error) {
-        setConsignatarios(originalConsignatarios);
         console.error("Error deleting consignatario:", error);
         const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         toast({
@@ -129,8 +127,34 @@ export function ConsignatariosClient({
           variant: 'destructive',
           duration: 10000,
         });
+    } finally {
+      setConsignatarioToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -156,6 +180,7 @@ export function ConsignatariosClient({
               initialData={editingConsignatario}
               paises={paises}
               customers={customers}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

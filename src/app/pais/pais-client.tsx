@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,22 +17,43 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addPais, updatePais, deletePais } from '@/services/paises';
+import { addPais, updatePais, deletePais, getPaises } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
-type PaisClientProps = {
-  initialPaises: Pais[];
-};
-
-export function PaisClient({ initialPaises }: PaisClientProps) {
-  const [paises, setPaises] = useState<Pais[]>(initialPaises);
+export function PaisClient() {
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
+
+  const fetchPaises = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPaises();
+      setPaises(data);
+    } catch (error) {
+       console.error("Error fetching paises:", error);
+       toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los países.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchPaises();
+  }, [fetchPaises]);
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);
@@ -40,53 +61,34 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if(isSubmitting) return;
     setIsDialogOpen(false);
     setEditingPais(null);
   };
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
-    handleCloseDialog();
-    const originalPaises = [...paises];
-
-    if (paisData.id) {
-      // Optimistic update
-      const updatedPaises = paises.map(p => p.id === paisData.id ? { ...p, ...paisData } : p);
-      setPaises(updatedPaises as Pais[]);
-      try {
+    setIsSubmitting(true);
+    try {
+      if (paisData.id) {
         await updatePais(paisData.id, paisData as Pais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
-      } catch (error) {
-        setPaises(originalPaises);
-        console.error("Error updating pais:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar el país: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newPais = { ...paisData, id: tempId } as Pais;
-      setPaises(prev => [...prev, newPais]);
-
-      try {
-        const newId = await addPais(paisData as Omit<Pais, 'id'>);
-        setPaises(prev => prev.map(p => p.id === tempId ? { ...newPais, id: newId } : p));
+      } else {
+        await addPais(paisData as Omit<Pais, 'id'>);
         toast({ title: 'Éxito', description: 'País añadido correctamente.' });
-      } catch (error) {
-        setPaises(originalPaises);
-        console.error("Error adding pais:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir el país: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchPaises();
+    } catch (error) {
+      console.error("Error submitting pais:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el país: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -97,18 +99,11 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
     
-    const originalPaises = [...paises];
-    const idToDelete = paisToDelete.id;
-
-    // Optimistic delete
-    setPaises(prev => prev.filter(p => p.id !== idToDelete));
-    setPaisToDelete(null);
-
     try {
-      await deletePais(idToDelete);
+      await deletePais(paisToDelete.id);
       toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+      await fetchPaises();
     } catch (error) {
-      setPaises(originalPaises);
       console.error("Error deleting pais:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -117,8 +112,34 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+        setPaisToDelete(null);
     }
   };
+  
+  if (isLoading) {
+    return (
+       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -142,6 +163,7 @@ export function PaisClient({ initialPaises }: PaisClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingPais}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

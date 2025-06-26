@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,22 +16,43 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
+import { addVendedor, updateVendedor, deleteVendedor, getVendedores } from '@/services/vendedores';
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 
-type VendedoresClientProps = {
-  initialVendedores: Vendedor[];
-};
-
-export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
-  const [vendedores, setVendedores] = useState<Vendedor[]>(initialVendedores);
+export function VendedoresClient() {
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
   const { toast } = useToast();
+
+  const fetchVendedores = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getVendedores();
+      setVendedores(data);
+    } catch(error) {
+       console.error("Error fetching vendedores:", error);
+       toast({
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los vendedores.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchVendedores();
+  }, [fetchVendedores]);
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);
@@ -39,54 +60,34 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingVendedor(null);
   };
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
-    handleCloseDialog();
-    const originalVendedores = [...vendedores];
-
-    if (vendedorData.id) {
-      // Optimistic update
-      const updatedVendedores = vendedores.map(v => v.id === vendedorData.id ? { ...v, ...vendedorData } : v);
-      setVendedores(updatedVendedores as Vendedor[]);
-
-      try {
+    setIsSubmitting(true);
+    try {
+      if (vendedorData.id) {
         await updateVendedor(vendedorData.id, vendedorData as Vendedor);
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
-      } catch (error) {
-        setVendedores(originalVendedores);
-        console.error("Error updating vendedor:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Actualizar',
-          description: `No se pudo actualizar el vendedor: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
-      }
-    } else {
-      // Optimistic add
-      const tempId = `temp-${Date.now()}`;
-      const newVendedor = { ...vendedorData, id: tempId } as Vendedor;
-      setVendedores(prev => [...prev, newVendedor]);
-      
-      try {
-        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        setVendedores(prev => prev.map(v => v.id === tempId ? { ...newVendedor, id: newId } : v));
+      } else {
+        await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
         toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
-      } catch (error) {
-        setVendedores(originalVendedores);
-        console.error("Error adding vendedor:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        toast({
-          title: 'Error al Añadir',
-          description: `No se pudo añadir el vendedor: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-        });
       }
+      handleCloseDialog();
+      await fetchVendedores();
+    } catch (error) {
+      console.error("Error submitting vendedor:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el vendedor: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -96,19 +97,11 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
 
   const handleDeleteConfirm = async () => {
     if (!vendedorToDelete) return;
-
-    const originalVendedores = [...vendedores];
-    const idToDelete = vendedorToDelete.id;
-    
-    // Optimistic delete
-    setVendedores(prev => prev.filter(v => v.id !== idToDelete));
-    setVendedorToDelete(null);
-
     try {
-      await deleteVendedor(idToDelete);
+      await deleteVendedor(vendedorToDelete.id);
       toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+      await fetchVendedores();
     } catch (error) {
-      setVendedores(originalVendedores);
       console.error("Error deleting vendedor:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
@@ -117,8 +110,26 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
         variant: 'destructive',
         duration: 10000,
       });
+    } finally {
+      setVendedorToDelete(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-10 w-36" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
+             <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <>
@@ -142,6 +153,7 @@ export function VendedoresClient({ initialVendedores }: VendedoresClientProps) {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingVendedor}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>
