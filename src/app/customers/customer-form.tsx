@@ -9,17 +9,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Customer } from '@/lib/types';
+import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  pais: z.string().min(2, { message: "El país es requerido." }),
+  pais: z.string().min(1, { message: "El país es requerido." }),
   estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
   address: z.string().min(10, { message: "La dirección es muy corta." }),
   email: z.string().email({ message: "Correo electrónico no válido." }),
   phone: z.string().min(7, { message: "El teléfono no es válido." }),
-  agencia: z.string().min(2, { message: "La agencia es requerida." }),
-  vendedor: z.string().min(2, { message: "El vendedor es requerido." }),
+  agencia: z.string().min(1, { message: "La agencia es requerida." }),
+  vendedor: z.string().min(1, { message: "El vendedor es requerido." }),
   plazo: z.coerce.number().refine(val => [8, 15, 30, 45].includes(val), { message: "Plazo no válido." }),
   cupo: z.coerce.number().positive({ message: "El cupo debe ser un número positivo." }),
 });
@@ -30,9 +30,12 @@ type CustomerFormProps = {
   onSubmit: (data: CustomerFormData) => void;
   onClose: () => void;
   initialData?: Customer | null;
+  paises: Pais[];
+  cargueras: Carguera[];
+  vendedores: Vendedor[];
 };
 
-export function CustomerForm({ onSubmit, onClose, initialData }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -100,9 +103,20 @@ export function CustomerForm({ onSubmit, onClose, initialData }: CustomerFormPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel>País</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Ecuador" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un país" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {paises.map(p => (
+                      <SelectItem key={p.id} value={p.nombre}>
+                        {p.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -152,9 +166,20 @@ export function CustomerForm({ onSubmit, onClose, initialData }: CustomerFormPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Agencia</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Agencia A" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione una agencia" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {cargueras.map(c => (
+                      <SelectItem key={c.id} value={c.nombreCarguera}>
+                        {c.nombreCarguera}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -165,9 +190,20 @@ export function CustomerForm({ onSubmit, onClose, initialData }: CustomerFormPro
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Vendedor</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Vendedor 1" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un vendedor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {vendedores.map(v => (
+                      <SelectItem key={v.id} value={v.nombre}>
+                        {v.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

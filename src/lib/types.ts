@@ -94,3 +94,9 @@ export interface Carguera {
   nombreCarguera: string;
   pais: string;
 }
+
+export interface Consignatario {
+  id: string;
+  nombre: string;
+  pais: string;
+}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
@@ -18,35 +17,49 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
-import type { Customer } from '@/lib/types';
+import { getPaises } from '@/services/paises';
+import { getCargueras } from '@/services/cargueras';
+import { getVendedores } from '@/services/vendedores';
+import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
 export function CustomersClient() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [cargueras, setCargueras] = useState<Carguera[]>([]);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { toast } = useToast();
 
-  const fetchCustomers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const customersData = await getCustomers();
+      const [customersData, paisesData, carguerasData, vendedoresData] = await Promise.all([
+        getCustomers(),
+        getPaises(),
+        getCargueras(),
+        getVendedores(),
+      ]);
       setCustomers(customersData);
+      setPaises(paisesData);
+      setCargueras(carguerasData);
+      setVendedores(vendedoresData);
     } catch (error) {
-      console.error("Error fetching customers:", error);
+      console.error("Error fetching data:", error);
       toast({
         title: 'Error de Carga',
-        description: 'No se pudieron cargar los clientes. Verifique sus reglas de seguridad de Firestore.',
+        description: 'No se pudieron cargar los datos necesarios. Verifique sus reglas de seguridad de Firestore.',
         variant: 'destructive',
       });
     }
   }, [toast]);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    fetchData();
+  }, [fetchData]);
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -74,7 +87,7 @@ export function CustomersClient() {
         console.error("Error updating customer:", error);
         toast({
           title: 'Error de Actualización',
-          description: 'No se pudo actualizar el cliente. Verifique sus reglas de seguridad de Firestore.',
+          description: 'No se pudo actualizar el cliente. Revise la consola para más detalles.',
           variant: 'destructive',
         });
       }
@@ -92,7 +105,7 @@ export function CustomersClient() {
         console.error("Error adding customer:", error);
         toast({
           title: 'Error al Añadir',
-          description: 'No se pudo añadir el cliente. Verifique sus reglas de seguridad de Firestore.',
+          description: 'No se pudo añadir el cliente. Revise la consola para más detalles.',
           variant: 'destructive',
         });
       }
@@ -120,7 +133,7 @@ export function CustomersClient() {
       console.error("Error deleting customer:", error);
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el cliente. Verifique sus reglas de seguridad de Firestore.',
+        description: 'No se pudo eliminar el cliente. Revise la consola para más detalles.',
         variant: 'destructive',
       });
     }
@@ -148,6 +161,9 @@ export function CustomersClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingCustomer}
+              paises={paises}
+              cargueras={cargueras}
+              vendedores={vendedores}
             />
           </DialogContent>
         </Dialog>
