@@ -33,6 +33,7 @@ export function ConsignatariosClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -72,48 +73,34 @@ export function ConsignatariosClient() {
   };
 
   const handleCloseDialog = () => {
+    if(isSubmitting) return;
     setIsDialogOpen(false);
     setEditingConsignatario(null);
   };
 
   const handleFormSubmit = async (formData: ConsignatarioFormData) => {
-    handleCloseDialog();
-    
-    if (formData.id) {
-      const originalData = [...consignatarios];
-      const updatedData = formData as Consignatario;
-      setConsignatarios(prev => prev.map(c => c.id === updatedData.id ? updatedData : c));
-
-      try {
-        await updateConsignatario(updatedData.id, updatedData);
+    setIsSubmitting(true);
+    try {
+      if (formData.id) {
+        await updateConsignatario(formData.id, formData as Consignatario);
         toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
-      } catch (error) {
-        setConsignatarios(originalData);
-        console.error("Error updating consignatario:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar el consignatario. Revise la consola para más detalles.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newData = { ...formData, id: tempId } as Consignatario;
-      setConsignatarios(prev => [...prev, newData]);
-
-      try {
-        const newId = await addConsignatario(formData as Omit<Consignatario, 'id'>);
-        setConsignatarios(prev => prev.map(c => c.id === tempId ? { ...newData, id: newId } : c));
+      } else {
+        await addConsignatario(formData as Omit<Consignatario, 'id'>);
         toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
-      } catch (error) {
-        setConsignatarios(prev => prev.filter(c => c.id !== tempId));
-        console.error("Error adding consignatario:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo añadir el consignatario. Revise la consola para más detalles.',
-          variant: 'destructive',
-        });
       }
+      await fetchData();
+      handleCloseDialog();
+    } catch (error) {
+        console.error("Error saving consignatario:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Guardar',
+          description: `No se pudo guardar el consignatario: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -123,24 +110,23 @@ export function ConsignatariosClient() {
 
   const handleDeleteConfirm = async () => {
     if (!consignatarioToDelete) return;
-
-    const originalData = [...consignatarios];
     const idToDelete = consignatarioToDelete.id;
-
-    setConsignatarios(prev => prev.filter(c => c.id !== idToDelete));
-    setConsignatarioToDelete(null);
 
     try {
       await deleteConsignatario(idToDelete);
       toast({ title: 'Éxito', description: 'Consignatario eliminado correctamente.' });
+      await fetchData();
     } catch (error) {
-      setConsignatarios(originalData);
-      console.error("Error deleting consignatario:", error);
-      toast({
-        title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el consignatario. Revise la consola para más detalles.',
-        variant: 'destructive',
-      });
+        console.error("Error deleting consignatario:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        toast({
+          title: 'Error al Eliminar',
+          description: `No se pudo eliminar el consignatario: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+    } finally {
+        setConsignatarioToDelete(null);
     }
   };
 
@@ -157,9 +143,9 @@ export function ConsignatariosClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingConsignatario ? 'Editar Consignatario' : 'Añadir Nuevo Consignatario'}</DialogTitle>
@@ -170,6 +156,7 @@ export function ConsignatariosClient() {
               initialData={editingConsignatario}
               paises={paises}
               customers={customers}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

@@ -29,6 +29,7 @@ export function DaeClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchDaes = useCallback(async () => {
@@ -55,48 +56,34 @@ export function DaeClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingDae(null);
   };
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
-    handleCloseDialog();
-    
-    if (daeData.id) {
-      const originalDaes = [...daes];
-      const updatedDae = daeData as Dae;
-      setDaes(prev => prev.map(d => d.id === updatedDae.id ? updatedDae : d));
-
-      try {
-        await updateDae(updatedDae.id, updatedDae);
+    setIsSubmitting(true);
+    try {
+      if (daeData.id) {
+        await updateDae(daeData.id, daeData as Dae);
         toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
-      } catch (error) {
-        setDaes(originalDaes);
-        console.error("Error updating DAE:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar el DAE. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newDae = { ...daeData, id: tempId } as Dae;
-      setDaes(prev => [...prev, newDae]);
-
-      try {
-        const newId = await addDae(daeData as Omit<Dae, 'id'>);
-        setDaes(prev => prev.map(d => d.id === tempId ? { ...newDae, id: newId } : d));
+      } else {
+        await addDae(daeData as Omit<Dae, 'id'>);
         toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
-      } catch (error) {
-        setDaes(prev => prev.filter(d => d.id !== tempId));
-        console.error("Error adding DAE:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo añadir el DAE. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchDaes();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving DAE:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el DAE: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -106,24 +93,23 @@ export function DaeClient() {
 
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
-
-    const originalDaes = [...daes];
     const idToDelete = daeToDelete.id;
-
-    setDaes(prev => prev.filter(d => d.id !== idToDelete));
-    setDaeToDelete(null);
 
     try {
       await deleteDae(idToDelete);
       toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+      await fetchDaes();
     } catch (error) {
-      setDaes(originalDaes);
       console.error("Error deleting DAE:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el DAE. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar el DAE: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+      setDaeToDelete(null);
     }
   };
 
@@ -140,9 +126,9 @@ export function DaeClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingDae ? 'Editar DAE' : 'Añadir Nuevo DAE'}</DialogTitle>
@@ -151,6 +137,7 @@ export function DaeClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingDae}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

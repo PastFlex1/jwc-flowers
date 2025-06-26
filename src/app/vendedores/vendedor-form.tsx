@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { Vendedor } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -20,9 +21,10 @@ type VendedorFormProps = {
   onSubmit: (data: VendedorFormData) => void;
   onClose: () => void;
   initialData?: Vendedor | null;
+  isSubmitting: boolean;
 };
 
-export function VendedorForm({ onSubmit, onClose, initialData }: VendedorFormProps) {
+export function VendedorForm({ onSubmit, onClose, initialData, isSubmitting }: VendedorFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -93,11 +95,12 @@ export function VendedorForm({ onSubmit, onClose, initialData }: VendedorFormPro
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Vendedor'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Vendedor')}
             </Button>
         </div>
       </form>

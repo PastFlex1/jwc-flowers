@@ -30,6 +30,7 @@ export function CarguerasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchCargueras = useCallback(async () => {
@@ -37,6 +38,8 @@ export function CarguerasClient() {
       const carguerasData = await getCargueras();
       if (carguerasData.length > 0) {
         setCargueras(carguerasData);
+      } else {
+        setCargueras(initialCargueras);
       }
     } catch (error) {
       console.error("Error fetching cargueras:", error);
@@ -58,48 +61,34 @@ export function CarguerasClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingCarguera(null);
   };
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
-    handleCloseDialog();
-    
-    if (cargueraData.id) {
-      const originalCargueras = [...cargueras];
-      const updatedCarguera = cargueraData as Carguera;
-      setCargueras(prev => prev.map(c => c.id === updatedCarguera.id ? updatedCarguera : c));
-
-      try {
-        await updateCarguera(updatedCarguera.id, updatedCarguera);
+    setIsSubmitting(true);
+    try {
+      if (cargueraData.id) {
+        await updateCarguera(cargueraData.id, cargueraData as Carguera);
         toast({ title: 'Éxito', description: 'Carguera actualizada correctamente.' });
-      } catch (error) {
-        setCargueras(originalCargueras);
-        console.error("Error updating carguera:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar la carguera. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newCarguera = { ...cargueraData, id: tempId } as Carguera;
-      setCargueras(prev => [...prev, newCarguera]);
-
-      try {
-        const newId = await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-        setCargueras(prev => prev.map(c => c.id === tempId ? { ...newCarguera, id: newId } : c));
+      } else {
+        await addCarguera(cargueraData as Omit<Carguera, 'id'>);
         toast({ title: 'Éxito', description: 'Carguera añadida correctamente.' });
-      } catch (error) {
-        setCargueras(prev => prev.filter(c => c.id !== tempId));
-        console.error("Error adding carguera:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo añadir la carguera. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchCargueras();
+      handleCloseDialog();
+    } catch (error) {
+       console.error("Error saving carguera:", error);
+       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+       toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la carguera: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,24 +98,23 @@ export function CarguerasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
-
-    const originalCargueras = [...cargueras];
     const idToDelete = cargueraToDelete.id;
-
-    setCargueras(prev => prev.filter(c => c.id !== idToDelete));
-    setCargueraToDelete(null);
 
     try {
       await deleteCarguera(idToDelete);
       toast({ title: 'Éxito', description: 'Carguera eliminada correctamente.' });
+      await fetchCargueras();
     } catch (error) {
-      setCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la carguera. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar la carguera: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+      setCargueraToDelete(null);
     }
   };
 
@@ -143,9 +131,9 @@ export function CarguerasClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+             if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingCarguera ? 'Editar Carguera' : 'Añadir Nueva Carguera'}</DialogTitle>
@@ -154,6 +142,7 @@ export function CarguerasClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingCarguera}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

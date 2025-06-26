@@ -34,6 +34,7 @@ export function CustomersClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -70,48 +71,34 @@ export function CustomersClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingCustomer(null);
   };
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
-    const isEditing = !!customerData.id;
-    handleCloseDialog();
-    
-    if (isEditing) {
-      const updatedCustomer = customerData as Customer;
-      setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
-      
-      try {
-        await updateCustomer(updatedCustomer.id, updatedCustomer);
+    setIsSubmitting(true);
+    try {
+      if (customerData.id) {
+        await updateCustomer(customerData.id, customerData as Customer);
         toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
-      } catch (error) {
-        console.error("Error updating customer:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar el cliente. Revise la consola para más detalles.',
-          variant: 'destructive',
-        });
-        fetchData(); // Re-fetch to revert optimistic update
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newCustomer = { ...customerData, id: tempId } as Customer;
-      setCustomers(prev => [...prev, newCustomer]);
-
-      try {
-        const newId = await addCustomer(customerData as Omit<Customer, 'id'>);
-        setCustomers(prev => prev.map(c => c.id === tempId ? { ...newCustomer, id: newId } : c));
+      } else {
+        await addCustomer(customerData as Omit<Customer, 'id'>);
         toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
-      } catch (error) {
-        console.error("Error adding customer:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo añadir el cliente. Revise la consola para más detalles.',
-          variant: 'destructive',
-        });
-        setCustomers(prev => prev.filter(c => c.id !== tempId)); // Revert optimistic update
       }
+      await fetchData();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el cliente: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -122,22 +109,22 @@ export function CustomersClient() {
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
     const idToDelete = customerToDelete.id;
-    const originalCustomers = [...customers];
-    
-    setCustomers(prev => prev.filter(c => c.id !== idToDelete));
-    setCustomerToDelete(null);
     
     try {
       await deleteCustomer(idToDelete);
       toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
+      await fetchData();
     } catch (error) {
       console.error("Error deleting customer:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el cliente. Revise la consola para más detalles.',
+        description: `No se pudo eliminar el cliente: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
-      setCustomers(originalCustomers); // Revert optimistic update
+    } finally {
+      setCustomerToDelete(null);
     }
   };
   
@@ -154,8 +141,8 @@ export function CustomersClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-2xl" onInteractOutside={(e) => e.preventDefault()}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+          <DialogContent className="sm:max-w-2xl" onInteractOutside={(e) => {if(isSubmitting) e.preventDefault()}}>
             <DialogHeader>
               <DialogTitle>{editingCustomer ? 'Editar Cliente' : 'Añadir Nuevo Cliente'}</DialogTitle>
             </DialogHeader>
@@ -166,6 +153,7 @@ export function CustomersClient() {
               paises={paises}
               cargueras={cargueras}
               vendedores={vendedores}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

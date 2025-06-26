@@ -29,6 +29,7 @@ export function FincasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchFincas = useCallback(async () => {
@@ -55,48 +56,34 @@ export function FincasClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingFinca(null);
   };
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
-    handleCloseDialog();
-    
-    if (fincaData.id) {
-      const originalFincas = [...fincas];
-      const updatedFinca = fincaData as Finca;
-      setFincas(prev => prev.map(f => f.id === updatedFinca.id ? updatedFinca : f));
-
-      try {
-        await updateFinca(updatedFinca.id, updatedFinca);
+    setIsSubmitting(true);
+    try {
+      if (fincaData.id) {
+        await updateFinca(fincaData.id, fincaData as Finca);
         toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
-      } catch (error) {
-        setFincas(originalFincas);
-        console.error("Error updating finca:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar la finca. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newFinca = { ...fincaData, id: tempId } as Finca;
-      setFincas(prev => [...prev, newFinca]);
-
-      try {
-        const newId = await addFinca(fincaData);
-        setFincas(prev => prev.map(f => f.id === tempId ? { ...newFinca, id: newId } : f));
+      } else {
+        await addFinca(fincaData);
         toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
-      } catch (error) {
-        setFincas(prev => prev.filter(f => f.id !== tempId));
-        console.error("Error adding finca:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo añadir la finca. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchFincas();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving finca:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la finca: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -106,24 +93,22 @@ export function FincasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!fincaToDelete) return;
-
-    const originalFincas = [...fincas];
     const idToDelete = fincaToDelete.id;
-
-    setFincas(prev => prev.filter(f => f.id !== idToDelete));
-    setFincaToDelete(null);
-
     try {
       await deleteFinca(idToDelete);
       toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+      await fetchFincas();
     } catch (error) {
-      setFincas(originalFincas);
       console.error("Error deleting finca:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la finca. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar la finca: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+      setFincaToDelete(null);
     }
   };
 
@@ -140,9 +125,9 @@ export function FincasClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingFinca ? 'Editar Finca' : 'Añadir Nueva Finca'}</DialogTitle>
@@ -151,6 +136,7 @@ export function FincasClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingFinca}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

@@ -29,6 +29,7 @@ export function ProvinciasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchProvincias = useCallback(async () => {
@@ -56,48 +57,34 @@ export function ProvinciasClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingProvincia(null);
   };
 
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
-    handleCloseDialog();
-
-    if (provinciaData.id) {
-      const originalProvincias = [...provincias];
-      const updatedProvincia = provinciaData as Provincia;
-      setProvincias(prev => prev.map(p => p.id === updatedProvincia.id ? updatedProvincia : p));
-
-      try {
-        await updateProvincia(updatedProvincia.id, updatedProvincia);
+    setIsSubmitting(true);
+    try {
+      if (provinciaData.id) {
+        await updateProvincia(provinciaData.id, provinciaData as Provincia);
         toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
-      } catch (error) {
-        setProvincias(originalProvincias);
-        console.error("Error updating provincia:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar la provincia. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newProvincia = { ...provinciaData, id: tempId } as Provincia;
-      setProvincias(prev => [...prev, newProvincia]);
-
-      try {
-        const newId = await addProvincia(provinciaData as Omit<Provincia, 'id'>);
-        setProvincias(prev => prev.map(p => p.id === tempId ? { ...newProvincia, id: newId } : p));
+      } else {
+        await addProvincia(provinciaData as Omit<Provincia, 'id'>);
         toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
-      } catch (error) {
-        setProvincias(prev => prev.filter(p => p.id !== tempId));
-        console.error("Error adding provincia:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo guardar la provincia. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchProvincias();
+      handleCloseDialog();
+    } catch (error) {
+       console.error("Error saving provincia:", error);
+       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+       toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la provincia: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,24 +94,23 @@ export function ProvinciasClient() {
 
   const handleDeleteConfirm = async () => {
     if (!provinciaToDelete) return;
-
-    const originalProvincias = [...provincias];
     const idToDelete = provinciaToDelete.id;
-
-    setProvincias(prev => prev.filter(p => p.id !== idToDelete));
-    setProvinciaToDelete(null);
 
     try {
       await deleteProvincia(idToDelete);
       toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
+      await fetchProvincias();
     } catch (error) {
-      setProvincias(originalProvincias);
       console.error("Error deleting provincia:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la provincia. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar la provincia: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+      setProvinciaToDelete(null);
     }
   };
   
@@ -141,9 +127,9 @@ export function ProvinciasClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingProvincia ? 'Editar Provincia' : 'Añadir Nueva Provincia'}</DialogTitle>
@@ -152,6 +138,7 @@ export function ProvinciasClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingProvincia}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

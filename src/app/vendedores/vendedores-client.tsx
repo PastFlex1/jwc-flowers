@@ -28,6 +28,7 @@ export function VendedoresClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchVendedores = useCallback(async () => {
@@ -54,48 +55,34 @@ export function VendedoresClient() {
   };
 
   const handleCloseDialog = () => {
+    if(isSubmitting) return;
     setIsDialogOpen(false);
     setEditingVendedor(null);
   };
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
-    handleCloseDialog();
-    
-    if (vendedorData.id) {
-      const originalVendedores = [...vendedores];
-      const updatedVendedor = vendedorData as Vendedor;
-      setVendedores(prev => prev.map(v => v.id === updatedVendedor.id ? updatedVendedor : v));
-
-      try {
-        await updateVendedor(updatedVendedor.id, updatedVendedor);
+    setIsSubmitting(true);
+    try {
+      if (vendedorData.id) {
+        await updateVendedor(vendedorData.id, vendedorData as Vendedor);
         toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
-      } catch (error) {
-        setVendedores(originalVendedores);
-        console.error("Error updating vendedor:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar el vendedor. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newVendedor = { ...vendedorData, id: tempId } as Vendedor;
-      setVendedores(prev => [...prev, newVendedor]);
-
-      try {
-        const newId = await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        setVendedores(prev => prev.map(v => v.id === tempId ? { ...newVendedor, id: newId } : v));
+      } else {
+        await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
         toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
-      } catch (error) {
-        setVendedores(prev => prev.filter(v => v.id !== tempId));
-        console.error("Error adding vendedor:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo guardar el vendedor. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchVendedores();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving vendedor:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el vendedor: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -105,24 +92,23 @@ export function VendedoresClient() {
 
   const handleDeleteConfirm = async () => {
     if (!vendedorToDelete) return;
-
-    const originalVendedores = [...vendedores];
     const idToDelete = vendedorToDelete.id;
-
-    setVendedores(prev => prev.filter(v => v.id !== idToDelete));
-    setVendedorToDelete(null);
-
+    
     try {
       await deleteVendedor(idToDelete);
       toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+      await fetchVendedores();
     } catch (error) {
-      setVendedores(originalVendedores);
       console.error("Error deleting vendedor:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el vendedor. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar el vendedor: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+        setVendedorToDelete(null);
     }
   };
   
@@ -139,8 +125,8 @@ export function VendedoresClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+          <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {if(isSubmitting) e.preventDefault()}}>
             <DialogHeader>
               <DialogTitle>{editingVendedor ? 'Editar Vendedor' : 'Añadir Nuevo Vendedor'}</DialogTitle>
             </DialogHeader>
@@ -148,6 +134,7 @@ export function VendedoresClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingVendedor}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

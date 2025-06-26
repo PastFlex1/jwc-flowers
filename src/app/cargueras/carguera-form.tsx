@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { paises } from '@/lib/mock-data';
 import type { Carguera } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   nombreCarguera: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -22,9 +23,10 @@ type CargueraFormProps = {
   onSubmit: (data: CargueraFormData) => void;
   onClose: () => void;
   initialData?: Carguera | null;
+  isSubmitting: boolean;
 };
 
-export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormProps) {
+export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: CargueraFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -86,11 +88,12 @@ export function CargueraForm({ onSubmit, onClose, initialData }: CargueraFormPro
           )}
         />
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar
             </Button>
-            <Button type="submit">
-                {initialData ? 'Guardar Cambios' : 'Añadir Carguera'}
+            <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Carguera')}
             </Button>
         </div>
       </form>

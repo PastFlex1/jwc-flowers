@@ -29,6 +29,7 @@ export function PaisClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchPaises = useCallback(async () => {
@@ -56,48 +57,34 @@ export function PaisClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingPais(null);
   };
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
-    handleCloseDialog();
-
-    if (paisData.id) {
-      const originalPaises = [...paises];
-      const updatedPais = paisData as Pais;
-      setPaises(prev => prev.map(p => p.id === updatedPais.id ? updatedPais : p));
-
-      try {
-        await updatePais(updatedPais.id, updatedPais);
+    setIsSubmitting(true);
+    try {
+      if (paisData.id) {
+        await updatePais(paisData.id, paisData as Pais);
         toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
-      } catch (error) {
-        setPaises(originalPaises);
-        console.error("Error updating pais:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar el país. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newPais = { ...paisData, id: tempId } as Pais;
-      setPaises(prev => [...prev, newPais]);
-
-      try {
-        const newId = await addPais(paisData as Omit<Pais, 'id'>);
-        setPaises(prev => prev.map(p => p.id === tempId ? { ...newPais, id: newId } : p));
+      } else {
+        await addPais(paisData as Omit<Pais, 'id'>);
         toast({ title: 'Éxito', description: 'País añadido correctamente.' });
-      } catch (error) {
-        setPaises(prev => prev.filter(p => p.id !== tempId));
-        console.error("Error adding pais:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo guardar el país. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchPaises();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving pais:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el país: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -107,24 +94,23 @@ export function PaisClient() {
 
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
-
-    const originalPaises = [...paises];
     const idToDelete = paisToDelete.id;
-
-    setPaises(prev => prev.filter(p => p.id !== idToDelete));
-    setPaisToDelete(null);
 
     try {
       await deletePais(idToDelete);
       toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+      await fetchPaises();
     } catch (error) {
-      setPaises(originalPaises);
       console.error("Error deleting pais:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar el país. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar el país: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+        setPaisToDelete(null);
     }
   };
 
@@ -141,9 +127,9 @@ export function PaisClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingPais ? 'Editar País' : 'Añadir Nuevo País'}</DialogTitle>
@@ -152,6 +138,7 @@ export function PaisClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingPais}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

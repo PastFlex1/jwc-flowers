@@ -29,6 +29,7 @@ export function MarcacionClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const fetchMarcaciones = useCallback(async () => {
@@ -55,48 +56,34 @@ export function MarcacionClient() {
   };
 
   const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setIsDialogOpen(false);
     setEditingMarcacion(null);
   };
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
-    handleCloseDialog();
-
-    if (marcacionData.id) {
-      const originalMarcaciones = [...marcaciones];
-      const updatedMarcacion = marcacionData as Marcacion;
-      setMarcaciones(prev => prev.map(m => m.id === updatedMarcacion.id ? updatedMarcacion : m));
-      
-      try {
-        await updateMarcacion(updatedMarcacion.id, updatedMarcacion);
+    setIsSubmitting(true);
+    try {
+      if (marcacionData.id) {
+        await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
         toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
-      } catch (error) {
-        setMarcaciones(originalMarcaciones);
-        console.error("Error updating marcacion:", error);
-        toast({
-          title: 'Error de Actualización',
-          description: 'No se pudo actualizar la marcación. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
-      }
-    } else {
-      const tempId = `temp-${Date.now()}`;
-      const newMarcacion = { ...marcacionData, id: tempId } as Marcacion;
-      setMarcaciones(prev => [...prev, newMarcacion]);
-      
-      try {
-        const newId = await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        setMarcaciones(prev => prev.map(m => m.id === tempId ? { ...newMarcacion, id: newId } : m));
+      } else {
+        await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
         toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
-      } catch (error) {
-        setMarcaciones(prev => prev.filter(m => m.id !== tempId));
-        console.error("Error adding marcacion:", error);
-        toast({
-          title: 'Error al Añadir',
-          description: 'No se pudo guardar la marcación. Verifique sus reglas de seguridad de Firestore.',
-          variant: 'destructive',
-        });
       }
+      await fetchMarcaciones();
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error saving marcacion:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la marcación: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -106,24 +93,23 @@ export function MarcacionClient() {
 
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
-
-    const originalMarcaciones = [...marcaciones];
     const idToDelete = marcacionToDelete.id;
-
-    setMarcaciones(prev => prev.filter(m => m.id !== idToDelete));
-    setMarcacionToDelete(null);
 
     try {
       await deleteMarcacion(idToDelete);
       toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+      await fetchMarcaciones();
     } catch (error) {
-      setMarcaciones(originalMarcaciones);
       console.error("Error deleting marcación:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: 'No se pudo eliminar la marcación. Verifique sus reglas de seguridad de Firestore.',
+        description: `No se pudo eliminar la marcación: ${errorMessage}. Revise la consola y sus reglas de seguridad.`,
         variant: 'destructive',
+        duration: 10000,
       });
+    } finally {
+      setMarcacionToDelete(null);
     }
   };
   
@@ -140,9 +126,9 @@ export function MarcacionClient() {
           </Button>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md" onInteractOutside={(e) => {
-              e.preventDefault();
+              if (isSubmitting) e.preventDefault();
             }}>
             <DialogHeader>
               <DialogTitle>{editingMarcacion ? 'Editar Marcación' : 'Añadir Nueva Marcación'}</DialogTitle>
@@ -151,6 +137,7 @@ export function MarcacionClient() {
               onSubmit={handleFormSubmit}
               onClose={handleCloseDialog}
               initialData={editingMarcacion}
+              isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>

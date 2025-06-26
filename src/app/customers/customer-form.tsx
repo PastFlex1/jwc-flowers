@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -33,9 +34,10 @@ type CustomerFormProps = {
   paises: Pais[];
   cargueras: Carguera[];
   vendedores: Vendedor[];
+  isSubmitting: boolean;
 };
 
-export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, isSubmitting }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -260,11 +262,12 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             )}
           />
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancelar
           </Button>
-          <Button type="submit">
-              {initialData ? 'Guardar Cambios' : 'Añadir Cliente'}
+          <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Cliente')}
           </Button>
         </div>
       </form>
