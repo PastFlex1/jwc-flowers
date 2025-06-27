@@ -100,4 +100,6 @@ export interface Consignatario {
   nombreConsignatario: string;
   pais: string;
   customerId: string;
+  direccion: string;
+  provincia: string;
 }

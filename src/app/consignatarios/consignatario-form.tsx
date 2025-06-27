@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Consignatario, Pais, Customer } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
+import type { Consignatario, Pais, Customer, Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   nombreConsignatario: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
   customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
+  direccion: z.string().min(5, { message: "La dirección debe tener al menos 5 caracteres." }),
+  provincia: z.string().min(1, { message: "Por favor seleccione una provincia." }),
+  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
 });
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
@@ -25,16 +28,19 @@ type ConsignatarioFormProps = {
   initialData?: Consignatario | null;
   paises: Pais[];
   customers: Customer[];
+  provincias: Provincia[];
   isSubmitting: boolean;
 };
 
-export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, customers, isSubmitting }: ConsignatarioFormProps) {
+export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, customers, provincias, isSubmitting }: ConsignatarioFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       nombreConsignatario: '',
       pais: '',
       customerId: '',
+      direccion: '',
+      provincia: '',
     },
   });
 
@@ -43,6 +49,8 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
       nombreConsignatario: '',
       pais: '',
       customerId: '',
+      direccion: '',
+      provincia: '',
     });
   }, [initialData, form]);
 
@@ -93,28 +101,67 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
         />
         <FormField
           control={form.control}
-          name="pais"
+          name="direccion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>País</FormLabel>
-               <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un país" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {paises.map(pais => (
-                      <SelectItem key={pais.id} value={pais.nombre}>
-                        {pais.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <FormLabel>Dirección</FormLabel>
+              <FormControl>
+                <Textarea placeholder="e.g., Av. de las Rosas 123" {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="provincia"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Provincia</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione una provincia" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {provincias.map(provincia => (
+                        <SelectItem key={provincia.id} value={provincia.nombre}>
+                          {provincia.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="pais"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>País</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un país" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {paises.map(pais => (
+                        <SelectItem key={pais.id} value={pais.nombre}>
+                          {pais.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                 Cancelar

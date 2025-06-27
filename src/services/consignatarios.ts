@@ -18,6 +18,8 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Consignat
     nombreConsignatario: data.nombreConsignatario,
     pais: data.pais,
     customerId: data.customerId,
+    direccion: data.direccion || '',
+    provincia: data.provincia || '',
   };
 };
 

@@ -25,7 +25,7 @@ import { useAppData } from '@/context/app-data-context';
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
 export function ConsignatariosClient() {
-  const { consignatarios, paises, customers, refreshData } = useAppData();
+  const { consignatarios, paises, customers, provincias, refreshData } = useAppData();
   const [localConsignatarios, setLocalConsignatarios] = useState<Consignatario[]>([]);
   
   useEffect(() => {
@@ -147,6 +147,7 @@ export function ConsignatariosClient() {
               initialData={editingConsignatario}
               paises={paises}
               customers={customers}
+              provincias={provincias}
               isSubmitting={isSubmitting}
             />
           </DialogContent>
@@ -158,33 +159,39 @@ export function ConsignatariosClient() {
             <CardDescription>Un listado de todos tus consignatarios.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre del Consignatario</TableHead>
-                  <TableHead>Cliente Dirigido</TableHead>
-                  <TableHead>País</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {localConsignatarios.map((consignatario) => (
-                  <TableRow key={consignatario.id}>
-                    <TableCell className="font-medium">{consignatario.nombreConsignatario}</TableCell>
-                    <TableCell>{customerMap[consignatario.customerId] || 'N/A'}</TableCell>
-                    <TableCell>{consignatario.pais}</TableCell>
-                    <TableCell className="text-right space-x-0">
-                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(consignatario)}>
-                           <Edit className="h-4 w-4" />
-                       </Button>
-                       <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(consignatario)}>
-                           <Trash2 className="h-4 w-4 text-destructive" />
-                       </Button>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>País</TableHead>
+                    <TableHead>Provincia</TableHead>
+                    <TableHead>Dirección</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {localConsignatarios.map((consignatario) => (
+                    <TableRow key={consignatario.id}>
+                      <TableCell className="font-medium">{consignatario.nombreConsignatario}</TableCell>
+                      <TableCell>{customerMap[consignatario.customerId] || 'N/A'}</TableCell>
+                      <TableCell>{consignatario.pais}</TableCell>
+                      <TableCell>{consignatario.provincia}</TableCell>
+                      <TableCell>{consignatario.direccion}</TableCell>
+                      <TableCell className="text-right space-x-0">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(consignatario)}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(consignatario)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
