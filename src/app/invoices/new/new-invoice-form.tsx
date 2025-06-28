@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Edit, Loader2 } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, Edit, Loader2, GitFork, CornerDownRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -34,6 +34,7 @@ const lineItemSchema = z.object({
   stemCount: z.coerce.number().positive("Debe ser > 0"),
   purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
   salePrice: z.coerce.number().min(0, "Debe ser >= 0"),
+  isSubItem: z.boolean().optional(),
 });
 
 const invoiceSchema = z.object({
@@ -74,7 +75,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -166,6 +167,20 @@ export function NewInvoiceForm() {
       });
   }
   
+  function handleAddSubItem(parentIndex: number) {
+    const parentItem = form.getValues(`items.${parentIndex}`);
+    const subItemData: InvoiceFormValues['items'][number] = {
+      ...parentItem,
+      id: undefined, 
+      isSubItem: true,
+    };
+    insert(parentIndex + 1, subItemData);
+    toast({
+      title: 'Sub-ítem añadido',
+      description: `Copiado de la fila ${parentIndex + 1}. Puede editar los detalles.`,
+    });
+  }
+
   return (
     <div className="space-y-6">
        <div>
@@ -341,12 +356,22 @@ export function NewInvoiceForm() {
                     </TableHeader>
                     <TableBody>
                       {fields.map((field, index) => {
+                         const isSubItem = watchItems[index].isSubItem;
                          const { difference, total } = getCalculations(watchItems[index]);
                          return (
-                          <TableRow key={field.id}>
-                            <TableCell>{index + 1}</TableCell>
+                          <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
+                            <TableCell className="relative">
+                                {isSubItem && (
+                                    <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                                        <CornerDownRight className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <span className={cn(isSubItem && "pl-6")}>
+                                    {index + 1}
+                                </span>
+                            </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubItem}>
                                   <FormControl><SelectTrigger className="min-w-[80px]"><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
@@ -362,7 +387,11 @@ export function NewInvoiceForm() {
                             <TableCell className="min-w-[100px]">${difference.toFixed(2)}</TableCell>
                             <TableCell className="min-w-[100px]">${total.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(index)}><Edit className="h-4 w-4" /></Button>
+                              {!isSubItem && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleAddSubItem(index)} title="Crear sub-fila">
+                                  <GitFork className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                             </TableCell>
                           </TableRow>
@@ -371,7 +400,7 @@ export function NewInvoiceForm() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0})}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                 </Button>
               </CardContent>

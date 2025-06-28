@@ -31,6 +31,7 @@ export interface LineItem {
   stemCount: number;
   purchasePrice: number;
   salePrice: number;
+  isSubItem?: boolean;
 }
 
 export interface Invoice {
