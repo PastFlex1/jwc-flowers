@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Edit, Loader2, GitFork, CornerDownRight } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, CornerDownRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -154,9 +154,12 @@ export function NewInvoiceForm() {
     const purchasePrice = Number(item.purchasePrice) || 0;
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
+    const bunchCount = Number(item.bunchCount) || 0;
+    
+    const totalStems = stemCount * bunchCount;
     const difference = salePrice - purchasePrice;
-    const total = salePrice * stemCount;
-    return { difference, total };
+    const total = salePrice * totalStems;
+    return { difference, total, totalStems };
   };
 
   const handleEdit = (index: number) => {
@@ -346,7 +349,8 @@ export function NewInvoiceForm() {
                         <TableHead>Bunches/Caja</TableHead>
                         <TableHead>Descripción</TableHead>
                         <TableHead>Longitud</TableHead>
-                        <TableHead>N° Tallos</TableHead>
+                        <TableHead>Tallos/Bunch</TableHead>
+                        <TableHead>Total Tallos</TableHead>
                         <TableHead>P. Compra</TableHead>
                         <TableHead>P. Venta</TableHead>
                         <TableHead>Diferencia</TableHead>
@@ -357,7 +361,7 @@ export function NewInvoiceForm() {
                     <TableBody>
                       {fields.map((field, index) => {
                          const isSubItem = watchItems[index].isSubItem;
-                         const { difference, total } = getCalculations(watchItems[index]);
+                         const { difference, total, totalStems } = getCalculations(watchItems[index]);
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                             <TableCell className="relative">
@@ -382,6 +386,7 @@ export function NewInvoiceForm() {
                             <TableCell><FormField control={form.control} name={`items.${index}.description`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell className="min-w-[100px]">{totalStems}</TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell className="min-w-[100px]">${difference.toFixed(2)}</TableCell>

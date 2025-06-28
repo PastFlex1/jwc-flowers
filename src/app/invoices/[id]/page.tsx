@@ -27,12 +27,15 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     ? await getConsignatarioById(invoice.consignatarioId) 
     : null;
 
-  const subtotal = invoice.items.reduce((acc, item) => acc + (item.salePrice * item.stemCount), 0);
+  const subtotal = invoice.items.reduce((acc, item) => {
+    const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
+    return acc + ((item.salePrice || 0) * totalStems);
+  }, 0);
   const tax = subtotal * 0.12; // Standard VAT in Ecuador
   const total = subtotal + tax;
 
   const orderSummary = invoice.items
-    .map(item => `${item.stemCount}x ${item.description}`)
+    .map(item => `${(item.stemCount || 0) * (item.bunchCount || 0)}x ${item.description}`)
     .join(', ');
 
   const aiMessageInput: InvoiceMessageInput | null = customer ? {
@@ -88,26 +91,30 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
                 <TableRow>
                   <TableHead>Descripción</TableHead>
                   <TableHead className="text-center">Cajas</TableHead>
-                  <TableHead className="text-center">Tallos</TableHead>
+                  <TableHead className="text-center">Total Tallos</TableHead>
                   <TableHead className="text-right">Precio Unit.</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoice.items.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="font-medium">{item.description}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">{item.boxCount}</TableCell>
-                    <TableCell className="text-center">{item.stemCount}</TableCell>
-                    <TableCell className="text-right">${item.salePrice?.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${(item.salePrice * item.stemCount).toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
+                {invoice.items.map((item, index) => {
+                  const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
+                  const itemTotal = (item.salePrice || 0) * totalStems;
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="font-medium">{item.description}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">{item.boxCount}</TableCell>
+                      <TableCell className="text-center">{totalStems}</TableCell>
+                      <TableCell className="text-right">${item.salePrice?.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${itemTotal.toFixed(2)}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

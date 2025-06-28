@@ -48,7 +48,8 @@ export function InvoicesClient() {
   const getInvoiceTotal = (invoice: Invoice) => {
     if (!invoice.items) return 0;
     const subtotal = invoice.items.reduce((total, item) => {
-      const itemTotal = (item.salePrice || 0) * (item.stemCount || 0);
+      const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
+      const itemTotal = (item.salePrice || 0) * totalStems;
       return total + itemTotal;
     }, 0);
     const tax = subtotal * 0.12;
