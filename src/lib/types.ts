@@ -40,6 +40,7 @@ export interface Invoice {
   flightDate: string;
   sellerId: string;
   customerId: string;
+  consignatarioId?: string;
   farmId: string;
   carrierId: string;
   countryId: string;

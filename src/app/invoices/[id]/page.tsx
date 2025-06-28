@@ -6,6 +6,7 @@ import { InvoiceMessageGenerator } from './invoice-message-generator';
 import type { InvoiceMessageInput } from '@/ai/flows/invoice-message-generation';
 import { getInvoiceById } from '@/services/invoices';
 import { getCustomerById } from '@/services/customers';
+import { getConsignatarioById } from '@/services/consignatarios';
 import { format, parseISO } from 'date-fns';
 
 type InvoiceDetailPageProps = {
@@ -22,6 +23,9 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   }
 
   const customer = await getCustomerById(invoice.customerId);
+  const consignatario = invoice.consignatarioId 
+    ? await getConsignatarioById(invoice.consignatarioId) 
+    : null;
 
   const subtotal = invoice.items.reduce((acc, item) => acc + (item.salePrice * item.stemCount), 0);
   const tax = subtotal * 0.12; // Standard VAT in Ecuador
@@ -59,9 +63,16 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
             <div>
               <h3 className="font-semibold mb-2">Bill To:</h3>
               <address className="not-italic text-muted-foreground">
-                {customer?.name}<br />
-                {customer?.address.split(',').map(line => <div key={line}>{line.trim()}</div>)}<br />
-                {customer?.email}
+                <div>{consignatario ? consignatario.nombreConsignatario : customer?.name}</div>
+                  {consignatario ? (
+                    <>
+                      <div>{consignatario.direccion}</div>
+                      <div>{`${consignatario.provincia}, ${consignatario.pais}`}</div>
+                    </>
+                  ) : (
+                    customer?.address.split(',').map(line => <div key={line}>{line.trim()}</div>)
+                  )}
+                  {customer?.email && <div>{customer.email}</div>}
               </address>
             </div>
             <div className="text-right">

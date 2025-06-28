@@ -42,6 +42,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     houseAWB: data.houseAWB,
     items: data.items as LineItem[],
     status: data.status || 'Pending',
+    consignatarioId: data.consignatarioId,
   };
 };
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, Consignatario } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
@@ -41,7 +41,8 @@ const invoiceSchema = z.object({
   farmDepartureDate: z.date({ required_error: "Fecha de salida requerida." }),
   flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
   sellerId: z.string().min(1, 'Seleccione un vendedor.'),
-  customerId: z.string().min(1, 'Seleccione un consignatario.'),
+  customerId: z.string().min(1, 'Seleccione un cliente.'),
+  consignatarioId: z.string().min(1, 'Seleccione un consignatario.'),
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
@@ -57,10 +58,11 @@ type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios } = useAppData();
 
   const [isHeaderSet, setIsHeaderSet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -68,6 +70,7 @@ export function NewInvoiceForm() {
       items: [],
       reference: '',
       invoiceNumber: '',
+      consignatarioId: '',
     },
   });
 
@@ -75,12 +78,25 @@ export function NewInvoiceForm() {
     control: form.control,
     name: 'items',
   });
+  
+  const selectedCustomerId = form.watch('customerId');
+
+  useEffect(() => {
+    if (selectedCustomerId) {
+      const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
+      setFilteredConsignatarios(relatedConsignatarios);
+      form.setValue('consignatarioId', '');
+    } else {
+      setFilteredConsignatarios([]);
+    }
+  }, [selectedCustomerId, consignatarios, form]);
+
 
   async function handleHeaderSubmit() {
     const headerFields: (keyof InvoiceFormValues)[] = [
       'invoiceNumber',
       'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
-      'farmId', 'carrierId', 'countryId', 'pointOfSale', 
+      'consignatarioId', 'farmId', 'carrierId', 'countryId', 'pointOfSale', 
       'masterAWB', 'houseAWB'
     ];
     const result = await form.trigger(headerFields);
@@ -219,10 +235,19 @@ export function NewInvoiceForm() {
               )}/>
               <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Consignatario (Cliente)</FormLabel>
+                  <FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                  </Select><FormMessage />
+                </FormItem>
+              )}/>
+              <FormField control={form.control} name="consignatarioId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Consignatario</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
+                    <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
+                    <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>

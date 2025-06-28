@@ -7,12 +7,15 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  getDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Consignatario => {
+const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Consignatario => {
   const data = snapshot.data();
+  if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
     nombreConsignatario: data.nombreConsignatario,
@@ -28,6 +31,16 @@ export async function getConsignatarios(): Promise<Consignatario[]> {
   const consignatariosCollection = collection(db, 'consignatarios');
   const snapshot = await getDocs(consignatariosCollection);
   return snapshot.docs.map(fromFirestore);
+}
+
+export async function getConsignatarioById(id: string): Promise<Consignatario | null> {
+    if (!db) return null;
+    const consignatarioDoc = doc(db, 'consignatarios', id);
+    const snapshot = await getDoc(consignatarioDoc);
+    if (snapshot.exists()) {
+        return fromFirestore(snapshot);
+    }
+    return null;
 }
 
 export async function addConsignatario(consignatarioData: Omit<Consignatario, 'id'>): Promise<string> {
