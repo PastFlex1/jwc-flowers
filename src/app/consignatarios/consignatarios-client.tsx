@@ -21,12 +21,14 @@ import { addConsignatario, updateConsignatario, deleteConsignatario } from '@/se
 import type { Consignatario } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
 export function ConsignatariosClient() {
   const { consignatarios, paises, customers, provincias, refreshData } = useAppData();
   const [localConsignatarios, setLocalConsignatarios] = useState<Consignatario[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalConsignatarios(consignatarios);
@@ -128,11 +130,11 @@ export function ConsignatariosClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Consignatarios</h2>
-            <p className="text-muted-foreground">Administra los consignatarios.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('consignatarios.title')}</h2>
+            <p className="text-muted-foreground">{t('consignatarios.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Consignatario
+            <Plus className="mr-2 h-4 w-4" /> {t('consignatarios.add')}
           </Button>
         </div>
 

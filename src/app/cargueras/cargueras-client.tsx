@@ -21,12 +21,14 @@ import { addCarguera, updateCarguera, deleteCarguera } from '@/services/carguera
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
 export function CarguerasClient() {
   const { cargueras, refreshData } = useAppData();
   const [localCargueras, setLocalCargueras] = useState<Carguera[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setLocalCargueras(cargueras);
@@ -121,11 +123,11 @@ export function CarguerasClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Cargueras</h2>
-            <p className="text-muted-foreground">Administra las cargueras.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('cargueras.title')}</h2>
+            <p className="text-muted-foreground">{t('cargueras.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Carguera
+            <Plus className="mr-2 h-4 w-4" /> {t('cargueras.add')}
           </Button>
         </div>
 

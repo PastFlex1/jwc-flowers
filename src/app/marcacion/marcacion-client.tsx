@@ -21,12 +21,14 @@ import { addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marca
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
 export function MarcacionClient() {
   const { marcaciones, refreshData } = useAppData();
   const [localMarcaciones, setLocalMarcaciones] = useState<Marcacion[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalMarcaciones(marcaciones);
@@ -120,11 +122,11 @@ export function MarcacionClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Marcación</h2>
-            <p className="text-muted-foreground">Administra las marcaciones.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('marcacion.title')}</h2>
+            <p className="text-muted-foreground">{t('marcacion.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Marcación
+            <Plus className="mr-2 h-4 w-4" /> {t('marcacion.add')}
           </Button>
         </div>
 

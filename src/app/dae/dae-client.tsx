@@ -21,12 +21,14 @@ import { addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
 export function DaeClient() {
   const { daes, refreshData } = useAppData();
   const [localDaes, setLocalDaes] = useState<Dae[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalDaes(daes);
@@ -120,11 +122,11 @@ export function DaeClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">DAE</h2>
-            <p className="text-muted-foreground">Administra los DAEs.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('dae.title')}</h2>
+            <p className="text-muted-foreground">{t('dae.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir DAE
+            <Plus className="mr-2 h-4 w-4" /> {t('dae.add')}
           </Button>
         </div>
 

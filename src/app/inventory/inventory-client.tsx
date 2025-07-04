@@ -11,11 +11,13 @@ import { useToast } from '@/hooks/use-toast';
 import { getInventoryItems, addInventoryItem } from '@/services/inventory';
 import type { InventoryItem } from '@/lib/types';
 import { ItemForm } from './item-form';
+import { useTranslation } from '@/context/i18n-context';
 
 export function InventoryClient() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const fetchItems = useCallback(async () => {
     try {
@@ -61,13 +63,13 @@ export function InventoryClient() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Inventory</h2>
-          <p className="text-muted-foreground">Manage your products and services.</p>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">{t('inventory.title')}</h2>
+          <p className="text-muted-foreground">{t('inventory.description')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New Item
+              <Plus className="mr-2 h-4 w-4" /> {t('inventory.newItem')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">

@@ -1,0 +1,90 @@
+{
+  "sidebar": {
+    "title": "JCW FLOWERS",
+    "subtitle": "For Florists",
+    "invoices": "Invoices",
+    "customers": "Customers",
+    "inventory": "Inventory",
+    "devMode": "Development Mode",
+    "dbAccess": "Direct DB Access"
+  },
+  "header": {
+    "newSale": "New Sale",
+    "maintenance": "Maintenance",
+    "masterTables": "Master Tables",
+    "documents": "Documents",
+    "creditNotes": "Credit Notes",
+    "debitNotes": "Debit Notes",
+    "changeLanguage": "Change language"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Manage and track your customer invoices.",
+    "newInvoice": "New Invoice",
+    "history": "Invoice History",
+    "historyDescription": "A list of all your past and present invoices.",
+    "invoiceNumber": "Invoice #",
+    "customer": "Customer",
+    "flightDate": "Flight Date",
+    "amount": "Amount",
+    "status": "Status",
+    "actions": "Actions",
+    "editTooltip": "Edit Invoice",
+    "sendTooltip": "Send via Email",
+    "deleteTooltip": "Delete Invoice",
+    "sendMailNoticeTitle": "Feature in development",
+    "sendMailNoticeDescription": "Sending invoice {invoiceNumber} by email is not yet implemented."
+  },
+  "customers": {
+    "title": "Customers",
+    "description": "Manage your customer profiles.",
+    "newCustomer": "New Customer",
+    "view": "View",
+    "delete": "Delete"
+  },
+  "fincas": {
+    "title": "Farms",
+    "description": "Manage the supplier farms.",
+    "add": "Add Farm"
+  },
+  "consignatarios": {
+    "title": "Consignees",
+    "description": "Manage the consignees.",
+    "add": "Add Consignee"
+  },
+  "vendedores": {
+    "title": "Sellers",
+    "description": "Manage your seller profiles.",
+    "add": "New Seller"
+  },
+  "marcacion": {
+    "title": "Marking",
+    "description": "Manage markings.",
+    "add": "Add Marking"
+  },
+  "pais": {
+    "title": "Countries",
+    "description": "Manage countries.",
+    "add": "Add Country"
+  },
+  "provincias": {
+    "title": "Provinces",
+    "description": "Manage provinces.",
+    "add": "Add Province"
+  },
+  "dae": {
+    "title": "DAE",
+    "description": "Manage DAEs.",
+    "add": "Add DAE"
+  },
+  "cargueras": {
+    "title": "Carriers",
+    "description": "Manage carriers.",
+    "add": "Add Carrier"
+  },
+  "inventory": {
+    "title": "Inventory",
+    "description": "Manage your products and services.",
+    "newItem": "New Item"
+  }
+}

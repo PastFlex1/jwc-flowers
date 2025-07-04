@@ -1,0 +1,90 @@
+{
+  "sidebar": {
+    "title": "JCW FLOWERS",
+    "subtitle": "Para Floristas",
+    "invoices": "Facturas",
+    "customers": "Clientes",
+    "inventory": "Inventario",
+    "devMode": "Modo Desarrollo",
+    "dbAccess": "Acceso Directo a DB"
+  },
+  "header": {
+    "newSale": "Nueva Venta",
+    "maintenance": "Mantenimiento",
+    "masterTables": "Tablas Maestras",
+    "documents": "Documentos",
+    "creditNotes": "Notas de crédito",
+    "debitNotes": "Notas de débito",
+    "changeLanguage": "Cambiar idioma"
+  },
+  "invoices": {
+    "title": "Facturas",
+    "description": "Gestiona y rastrea las facturas de tus clientes.",
+    "newInvoice": "Nueva Factura",
+    "history": "Historial de Facturas",
+    "historyDescription": "Un listado de todas tus facturas pasadas y presentes.",
+    "invoiceNumber": "Factura #",
+    "customer": "Cliente",
+    "flightDate": "Fecha Vuelo",
+    "amount": "Monto",
+    "status": "Estado",
+    "actions": "Acciones",
+    "editTooltip": "Editar Factura",
+    "sendTooltip": "Enviar por Correo",
+    "deleteTooltip": "Eliminar Factura",
+    "sendMailNoticeTitle": "Funcionalidad en desarrollo",
+    "sendMailNoticeDescription": "Enviar la factura {invoiceNumber} por correo aún no está implementado."
+  },
+  "customers": {
+    "title": "Clientes",
+    "description": "Administra los perfiles de tus clientes.",
+    "newCustomer": "Nuevo Cliente",
+    "view": "Ver",
+    "delete": "Eliminar"
+  },
+  "fincas": {
+    "title": "Fincas",
+    "description": "Administra las fincas proveedoras.",
+    "add": "Añadir Finca"
+  },
+  "consignatarios": {
+    "title": "Consignatarios",
+    "description": "Administra los consignatarios.",
+    "add": "Añadir Consignatario"
+  },
+  "vendedores": {
+    "title": "Vendedores",
+    "description": "Administra los perfiles de tus vendedores.",
+    "add": "Nuevo Vendedor"
+  },
+  "marcacion": {
+    "title": "Marcación",
+    "description": "Administra las marcaciones.",
+    "add": "Añadir Marcación"
+  },
+  "pais": {
+    "title": "Países",
+    "description": "Administra los países.",
+    "add": "Añadir País"
+  },
+  "provincias": {
+    "title": "Provincias",
+    "description": "Administra las provincias.",
+    "add": "Añadir Provincia"
+  },
+  "dae": {
+    "title": "DAE",
+    "description": "Administra los DAEs.",
+    "add": "Añadir DAE"
+  },
+  "cargueras": {
+    "title": "Cargueras",
+    "description": "Administra las cargueras.",
+    "add": "Añadir Carguera"
+  },
+  "inventory": {
+    "title": "Inventario",
+    "description": "Administra tus productos y servicios.",
+    "newItem": "Nuevo Ítem"
+  }
+}

@@ -21,12 +21,14 @@ import { addProvincia, updateProvincia, deleteProvincia } from '@/services/provi
 import type { Provincia } from '@/lib/types';
 import { ProvinciaForm } from './provincia-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
 export function ProvinciasClient() {
   const { provincias, refreshData } = useAppData();
   const [localProvincias, setLocalProvincias] = useState<Provincia[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalProvincias(provincias);
@@ -120,11 +122,11 @@ export function ProvinciasClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Provincias</h2>
-            <p className="text-muted-foreground">Administra las provincias.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('provincias.title')}</h2>
+            <p className="text-muted-foreground">{t('provincias.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Provincia
+            <Plus className="mr-2 h-4 w-4" /> {t('provincias.add')}
           </Button>
         </div>
 

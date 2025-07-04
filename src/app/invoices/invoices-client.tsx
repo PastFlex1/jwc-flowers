@@ -23,12 +23,14 @@ import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 export function InvoicesClient() {
   const { invoices, customers, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setLocalInvoices(invoices);
@@ -58,8 +60,8 @@ export function InvoicesClient() {
 
   const handleSendEmailClick = (invoice: Invoice) => {
     toast({
-      title: 'Funcionalidad en desarrollo',
-      description: `Enviar la factura ${invoice.invoiceNumber} por correo aún no está implementado.`,
+      title: t('invoices.sendMailNoticeTitle'),
+      description: t('invoices.sendMailNoticeDescription', { invoiceNumber: invoice.invoiceNumber }),
     });
   };
 
@@ -98,31 +100,31 @@ export function InvoicesClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Invoices</h2>
-            <p className="text-muted-foreground">Manage and track your customer invoices.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('invoices.title')}</h2>
+            <p className="text-muted-foreground">{t('invoices.description')}</p>
           </div>
           <Link href="/invoices/new" passHref>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> New Invoice
+              <Plus className="mr-2 h-4 w-4" /> {t('invoices.newInvoice')}
             </Button>
           </Link>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Invoice History</CardTitle>
-            <CardDescription>A list of all your past and present invoices.</CardDescription>
+            <CardTitle>{t('invoices.history')}</CardTitle>
+            <CardDescription>{t('invoices.historyDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Flight Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>{t('invoices.invoiceNumber')}</TableHead>
+                  <TableHead>{t('invoices.customer')}</TableHead>
+                  <TableHead>{t('invoices.flightDate')}</TableHead>
+                  <TableHead>{t('invoices.amount')}</TableHead>
+                  <TableHead>{t('invoices.status')}</TableHead>
+                  <TableHead className="text-right">{t('invoices.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -152,18 +154,18 @@ export function InvoicesClient() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link href={`/invoices/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Editar Factura">
+                            <Button variant="ghost" size="icon" title={t('invoices.editTooltip')}>
                               <Edit className="h-4 w-4" />
-                              <span className="sr-only">Editar Factura</span>
+                              <span className="sr-only">{t('invoices.editTooltip')}</span>
                             </Button>
                           </Link>
-                          <Button variant="ghost" size="icon" onClick={() => handleSendEmailClick(invoice)} title="Enviar por Correo">
+                          <Button variant="ghost" size="icon" onClick={() => handleSendEmailClick(invoice)} title={t('invoices.sendTooltip')}>
                             <Mail className="h-4 w-4" />
-                            <span className="sr-only">Enviar por Correo</span>
+                            <span className="sr-only">{t('invoices.sendTooltip')}</span>
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title="Eliminar Factura">
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
                             <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Eliminar Factura</span>
+                            <span className="sr-only">{t('invoices.deleteTooltip')}</span>
                           </Button>
                         </div>
                       </TableCell>

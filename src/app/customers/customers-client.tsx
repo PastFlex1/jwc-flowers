@@ -20,12 +20,14 @@ import { addCustomer, updateCustomer, deleteCustomer } from '@/services/customer
 import type { Customer } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
 export function CustomersClient() {
   const { customers, paises, cargueras, vendedores, refreshData } = useAppData();
   const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
+  const { t } = useTranslation();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -120,11 +122,11 @@ export function CustomersClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Clientes</h2>
-            <p className="text-muted-foreground">Administra los perfiles de tus clientes.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('customers.title')}</h2>
+            <p className="text-muted-foreground">{t('customers.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Cliente
+            <Plus className="mr-2 h-4 w-4" /> {t('customers.newCustomer')}
           </Button>
         </div>
 
@@ -153,11 +155,11 @@ export function CustomersClient() {
               </CardContent>
               <div className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>
-                  Ver
+                  {t('customers.view')}
                 </Button>
                 <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(customer)}>
                   <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Eliminar</span>
+                  <span className="sr-only">{t('customers.delete')}</span>
                 </Button>
               </div>
             </Card>

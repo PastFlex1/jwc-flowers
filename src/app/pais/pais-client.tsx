@@ -21,6 +21,7 @@ import { addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
@@ -28,6 +29,7 @@ type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 export function PaisClient() {
   const { paises, refreshData } = useAppData();
   const [localPaises, setLocalPaises] = useState<Pais[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalPaises(paises);
@@ -121,11 +123,11 @@ export function PaisClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Países</h2>
-            <p className="text-muted-foreground">Administra los países.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('pais.title')}</h2>
+            <p className="text-muted-foreground">{t('pais.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir País
+            <Plus className="mr-2 h-4 w-4" /> {t('pais.add')}
           </Button>
         </div>
 

@@ -20,6 +20,7 @@ import { addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedor
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
@@ -27,6 +28,7 @@ type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 export function VendedoresClient() {
   const { vendedores, refreshData } = useAppData();
   const [localVendedores, setLocalVendedores] = useState<Vendedor[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setLocalVendedores(vendedores);
@@ -120,11 +122,11 @@ export function VendedoresClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Vendedores</h2>
-            <p className="text-muted-foreground">Administra los perfiles de tus vendedores.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('vendedores.title')}</h2>
+            <p className="text-muted-foreground">{t('vendedores.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Vendedor
+            <Plus className="mr-2 h-4 w-4" /> {t('vendedores.add')}
           </Button>
         </div>
 

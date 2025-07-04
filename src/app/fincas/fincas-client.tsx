@@ -21,12 +21,14 @@ import { addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
 import { useAppData } from '@/context/app-data-context';
+import { useTranslation } from '@/context/i18n-context';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
 export function FincasClient() {
   const { fincas, refreshData } = useAppData();
   const [localFincas, setLocalFincas] = useState<Finca[]>([]);
+  const { t } = useTranslation();
   
   useEffect(() => {
     setLocalFincas(fincas);
@@ -121,11 +123,11 @@ export function FincasClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Fincas</h2>
-            <p className="text-muted-foreground">Administra las fincas proveedoras.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('fincas.title')}</h2>
+            <p className="text-muted-foreground">{t('fincas.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Finca
+            <Plus className="mr-2 h-4 w-4" /> {t('fincas.add')}
           </Button>
         </div>
 

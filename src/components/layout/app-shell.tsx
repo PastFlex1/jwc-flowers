@@ -23,6 +23,7 @@ import {
   Database,
   Settings,
   Plus,
+  Languages,
 } from 'lucide-react';
 import {
   Menubar,
@@ -33,16 +34,18 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from '@/components/ui/menubar';
-
-const navItems = [
-  { href: '/invoices', label: 'Invoices', icon: FileText },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/inventory', label: 'Inventory', icon: Leaf },
-];
+import { useTranslation } from '@/context/i18n-context';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { t, setLocale, locale } = useTranslation();
+
+  const navItems = [
+    { href: '/invoices', label: t('sidebar.invoices'), icon: FileText },
+    { href: '/customers', label: t('sidebar.customers'), icon: Users },
+    { href: '/inventory', label: t('sidebar.inventory'), icon: Leaf },
+  ];
 
   return (
     <SidebarProvider>
@@ -53,8 +56,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Flower2 className="h-6 w-6 text-primary" />
             </Button>
             <div className="flex flex-col">
-              <h2 className="text-lg font-semibold font-headline">JCW FLOWERS</h2>
-              <p className="text-sm text-muted-foreground">For Florists</p>
+              <h2 className="text-lg font-semibold font-headline">{t('sidebar.title')}</h2>
+              <p className="text-sm text-muted-foreground">{t('sidebar.subtitle')}</p>
             </div>
           </div>
         </SidebarHeader>
@@ -80,8 +83,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <div className="flex items-center gap-3 w-full px-2 h-12">
               <Database className="h-6 w-6 text-muted-foreground" />
               <div className="flex flex-col items-start">
-                 <span className="font-medium">Modo Desarrollo</span>
-                 <span className="text-xs text-muted-foreground">Acceso Directo a DB</span>
+                 <span className="font-medium">{t('sidebar.devMode')}</span>
+                 <span className="text-xs text-muted-foreground">{t('sidebar.dbAccess')}</span>
               </div>
             </div>
         </SidebarFooter>
@@ -96,33 +99,51 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <div className="ml-auto flex items-center gap-2">
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nueva Venta</span>
+                <span className="hidden sm:inline">{t('header.newSale')}</span>
               </Button>
               <Menubar className="p-0 bg-transparent border-none">
                 <MenubarMenu>
                   <MenubarTrigger asChild>
                     <Button variant="outline" size="icon">
                       <Settings className="h-5 w-5" />
-                      <span className="sr-only">Mantenimiento</span>
+                      <span className="sr-only">{t('header.maintenance')}</span>
                     </Button>
                   </MenubarTrigger>
                   <MenubarContent align="end">
-                    <MenubarLabel>Tablas Maestras</MenubarLabel>
+                    <MenubarLabel>{t('header.masterTables')}</MenubarLabel>
                     <MenubarSeparator />
-                    <MenubarItem onClick={() => router.push('/fincas')}>Fincas</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/customers')}>Clientes</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/consignatarios')}>Consignatarios</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/vendedores')}>Vendedores</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/marcacion')}>Marcacion</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/pais')}>Pais</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/provincias')}>Provincias</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/dae')}>Dae</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/cargueras')}>Carguera</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/customers')}>{t('customers.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/consignatarios')}>{t('consignatarios.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/vendedores')}>{t('vendedores.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/marcacion')}>{t('marcacion.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/pais')}>{t('pais.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/provincias')}>{t('provincias.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/dae')}>{t('dae.title')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/cargueras')}>{t('cargueras.title')}</MenubarItem>
                     <MenubarSeparator />
-                    <MenubarLabel>Documentos</MenubarLabel>
+                    <MenubarLabel>{t('header.documents')}</MenubarLabel>
                      <MenubarSeparator />
-                    <MenubarItem>Notas de crédito</MenubarItem>
-                    <MenubarItem>Notas de débito</MenubarItem>
+                    <MenubarItem>{t('header.creditNotes')}</MenubarItem>
+                    <MenubarItem>{t('header.debitNotes')}</MenubarItem>
+                  </MenubarContent>
+                </MenubarMenu>
+              </Menubar>
+              <Menubar className="p-0 bg-transparent border-none">
+                <MenubarMenu>
+                  <MenubarTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Languages className="h-5 w-5" />
+                      <span className="sr-only">{t('header.changeLanguage')}</span>
+                    </Button>
+                  </MenubarTrigger>
+                  <MenubarContent align="end">
+                    <MenubarItem onClick={() => setLocale('es')} disabled={locale === 'es'}>
+                      Español
+                    </MenubarItem>
+                    <MenubarItem onClick={() => setLocale('en')} disabled={locale === 'en'}>
+                      English
+                    </MenubarItem>
                   </MenubarContent>
                 </MenubarMenu>
               </Menubar>
