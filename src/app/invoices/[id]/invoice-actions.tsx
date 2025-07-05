@@ -1,19 +1,23 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Download, Mail } from 'lucide-react';
+import { Download, Mail, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { InvoicePDFDocument } from './invoice-pdf-document';
+import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
 type InvoiceActionsProps = {
   onSendEmailClick: () => void;
+  invoice: Invoice;
+  customer: Customer | null;
+  consignatario: Consignatario | null;
 };
 
-export function InvoiceActions({ onSendEmailClick }: InvoiceActionsProps) {
+export function InvoiceActions({ onSendEmailClick, invoice, customer, consignatario }: InvoiceActionsProps) {
   const router = useRouter();
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const isDataReady = !!(invoice && customer);
 
   return (
     <div className="flex justify-between items-center no-print">
@@ -25,10 +29,23 @@ export function InvoiceActions({ onSendEmailClick }: InvoiceActionsProps) {
           <Mail className="mr-2 h-4 w-4" />
           Enviar por Correo
         </Button>
-        <Button onClick={handlePrint}>
-          <Download className="mr-2 h-4 w-4" />
-          Descargar PDF
-        </Button>
+        {isDataReady && (
+            <PDFDownloadLink
+                document={<InvoicePDFDocument invoice={invoice} customer={customer} consignatario={consignatario} />}
+                fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
+            >
+            {({ loading }) => (
+                <Button disabled={loading}>
+                {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                )}
+                {loading ? 'Generando...' : 'Descargar PDF'}
+                </Button>
+            )}
+            </PDFDownloadLink>
+        )}
       </div>
     </div>
   );

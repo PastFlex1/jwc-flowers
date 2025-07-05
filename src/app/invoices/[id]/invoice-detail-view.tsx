@@ -28,7 +28,12 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
-        <InvoiceActions onSendEmailClick={() => setIsSendDialogOpen(true)} />
+        <InvoiceActions 
+            onSendEmailClick={() => setIsSendDialogOpen(true)}
+            invoice={invoice}
+            customer={customer}
+            consignatario={consignatario}
+        />
         <Card className="p-4 sm:p-6 md:p-8" id="invoice-to-print">
           <CardHeader className="p-0">
             <div className="flex justify-between items-start">
