@@ -1,13 +1,13 @@
 'use client';
 
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { format, parseISO } from 'date-fns';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
 // Create styles
 const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Alegreya',
+    // fontFamily: 'Alegreya', // Custom font registration is problematic in SSR. Removed to prevent crash.
     fontSize: 10,
     padding: 40,
     color: '#333',
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   },
   invoiceTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    // fontWeight: 'bold', // Requires custom font to be registered
     color: '#166534', // primary
   },
   invoiceNumber: {
@@ -37,7 +37,7 @@ const styles = StyleSheet.create({
   },
   companyName: {
     fontSize: 18,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
   },
   section: {
     flexDirection: 'row',
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     color: '#71717a',
   },
   sectionTitle: {
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     marginBottom: 4,
   },
   table: {
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eaeaea',
     backgroundColor: '#f4f4f5', // secondary
     padding: 5,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
   },
   tableCol: {
     width: "20%",
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   totalAmount: {},
   grandTotal: {
     fontSize: 14,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
   },
   grandTotalAmount: {
     color: '#166534',
@@ -137,15 +137,6 @@ type InvoicePDFDocumentProps = {
   };
 
 export function InvoicePDFDocument({ invoice, customer, consignatario }: InvoicePDFDocumentProps) {
-  // Register fonts inside the component to avoid running on the server.
-  // This is the fix for the server-side rendering error.
-  Font.register({
-      family: 'Alegreya',
-      fonts: [
-        { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wFnBw3_1k_U6AnXgPK-g.ttf' }, // regular
-        { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wBnbw3_1k_U6AnXgPK8c4.ttf', fontWeight: 'bold' }, // bold
-      ]
-    });
     
   const subtotal = invoice.items.reduce((acc, item) => {
     const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
@@ -206,7 +197,7 @@ export function InvoicePDFDocument({ invoice, customer, consignatario }: Invoice
             return (
                 <View key={index} style={styles.tableRow}>
                     <View style={{...styles.tableCol, width: '40%'}}>
-                        <Text style={{...styles.tableCell, fontWeight: 'bold'}}>{item.description}</Text>
+                        <Text style={{...styles.tableCell}}>{item.description}</Text>
                         <Text style={{...styles.tableCell, ...styles.tableCellDesc}}>
                             {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
                         </Text>
