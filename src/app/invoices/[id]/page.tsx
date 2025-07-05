@@ -2,12 +2,11 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
-import { InvoiceMessageGenerator } from './invoice-message-generator';
-import type { InvoiceMessageInput } from '@/ai/flows/invoice-message-generation';
 import { getInvoiceById } from '@/services/invoices';
 import { getCustomerById } from '@/services/customers';
 import { getConsignatarioById } from '@/services/consignatarios';
 import { format, parseISO } from 'date-fns';
+import { InvoiceActions } from './invoice-actions';
 
 type InvoiceDetailPageProps = {
   params: {
@@ -34,20 +33,10 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   const tax = subtotal * 0.12; // Standard VAT in Ecuador
   const total = subtotal + tax;
 
-  const orderSummary = invoice.items
-    .map(item => `${(item.stemCount || 0) * (item.bunchCount || 0)}x ${item.description}`)
-    .join(', ');
-
-  const aiMessageInput: InvoiceMessageInput | null = customer ? {
-    customerName: customer.name,
-    orderSummary,
-    invoiceTotal: total,
-    isFirstOrder: false,
-  } : null;
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="p-4 sm:p-6 md:p-8">
+    <div className="max-w-4xl mx-auto space-y-6">
+      <InvoiceActions />
+      <Card className="p-4 sm:p-6 md:p-8" id="invoice-to-print">
         <CardHeader className="p-0">
           <div className="flex justify-between items-start">
             <div>
@@ -137,8 +126,6 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
           </div>
         </CardContent>
       </Card>
-      
-      {aiMessageInput && <InvoiceMessageGenerator input={aiMessageInput} />}
     </div>
   );
 }

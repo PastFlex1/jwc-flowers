@@ -91,4 +91,37 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+
+  @media print {
+    body {
+      background: white !important;
+    }
+
+    .app-shell-header,
+    [data-sidebar='sidebar'],
+    .no-print {
+      display: none !important;
+    }
+
+    main {
+      padding: 0 !important;
+      margin: 0 !important;
+      min-height: auto !important;
+    }
+
+    main > div {
+       padding: 0 !important;
+    }
+
+    #invoice-to-print {
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    @page {
+      size: auto;
+      margin: 0.5in;
+    }
+  }
 }

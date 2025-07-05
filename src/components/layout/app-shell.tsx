@@ -90,8 +90,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
+      <SidebarInset className="flex flex-col">
+        <header className="app-shell-header flex h-16 shrink-0 items-center gap-4 border-b bg-background px-6">
            <SidebarTrigger className="md:hidden" />
            <div className="flex-1">
              {/* This can be a breadcrumb or page title */}
@@ -149,9 +149,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Menubar>
            </div>
         </header>
-        <main className="p-4 md:p-6 lg:p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

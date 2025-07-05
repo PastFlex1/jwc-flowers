@@ -1,4 +1,5 @@
+'use server';
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/invoice-message-generation.ts';
+// This file is intentionally left blank after removing the AI flow.
