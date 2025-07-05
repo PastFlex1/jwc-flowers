@@ -1,12 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BlobProvider } from '@react-pdf/renderer';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 import { InvoicePDFDocument } from './invoice-pdf-document';
+
+// Define component prop types inline to avoid a static import of the library
+type BlobProviderState = { url: string | null; loading: boolean; error: Error | null };
+type ClientBlobProviderProps = {
+  document: React.ReactElement;
+  children: (state: BlobProviderState) => React.ReactNode;
+};
 
 type InvoiceDownloadButtonProps = {
   invoice: Invoice;
@@ -16,12 +22,15 @@ type InvoiceDownloadButtonProps = {
 
 export default function InvoiceDownloadButton({ invoice, customer, consignatario }: InvoiceDownloadButtonProps) {
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isClient, setIsClient] = useState(false);
+    // State to hold the dynamically imported component
+    const [ClientBlobProvider, setClientBlobProvider] = useState<React.ComponentType<ClientBlobProviderProps> | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
-        // This runs only on the client, after the component has mounted.
-        setIsClient(true);
+        // Dynamically import BlobProvider only on the client-side after mount
+        import('@react-pdf/renderer').then(module => {
+            setClientBlobProvider(() => module.BlobProvider);
+        });
     }, []);
 
     const handlePrintAndSave = (url: string | null) => {
@@ -94,9 +103,8 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
         }
     };
     
-    // Render a disabled button on the server and before the client has mounted
-    // This avoids the initial "Cargando..." state and prevents layout shifts.
-    if (!isClient || !customer) {
+    // Render a disabled button on the server and before the client-side module has been loaded.
+    if (!ClientBlobProvider || !customer) {
       return (
         <Button disabled>
             <Printer className="mr-2 h-4 w-4" />
@@ -106,7 +114,7 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
     }
   
     return (
-      <BlobProvider document={<InvoicePDFDocument invoice={invoice} customer={customer} consignatario={consignatario} />}>
+      <ClientBlobProvider document={<InvoicePDFDocument invoice={invoice} customer={customer} consignatario={consignatario} />}>
         {({ url, loading, error }) => {
           if (error) {
               console.error("PDF Generation Error:", error);
@@ -126,6 +134,6 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
             </Button>
           );
         }}
-      </BlobProvider>
+      </ClientBlobProvider>
     );
 }
