@@ -1,11 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+
+const InvoiceDownloadButton = dynamic(
+  () => import('./invoice-download-button').then(mod => mod.InvoiceDownloadButton),
+  { 
+    ssr: false,
+    loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</Button> 
+  }
+);
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -24,7 +35,19 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
-        <InvoiceActions />
+        <div className="flex justify-between items-center no-print">
+          <InvoiceActions />
+          <div className="flex gap-2">
+            {customer && (
+              <InvoiceDownloadButton
+                invoice={invoice}
+                customer={customer}
+                consignatario={consignatario}
+              />
+            )}
+          </div>
+        </div>
+        
         <Card className="p-4 sm:p-6 md:p-8" id="invoice-to-print">
           <CardHeader className="p-0">
             <div className="flex justify-between items-start">
