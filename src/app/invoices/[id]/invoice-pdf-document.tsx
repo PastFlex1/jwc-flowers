@@ -7,7 +7,7 @@ import type { Invoice, Customer, Consignatario } from '@/lib/types';
 // Create styles
 const styles = StyleSheet.create({
   page: {
-    // NOTE: Custom fonts can cause issues with SSR. Using default fonts for stability.
+    // NOTE: Using default fonts for stability.
     fontSize: 10,
     padding: 40,
     color: '#333',

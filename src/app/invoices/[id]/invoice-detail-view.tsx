@@ -7,7 +7,22 @@ import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const InvoiceDownloadButton = dynamic(
+  () => import('./invoice-download-button').then((mod) => mod.InvoiceDownloadButton),
+  {
+    ssr: false,
+    loading: () => (
+      <Button disabled>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Cargando...
+      </Button>
+    ),
+  }
+);
+
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -23,20 +38,19 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
   const tax = subtotal * 0.12; // Standard VAT in Ecuador
   const total = subtotal + tax;
   
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="flex justify-between items-center no-print">
           <InvoiceActions />
           <div className="flex gap-2">
-             <Button onClick={handlePrint}>
-                <Download className="mr-2 h-4 w-4" />
-                Descargar PDF
-            </Button>
+             {customer && (
+                <InvoiceDownloadButton
+                    invoice={invoice}
+                    customer={customer}
+                    consignatario={consignatario}
+                />
+            )}
           </div>
         </div>
         
