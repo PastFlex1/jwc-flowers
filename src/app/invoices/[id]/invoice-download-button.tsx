@@ -94,11 +94,13 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
         }
     };
     
+    // Render a disabled button on the server and before the client has mounted
+    // This avoids the initial "Cargando..." state and prevents layout shifts.
     if (!isClient || !customer) {
       return (
         <Button disabled>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Cargando...
+            <Printer className="mr-2 h-4 w-4" />
+            Guardar e Imprimir
         </Button>
       );
     }
