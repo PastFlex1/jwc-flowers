@@ -6,14 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
-import { Loader2 } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import { Button } from '@/components/ui/button';
-
-const InvoiceDownloadButton = dynamic(() => import('./invoice-download-button'), {
-    ssr: false,
-    loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Cargando...</Button>
-});
+import InvoiceDownloadButton from './invoice-download-button';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -36,11 +29,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
           <InvoiceActions />
           <div className="flex gap-2">
              {customer && (
-                <InvoiceDownloadButton
-                    invoice={invoice}
-                    customer={customer}
-                    consignatario={consignatario}
-                />
+                <InvoiceDownloadButton />
             )}
           </div>
         </div>
