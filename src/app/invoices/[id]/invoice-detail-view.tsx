@@ -29,7 +29,11 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
           <InvoiceActions />
           <div className="flex gap-2">
              {customer && (
-                <InvoiceDownloadButton />
+                <InvoiceDownloadButton 
+                    invoice={invoice} 
+                    customer={customer} 
+                    consignatario={consignatario} 
+                />
             )}
           </div>
         </div>
