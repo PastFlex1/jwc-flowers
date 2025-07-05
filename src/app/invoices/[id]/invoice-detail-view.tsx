@@ -1,12 +1,13 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 import InvoiceDownloadButton from './invoice-download-button';
+import Image from 'next/image';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -45,9 +46,15 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
                 <h1 className="text-3xl font-bold font-headline text-primary">INVOICE</h1>
                 <p className="text-muted-foreground">{invoice.invoiceNumber}</p>
               </div>
-              <div className="text-right">
-                <h2 className="text-2xl font-bold font-headline">JCW Flowers</h2>
-                <p className="text-muted-foreground">Cayambe, Ecuador</p>
+              <div className="text-right flex flex-col items-end">
+                <Image
+                  src="https://placehold.co/150x50.png"
+                  alt="JCW Flowers Logo"
+                  width={150}
+                  height={50}
+                  data-ai-hint="logo company"
+                />
+                <p className="text-muted-foreground mt-2">Cayambe, Ecuador</p>
               </div>
             </div>
             <Separator className="my-6" />
