@@ -24,11 +24,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
-        <InvoiceActions 
-            invoice={invoice}
-            customer={customer}
-            consignatario={consignatario}
-        />
+        <InvoiceActions />
         <Card className="p-4 sm:p-6 md:p-8" id="invoice-to-print">
           <CardHeader className="p-0">
             <div className="flex justify-between items-start">
