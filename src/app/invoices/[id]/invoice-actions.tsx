@@ -1,12 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import dynamic from 'next/dynamic';
 import { InvoicePDFDocument } from './invoice-pdf-document';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
+
+// Dynamically import PDFDownloadLink and disable SSR, providing a loading state.
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+  {
+    ssr: false,
+    loading: () => (
+      <Button disabled>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Generando...
+      </Button>
+    ),
+  }
+);
+
 
 type InvoiceActionsProps = {
   onSendEmailClick: () => void;
@@ -17,12 +31,7 @@ type InvoiceActionsProps = {
 
 export function InvoiceActions({ onSendEmailClick, invoice, customer, consignatario }: InvoiceActionsProps) {
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+  
   const isDataReady = !!(invoice && customer);
 
   return (
@@ -35,7 +44,7 @@ export function InvoiceActions({ onSendEmailClick, invoice, customer, consignata
           <Mail className="mr-2 h-4 w-4" />
           Enviar por Correo
         </Button>
-        {isClient && isDataReady && (
+        {isDataReady && (
             <PDFDownloadLink
                 document={<InvoicePDFDocument invoice={invoice} customer={customer} consignatario={consignatario} />}
                 fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
