@@ -33,7 +33,9 @@
     "sendTooltip": "Enviar por Correo",
     "deleteTooltip": "Eliminar Factura",
     "sendMailNoticeTitle": "Funcionalidad en desarrollo",
-    "sendMailNoticeDescription": "Enviar la factura {invoiceNumber} por correo aún no está implementado."
+    "sendMailNoticeDescription": "Enviar la factura {invoiceNumber} por correo aún no está implementado.",
+    "unknownCustomer": "Cliente Desconocido",
+    "searchPlaceholder": "Buscar por N°, cliente o estado..."
   },
   "customers": {
     "title": "Clientes",
@@ -86,5 +88,19 @@
     "title": "Inventario",
     "description": "Administra tus productos y servicios.",
     "newItem": "Nuevo Ítem"
+  },
+  "sendInvoiceDialog": {
+    "title": "Enviar Factura por Correo",
+    "description": "Se enviará la factura {invoiceNumber} a {customerName}.",
+    "to": "Para",
+    "subject": "Asunto",
+    "body": "Cuerpo del Mensaje",
+    "cancel": "Cancelar",
+    "send": "Enviar Correo",
+    "sending": "Enviando...",
+    "defaultSubject": "Factura {invoiceNumber} de JCW Flowers",
+    "defaultBody": "Estimado/a {customerName},\n\nAdjunto encontrará la factura de su reciente pedido.\n\nGracias por su compra.\n\nSaludos cordiales,\nEl equipo de JCW Flowers",
+    "successTitle": "Correo Enviado (Simulación)",
+    "successDescription": "La factura {invoiceNumber} ha sido enviada a {email}."
   }
 }

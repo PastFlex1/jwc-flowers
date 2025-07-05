@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Mail, Trash2 } from 'lucide-react';
+import { Plus, Edit, Mail, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,34 +17,66 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, Customer } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { SendInvoiceDialog } from './send-invoice-dialog';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 export function InvoicesClient() {
   const { invoices, customers, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
+  const [invoiceToSend, setInvoiceToSend] = useState<Invoice | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    setLocalInvoices(invoices);
-  }, [invoices]);
-
   const customerMap = useMemo(() => {
     return customers.reduce((acc, customer) => {
-      acc[customer.id] = customer.name;
+      acc[customer.id] = customer;
       return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<string, Customer>);
   }, [customers]);
 
-  const getCustomerName = (customerId: string) => {
-    return customerMap[customerId] || 'Cliente Desconocido';
+  useEffect(() => {
+    const filtered = invoices.filter(invoice => {
+        const customerName = customerMap[invoice.customerId]?.name || '';
+        const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
+        
+        const searchFields = [
+            invoice.invoiceNumber,
+            customerName,
+            invoice.status,
+            format(parseISO(invoice.flightDate), 'PPP')
+        ];
+
+        return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
+    });
+    setLocalInvoices(filtered);
+  }, [invoices, debouncedSearchTerm, customerMap]);
+
+
+  const getCustomer = (customerId: string): Customer | null => {
+    return customerMap[customerId] || null;
   };
 
   const getInvoiceTotal = (invoice: Invoice) => {
@@ -59,10 +91,7 @@ export function InvoicesClient() {
   };
 
   const handleSendEmailClick = (invoice: Invoice) => {
-    toast({
-      title: t('invoices.sendMailNoticeTitle'),
-      description: t('invoices.sendMailNoticeDescription', { invoiceNumber: invoice.invoiceNumber }),
-    });
+    setInvoiceToSend(invoice);
   };
 
   const handleDeleteClick = (invoice: Invoice) => {
@@ -93,6 +122,8 @@ export function InvoicesClient() {
       setInvoiceToDelete(null);
     }
   };
+  
+  const selectedCustomer = invoiceToSend ? getCustomer(invoiceToSend.customerId) : null;
 
 
   return (
@@ -116,6 +147,15 @@ export function InvoicesClient() {
             <CardDescription>{t('invoices.historyDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t('invoices.searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -137,7 +177,7 @@ export function InvoicesClient() {
                           {invoice.invoiceNumber}
                         </Link>
                       </TableCell>
-                      <TableCell>{getCustomerName(invoice.customerId)}</TableCell>
+                      <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
                       <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
                       <TableCell>${total.toFixed(2)}</TableCell>
                       <TableCell>
@@ -192,6 +232,13 @@ export function InvoicesClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SendInvoiceDialog 
+        invoice={invoiceToSend}
+        customer={selectedCustomer}
+        isOpen={!!invoiceToSend}
+        onClose={() => setInvoiceToSend(null)}
+      />
     </>
   );
 }

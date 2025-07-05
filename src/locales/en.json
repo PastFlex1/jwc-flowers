@@ -33,7 +33,9 @@
     "sendTooltip": "Send via Email",
     "deleteTooltip": "Delete Invoice",
     "sendMailNoticeTitle": "Feature in development",
-    "sendMailNoticeDescription": "Sending invoice {invoiceNumber} by email is not yet implemented."
+    "sendMailNoticeDescription": "Sending invoice {invoiceNumber} by email is not yet implemented.",
+    "unknownCustomer": "Unknown Customer",
+    "searchPlaceholder": "Search by #, customer, or status..."
   },
   "customers": {
     "title": "Customers",
@@ -86,5 +88,19 @@
     "title": "Inventory",
     "description": "Manage your products and services.",
     "newItem": "New Item"
+  },
+  "sendInvoiceDialog": {
+    "title": "Send Invoice via Email",
+    "description": "Invoice {invoiceNumber} will be sent to {customerName}.",
+    "to": "To",
+    "subject": "Subject",
+    "body": "Message Body",
+    "cancel": "Cancel",
+    "send": "Send Email",
+    "sending": "Sending...",
+    "defaultSubject": "Invoice {invoiceNumber} from JCW Flowers",
+    "defaultBody": "Dear {customerName},\n\nPlease find your invoice attached.\n\nThank you for your business.\n\nBest regards,\nThe JCW Flowers Team",
+    "successTitle": "Email Sent (Simulation)",
+    "successDescription": "Invoice {invoiceNumber} has been sent to {email}."
   }
 }
