@@ -25,7 +25,6 @@ import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
-import { SendInvoiceDialog } from './send-invoice-dialog';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -44,7 +43,6 @@ export function InvoicesClient() {
   const { invoices, customers, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
-  const [invoiceToSend, setInvoiceToSend] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const { toast } = useToast();
@@ -90,10 +88,6 @@ export function InvoicesClient() {
     return subtotal + tax;
   };
 
-  const handleSendEmailClick = (invoice: Invoice) => {
-    setInvoiceToSend(invoice);
-  };
-
   const handleDeleteClick = (invoice: Invoice) => {
     setInvoiceToDelete(invoice);
   };
@@ -123,9 +117,6 @@ export function InvoicesClient() {
     }
   };
   
-  const selectedCustomer = invoiceToSend ? getCustomer(invoiceToSend.customerId) : null;
-
-
   return (
     <>
       <div className="space-y-6">
@@ -199,10 +190,12 @@ export function InvoicesClient() {
                               <span className="sr-only">{t('invoices.editTooltip')}</span>
                             </Button>
                           </Link>
-                          <Button variant="ghost" size="icon" onClick={() => handleSendEmailClick(invoice)} title={t('invoices.sendTooltip')}>
-                            <Mail className="h-4 w-4" />
-                            <span className="sr-only">{t('invoices.sendTooltip')}</span>
-                          </Button>
+                          <Link href={`/invoices/${invoice.id}`} passHref>
+                            <Button variant="ghost" size="icon" title={t('invoices.sendTooltip')}>
+                              <Mail className="h-4 w-4" />
+                              <span className="sr-only">{t('invoices.sendTooltip')}</span>
+                            </Button>
+                          </Link>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                             <span className="sr-only">{t('invoices.deleteTooltip')}</span>
@@ -232,13 +225,6 @@ export function InvoicesClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <SendInvoiceDialog 
-        invoice={invoiceToSend}
-        customer={selectedCustomer}
-        isOpen={!!invoiceToSend}
-        onClose={() => setInvoiceToSend(null)}
-      />
     </>
   );
 }
