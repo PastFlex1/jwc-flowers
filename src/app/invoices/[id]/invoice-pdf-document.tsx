@@ -4,17 +4,6 @@ import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/rendere
 import { format, parseISO } from 'date-fns';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
-// Register fonts
-// Note: You need to have the font files available in your public folder
-// For this example, we assume they are located at /fonts/
-Font.register({
-    family: 'Alegreya',
-    fonts: [
-      { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wFnBw3_1k_U6AnXgPK-g.ttf' }, // regular
-      { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wBnbw3_1k_U6AnXgPK8c4.ttf', fontWeight: 'bold' }, // bold
-    ]
-  });
-
 // Create styles
 const styles = StyleSheet.create({
   page: {
@@ -148,6 +137,16 @@ type InvoicePDFDocumentProps = {
   };
 
 export function InvoicePDFDocument({ invoice, customer, consignatario }: InvoicePDFDocumentProps) {
+  // Register fonts inside the component to avoid running on the server.
+  // This is the fix for the server-side rendering error.
+  Font.register({
+      family: 'Alegreya',
+      fonts: [
+        { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wFnBw3_1k_U6AnXgPK-g.ttf' }, // regular
+        { src: 'https://fonts.gstatic.com/s/alegreya/v35/i-wBnbw3_1k_U6AnXgPK8c4.ttf', fontWeight: 'bold' }, // bold
+      ]
+    });
+    
   const subtotal = invoice.items.reduce((acc, item) => {
     const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
     return acc + ((item.salePrice || 0) * totalStems);
