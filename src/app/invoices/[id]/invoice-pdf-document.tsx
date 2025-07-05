@@ -7,11 +7,10 @@ import type { Invoice, Customer, Consignatario } from '@/lib/types';
 // Create styles
 const styles = StyleSheet.create({
   page: {
-    // NOTE: Using default fonts for stability.
     fontSize: 10,
     padding: 40,
     color: '#333',
-    fontFamily: 'Helvetica',
+    fontFamily: 'Helvetica', // Use default font
   },
   header: {
     flexDirection: 'row',
@@ -31,10 +30,10 @@ const styles = StyleSheet.create({
   invoiceTitle: {
     fontSize: 24,
     fontFamily: 'Helvetica-Bold',
-    color: '#166534', // primary
+    color: '#166534',
   },
   invoiceNumber: {
-    color: '#71717a', // muted-foreground
+    color: '#71717a',
   },
   companyName: {
     fontSize: 18,
@@ -65,8 +64,6 @@ const styles = StyleSheet.create({
     width: "auto",
     borderStyle: "solid",
     borderWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0
   },
   tableRow: {
     margin: "auto",
@@ -75,20 +72,20 @@ const styles = StyleSheet.create({
   tableColHeader: {
     width: "20%",
     borderStyle: "solid",
-    borderWidth: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#eaeaea',
-    backgroundColor: '#f4f4f5', // secondary
+    backgroundColor: '#f4f4f5',
     padding: 5,
     fontFamily: 'Helvetica-Bold',
+    textAlign: 'center'
   },
   tableCol: {
     width: "20%",
     borderStyle: "solid",
-    borderWidth: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#eaeaea',
     padding: 5,
+    textAlign: 'center',
   },
   tableCell: {
     margin: "auto",
@@ -97,7 +94,8 @@ const styles = StyleSheet.create({
   },
   tableCellDesc: {
     fontSize: 9,
-    color: '#71717a'
+    color: '#71717a',
+    textAlign: 'left'
   },
   totals: {
     flexDirection: 'row',
@@ -115,7 +113,6 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: '#71717a',
   },
-  totalAmount: {},
   grandTotal: {
     fontSize: 14,
     fontFamily: 'Helvetica-Bold',
@@ -170,7 +167,7 @@ export function InvoicePDFDocument({ invoice, customer, consignatario }: Invoice
                         <Text style={styles.address}>{`${consignatario.provincia}, ${consignatario.pais}`}</Text>
                     </>
                 ) : (
-                    customer?.address.split(',').map(line => <Text key={line} style={styles.address}>{line.trim()}</Text>)
+                    customer?.address.split(',').map((line, i) => <Text key={i} style={styles.address}>{line.trim()}</Text>)
                 )}
                 {customer?.email && <Text style={styles.address}>{customer.email}</Text>}
             </View>
@@ -184,11 +181,11 @@ export function InvoicePDFDocument({ invoice, customer, consignatario }: Invoice
         
         {/* Table Header */}
         <View style={styles.tableRow}>
-            <View style={{...styles.tableColHeader, width: '40%'}}><Text style={styles.tableCell}>Descripción</Text></View>
-            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'center'}}><Text style={styles.tableCell}>Cajas</Text></View>
-            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'center'}}><Text style={styles.tableCell}>Total Tallos</Text></View>
-            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'right'}}><Text style={styles.tableCell}>Precio Unit.</Text></View>
-            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'right'}}><Text style={styles.tableCell}>Total</Text></View>
+            <View style={{...styles.tableColHeader, width: '40%', textAlign: 'left'}}><Text>Descripción</Text></View>
+            <View style={{...styles.tableColHeader, width: '15%'}}><Text>Cajas</Text></View>
+            <View style={{...styles.tableColHeader, width: '15%'}}><Text>Total Tallos</Text></View>
+            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'right'}}><Text>Precio Unit.</Text></View>
+            <View style={{...styles.tableColHeader, width: '15%', textAlign: 'right'}}><Text>Total</Text></View>
         </View>
 
         {/* Table Body */}
@@ -197,16 +194,16 @@ export function InvoicePDFDocument({ invoice, customer, consignatario }: Invoice
             const itemTotal = (item.salePrice || 0) * totalStems;
             return (
                 <View key={index} style={styles.tableRow}>
-                    <View style={{...styles.tableCol, width: '40%'}}>
-                        <Text style={{...styles.tableCell, fontFamily: 'Helvetica-Bold'}}>{item.description}</Text>
-                        <Text style={{...styles.tableCell, ...styles.tableCellDesc}}>
+                    <View style={{...styles.tableCol, width: '40%', textAlign: 'left'}}>
+                        <Text style={{fontFamily: 'Helvetica-Bold'}}>{item.description}</Text>
+                        <Text style={styles.tableCellDesc}>
                             {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
                         </Text>
                     </View>
-                    <View style={{...styles.tableCol, width: '15%', textAlign: 'center'}}><Text style={styles.tableCell}>{item.boxCount}</Text></View>
-                    <View style={{...styles.tableCol, width: '15%', textAlign: 'center'}}><Text style={styles.tableCell}>{totalStems}</Text></View>
-                    <View style={{...styles.tableCol, width: '15%', textAlign: 'right'}}><Text style={styles.tableCell}>${item.salePrice?.toFixed(2)}</Text></View>
-                    <View style={{...styles.tableCol, width: '15%', textAlign: 'right'}}><Text style={styles.tableCell}>${itemTotal.toFixed(2)}</Text></View>
+                    <View style={{...styles.tableCol, width: '15%'}}><Text>{item.boxCount}</Text></View>
+                    <View style={{...styles.tableCol, width: '15%'}}><Text>{totalStems}</Text></View>
+                    <View style={{...styles.tableCol, width: '15%', textAlign: 'right'}}><Text>${item.salePrice?.toFixed(2)}</Text></View>
+                    <View style={{...styles.tableCol, width: '15%', textAlign: 'right'}}><Text>${itemTotal.toFixed(2)}</Text></View>
                 </View>
             )
         })}
