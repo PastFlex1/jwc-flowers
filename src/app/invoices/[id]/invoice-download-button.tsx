@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BlobProvider } from '@react-pdf/renderer';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
@@ -16,7 +16,13 @@ type InvoiceDownloadButtonProps = {
 
 export default function InvoiceDownloadButton({ invoice, customer, consignatario }: InvoiceDownloadButtonProps) {
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isClient, setIsClient] = useState(false);
     const { toast } = useToast();
+
+    useEffect(() => {
+        // This runs only on the client, after the component has mounted.
+        setIsClient(true);
+    }, []);
 
     const handlePrintAndSave = (url: string | null) => {
         if (!url || !customer) {
@@ -88,8 +94,13 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
         }
     };
     
-    if (!customer) {
-      return <Button disabled>Guardar e Imprimir</Button>;
+    if (!isClient || !customer) {
+      return (
+        <Button disabled>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Cargando...
+        </Button>
+      );
     }
   
     return (
