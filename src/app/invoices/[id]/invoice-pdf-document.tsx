@@ -7,10 +7,11 @@ import type { Invoice, Customer, Consignatario } from '@/lib/types';
 // Create styles
 const styles = StyleSheet.create({
   page: {
-    // fontFamily: 'Alegreya', // Custom font registration is problematic in SSR. Removed to prevent crash.
+    // NOTE: Custom fonts can cause issues with SSR. Using default fonts for stability.
     fontSize: 10,
     padding: 40,
     color: '#333',
+    fontFamily: 'Helvetica',
   },
   header: {
     flexDirection: 'row',
@@ -29,7 +30,7 @@ const styles = StyleSheet.create({
   },
   invoiceTitle: {
     fontSize: 24,
-    // fontWeight: 'bold', // Requires custom font to be registered
+    fontFamily: 'Helvetica-Bold',
     color: '#166534', // primary
   },
   invoiceNumber: {
@@ -37,7 +38,7 @@ const styles = StyleSheet.create({
   },
   companyName: {
     fontSize: 18,
-    // fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
   },
   section: {
     flexDirection: 'row',
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     color: '#71717a',
   },
   sectionTitle: {
-    // fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
     marginBottom: 4,
   },
   table: {
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eaeaea',
     backgroundColor: '#f4f4f5', // secondary
     padding: 5,
-    // fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
   },
   tableCol: {
     width: "20%",
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   totalAmount: {},
   grandTotal: {
     fontSize: 14,
-    // fontWeight: 'bold',
+    fontFamily: 'Helvetica-Bold',
   },
   grandTotalAmount: {
     color: '#166534',
@@ -197,7 +198,7 @@ export function InvoicePDFDocument({ invoice, customer, consignatario }: Invoice
             return (
                 <View key={index} style={styles.tableRow}>
                     <View style={{...styles.tableCol, width: '40%'}}>
-                        <Text style={{...styles.tableCell}}>{item.description}</Text>
+                        <Text style={{...styles.tableCell, fontFamily: 'Helvetica-Bold'}}>{item.description}</Text>
                         <Text style={{...styles.tableCell, ...styles.tableCellDesc}}>
                             {item.boxCount} {item.boxType.toUpperCase()} / {item.bunchCount} Bunches / {item.length}cm
                         </Text>

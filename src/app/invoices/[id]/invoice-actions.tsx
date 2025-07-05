@@ -1,10 +1,26 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
-export function InvoiceActions() {
+const InvoiceDownloadButton = dynamic(
+  () => import('./invoice-download-button').then(mod => mod.InvoiceDownloadButton),
+  { 
+    ssr: false,
+    loading: () => <Button disabled><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generando...</Button> 
+  }
+);
+
+type InvoiceActionsProps = {
+  invoice: Invoice;
+  customer: Customer;
+  consignatario: Consignatario | null;
+};
+
+export function InvoiceActions({ invoice, customer, consignatario }: InvoiceActionsProps) {
   const router = useRouter();
 
   return (
@@ -13,10 +29,11 @@ export function InvoiceActions() {
         Volver
       </Button>
       <div className="flex gap-2">
-        <Button onClick={() => window.print()}>
-          <Download className="mr-2 h-4 w-4" />
-          Descargar PDF
-        </Button>
+        <InvoiceDownloadButton
+          invoice={invoice}
+          customer={customer}
+          consignatario={consignatario}
+        />
       </div>
     </div>
   );
