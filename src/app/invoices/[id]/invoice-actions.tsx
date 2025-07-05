@@ -1,10 +1,14 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function InvoiceActions() {
+type InvoiceActionsProps = {
+  onSendEmailClick: () => void;
+};
+
+export function InvoiceActions({ onSendEmailClick }: InvoiceActionsProps) {
   const router = useRouter();
 
   const handlePrint = () => {
@@ -16,10 +20,16 @@ export function InvoiceActions() {
        <Button variant="outline" onClick={() => router.back()}>
         Volver
       </Button>
-      <Button onClick={handlePrint}>
-        <Printer className="mr-2 h-4 w-4" />
-        Guardar e Imprimir Factura
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={onSendEmailClick} variant="outline">
+          <Mail className="mr-2 h-4 w-4" />
+          Enviar por Correo
+        </Button>
+        <Button onClick={handlePrint}>
+          <Download className="mr-2 h-4 w-4" />
+          Descargar PDF
+        </Button>
+      </div>
     </div>
   );
 }
