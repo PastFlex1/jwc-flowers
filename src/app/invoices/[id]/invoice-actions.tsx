@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Mail, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
@@ -23,13 +23,12 @@ const InvoiceDownloadButton = dynamic(
 
 
 type InvoiceActionsProps = {
-  onSendEmailClick: () => void;
   invoice: Invoice;
   customer: Customer | null;
   consignatario: Consignatario | null;
 };
 
-export function InvoiceActions({ onSendEmailClick, invoice, customer, consignatario }: InvoiceActionsProps) {
+export function InvoiceActions({ invoice, customer, consignatario }: InvoiceActionsProps) {
   const router = useRouter();
   
   const isDataReady = !!(invoice && customer);
@@ -40,10 +39,6 @@ export function InvoiceActions({ onSendEmailClick, invoice, customer, consignata
         Volver
       </Button>
       <div className="flex gap-2">
-        <Button onClick={onSendEmailClick} variant="outline">
-          <Mail className="mr-2 h-4 w-4" />
-          Enviar por Correo
-        </Button>
         {isDataReady && (
             <InvoiceDownloadButton
                 invoice={invoice}

@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
-import { SendInvoiceDialog } from '../send-invoice-dialog';
 import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
 type InvoiceDetailViewProps = {
@@ -16,8 +14,6 @@ type InvoiceDetailViewProps = {
 };
 
 export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceDetailViewProps) {
-  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
-
   const subtotal = invoice.items.reduce((acc, item) => {
     const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
     return acc + ((item.salePrice || 0) * totalStems);
@@ -29,7 +25,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
     <>
       <div className="max-w-4xl mx-auto space-y-6">
         <InvoiceActions 
-            onSendEmailClick={() => setIsSendDialogOpen(true)}
             invoice={invoice}
             customer={customer}
             consignatario={consignatario}
@@ -125,12 +120,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
           </CardContent>
         </Card>
       </div>
-       <SendInvoiceDialog
-        isOpen={isSendDialogOpen}
-        onClose={() => setIsSendDialogOpen(false)}
-        invoice={invoice}
-        customer={customer}
-      />
     </>
   );
 }

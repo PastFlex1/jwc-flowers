@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Mail, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -188,12 +188,6 @@ export function InvoicesClient() {
                             <Button variant="ghost" size="icon" title={t('invoices.editTooltip')}>
                               <Edit className="h-4 w-4" />
                               <span className="sr-only">{t('invoices.editTooltip')}</span>
-                            </Button>
-                          </Link>
-                          <Link href={`/invoices/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title={t('invoices.sendTooltip')}>
-                              <Mail className="h-4 w-4" />
-                              <span className="sr-only">{t('invoices.sendTooltip')}</span>
                             </Button>
                           </Link>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
