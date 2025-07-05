@@ -10,9 +10,10 @@ import {
   deleteDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentData): Customer => {
+const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Customer => {
   const data = snapshot.data();
    if (!data) throw new Error("Document data not found");
   return {

@@ -41,7 +41,7 @@
     "title": "Clientes",
     "description": "Administra los perfiles de tus clientes.",
     "newCustomer": "Nuevo Cliente",
-    "view": "Ver",
+    "edit": "Editar",
     "delete": "Eliminar"
   },
   "fincas": {
@@ -57,7 +57,9 @@
   "vendedores": {
     "title": "Vendedores",
     "description": "Administra los perfiles de tus vendedores.",
-    "add": "Nuevo Vendedor"
+    "add": "Nuevo Vendedor",
+    "edit": "Editar",
+    "delete": "Eliminar"
   },
   "marcacion": {
     "title": "Marcación",

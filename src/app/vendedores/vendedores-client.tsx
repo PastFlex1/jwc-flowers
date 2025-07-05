@@ -153,11 +153,11 @@ export function VendedoresClient() {
               </CardContent>
               <div className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(vendedor)}>
-                  Ver
+                  {t('vendedores.edit')}
                 </Button>
                 <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(vendedor)}>
                   <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Eliminar</span>
+                  <span className="sr-only">{t('vendedores.delete')}</span>
                 </Button>
               </div>
             </Card>

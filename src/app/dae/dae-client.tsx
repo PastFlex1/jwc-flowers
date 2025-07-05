@@ -26,7 +26,7 @@ import { useTranslation } from '@/context/i18n-context';
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
 export function DaeClient() {
-  const { daes, refreshData } = useAppData();
+  const { daes, paises, refreshData } = useAppData();
   const [localDaes, setLocalDaes] = useState<Dae[]>([]);
   const { t } = useTranslation();
   
@@ -140,6 +140,7 @@ export function DaeClient() {
               onClose={handleCloseDialog}
               initialData={editingDae}
               isSubmitting={isSubmitting}
+              paises={paises}
             />
           </DialogContent>
         </Dialog>

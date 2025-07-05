@@ -7,11 +7,12 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Dae } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Dae, Pais } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  pais: z.string().min(2, { message: "El país debe tener al menos 2 caracteres." }),
+  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
   numeroDae: z.string().min(3, { message: "El número DAE es muy corto." }),
 });
 
@@ -22,9 +23,10 @@ type DaeFormProps = {
   onClose: () => void;
   initialData?: Dae | null;
   isSubmitting: boolean;
+  paises: Pais[];
 };
 
-export function DaeForm({ onSubmit, onClose, initialData, isSubmitting }: DaeFormProps) {
+export function DaeForm({ onSubmit, onClose, initialData, isSubmitting, paises }: DaeFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -54,9 +56,20 @@ export function DaeForm({ onSubmit, onClose, initialData, isSubmitting }: DaeFor
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nombre del País</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Ecuador" {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un país" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {paises.map(pais => (
+                      <SelectItem key={pais.id} value={pais.nombre}>
+                        {pais.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               <FormMessage />
             </FormItem>
           )}

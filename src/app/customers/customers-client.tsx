@@ -155,7 +155,7 @@ export function CustomersClient() {
               </CardContent>
               <div className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>
-                  {t('customers.view')}
+                  {t('customers.edit')}
                 </Button>
                 <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(customer)}>
                   <Trash2 className="h-4 w-4" />
