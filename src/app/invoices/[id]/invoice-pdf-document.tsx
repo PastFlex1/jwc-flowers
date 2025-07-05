@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
 });
 
 
-type InvoicePDFDocumentProps = {
+export type InvoicePDFDocumentProps = {
     invoice: Invoice;
     customer: Customer | null;
     consignatario: Consignatario | null;
