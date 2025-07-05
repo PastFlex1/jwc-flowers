@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,11 @@ type InvoiceActionsProps = {
 
 export function InvoiceActions({ onSendEmailClick, invoice, customer, consignatario }: InvoiceActionsProps) {
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const isDataReady = !!(invoice && customer);
 
@@ -29,7 +35,7 @@ export function InvoiceActions({ onSendEmailClick, invoice, customer, consignata
           <Mail className="mr-2 h-4 w-4" />
           Enviar por Correo
         </Button>
-        {isDataReady && (
+        {isClient && isDataReady && (
             <PDFDownloadLink
                 document={<InvoicePDFDocument invoice={invoice} customer={customer} consignatario={consignatario} />}
                 fileName={`Invoice-${invoice.invoiceNumber}.pdf`}
