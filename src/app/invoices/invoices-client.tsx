@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -39,12 +39,15 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export function InvoicesClient() {
   const { invoices, customers, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -70,7 +73,18 @@ export function InvoicesClient() {
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
     });
     setLocalInvoices(filtered);
+    setCurrentPage(1);
   }, [invoices, debouncedSearchTerm, customerMap]);
+
+  const totalPages = Math.ceil(localInvoices.length / ITEMS_PER_PAGE);
+
+  const paginatedInvoices = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localInvoices, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
 
   const getCustomer = (customerId: string): Customer | null => {
@@ -159,7 +173,7 @@ export function InvoicesClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localInvoices.map((invoice) => {
+                {paginatedInvoices.map((invoice) => {
                   const total = getInvoiceTotal(invoice);
                   return (
                     <TableRow key={invoice.id}>
@@ -202,6 +216,31 @@ export function InvoicesClient() {
               </TableBody>
             </Table>
           </CardContent>
+          {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

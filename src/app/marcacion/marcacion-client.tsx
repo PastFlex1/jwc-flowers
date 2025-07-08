@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,20 +25,34 @@ import { useTranslation } from '@/context/i18n-context';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function MarcacionClient() {
   const { marcaciones, refreshData } = useAppData();
   const [localMarcaciones, setLocalMarcaciones] = useState<Marcacion[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalMarcaciones(marcaciones);
-  }, [marcaciones]);
-  
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalMarcaciones(marcaciones);
+    setCurrentPage(1);
+  }, [marcaciones]);
+  
+  const totalPages = Math.ceil(localMarcaciones.length / ITEMS_PER_PAGE);
+
+  const paginatedMarcaciones = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localMarcaciones.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localMarcaciones, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (marcacion: Marcacion | null = null) => {
     setEditingMarcacion(marcacion);
@@ -159,7 +173,7 @@ export function MarcacionClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localMarcaciones.map((marcacion) => (
+                {paginatedMarcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
                     <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
                     <TableCell>{marcacion.cliente}</TableCell>
@@ -176,6 +190,31 @@ export function MarcacionClient() {
               </TableBody>
             </Table>
           </CardContent>
+          {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

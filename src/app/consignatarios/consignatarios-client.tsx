@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,27 +25,41 @@ import { useTranslation } from '@/context/i18n-context';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function ConsignatariosClient() {
   const { consignatarios, paises, customers, provincias, refreshData } = useAppData();
   const [localConsignatarios, setLocalConsignatarios] = useState<Consignatario[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalConsignatarios(consignatarios);
-  }, [consignatarios]);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    setLocalConsignatarios(consignatarios);
+    setCurrentPage(1);
+  }, [consignatarios]);
+  
   const customerMap = useMemo(() => {
     return customers.reduce((acc, customer) => {
       acc[customer.id] = customer.name;
       return acc;
     }, {} as Record<string, string>);
   }, [customers]);
+
+  const totalPages = Math.ceil(localConsignatarios.length / ITEMS_PER_PAGE);
+
+  const paginatedConsignatarios = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localConsignatarios.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localConsignatarios, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (consignatario: Consignatario | null = null) => {
     setEditingConsignatario(consignatario);
@@ -174,7 +188,7 @@ export function ConsignatariosClient() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {localConsignatarios.map((consignatario) => (
+                  {paginatedConsignatarios.map((consignatario) => (
                     <TableRow key={consignatario.id}>
                       <TableCell className="font-medium">{consignatario.nombreConsignatario}</TableCell>
                       <TableCell>{customerMap[consignatario.customerId] || 'N/A'}</TableCell>
@@ -195,6 +209,31 @@ export function ConsignatariosClient() {
               </Table>
             </div>
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

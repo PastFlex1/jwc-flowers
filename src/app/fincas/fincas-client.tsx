@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,20 +25,35 @@ import { useTranslation } from '@/context/i18n-context';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function FincasClient() {
   const { fincas, refreshData } = useAppData();
   const [localFincas, setLocalFincas] = useState<Finca[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalFincas(fincas);
-  }, [fincas]);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalFincas(fincas);
+    setCurrentPage(1);
+  }, [fincas]);
+
+  const totalPages = Math.ceil(localFincas.length / ITEMS_PER_PAGE);
+
+  const paginatedFincas = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localFincas.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localFincas, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
 
   const handleOpenDialog = (finca: Finca | null = null) => {
     setEditingFinca(finca);
@@ -163,7 +178,7 @@ export function FincasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localFincas.map((finca) => (
+                {paginatedFincas.map((finca) => (
                   <TableRow key={finca.id}>
                     <TableCell className="font-medium">{finca.name}</TableCell>
                     <TableCell>{finca.address}</TableCell>
@@ -183,6 +198,31 @@ export function FincasClient() {
               </TableBody>
             </Table>
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

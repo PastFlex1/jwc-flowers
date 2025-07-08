@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,20 +25,34 @@ import { useTranslation } from '@/context/i18n-context';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function CarguerasClient() {
   const { cargueras, refreshData } = useAppData();
   const [localCargueras, setLocalCargueras] = useState<Carguera[]>([]);
   const { t } = useTranslation();
-
-  useEffect(() => {
-    setLocalCargueras(cargueras);
-  }, [cargueras]);
   
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalCargueras(cargueras);
+    setCurrentPage(1);
+  }, [cargueras]);
+  
+  const totalPages = Math.ceil(localCargueras.length / ITEMS_PER_PAGE);
+
+  const paginatedCargueras = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localCargueras.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localCargueras, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (carguera: Carguera | null = null) => {
     setEditingCarguera(carguera);
@@ -160,7 +174,7 @@ export function CarguerasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localCargueras.map((carguera) => (
+                {paginatedCargueras.map((carguera) => (
                   <TableRow key={carguera.id}>
                     <TableCell className="font-medium">{carguera.nombreCarguera}</TableCell>
                     <TableCell>{carguera.pais}</TableCell>
@@ -177,6 +191,31 @@ export function CarguerasClient() {
               </TableBody>
             </Table>
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

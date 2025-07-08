@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -26,20 +26,34 @@ import { useTranslation } from '@/context/i18n-context';
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function PaisClient() {
   const { paises, refreshData } = useAppData();
   const [localPaises, setLocalPaises] = useState<Pais[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalPaises(paises);
-  }, [paises]);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalPaises(paises);
+    setCurrentPage(1);
+  }, [paises]);
+
+  const totalPages = Math.ceil(localPaises.length / ITEMS_PER_PAGE);
+
+  const paginatedPaises = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localPaises.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localPaises, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (pais: Pais | null = null) => {
     setEditingPais(pais);
@@ -159,7 +173,7 @@ export function PaisClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localPaises.map((pais) => (
+                {paginatedPaises.map((pais) => (
                   <TableRow key={pais.id}>
                     <TableCell className="font-medium">{pais.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">
@@ -175,6 +189,31 @@ export function PaisClient() {
               </TableBody>
             </Table>
           </CardContent>
+          {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

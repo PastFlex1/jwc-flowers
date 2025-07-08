@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -24,11 +24,14 @@ import { useTranslation } from '@/context/i18n-context';
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function CustomersClient() {
   const { customers, paises, cargueras, vendedores, refreshData } = useAppData();
   const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
   const { t } = useTranslation();
 
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -37,7 +40,18 @@ export function CustomersClient() {
 
   useEffect(() => {
     setLocalCustomers(customers);
+    setCurrentPage(1);
   }, [customers]);
+
+  const totalPages = Math.ceil(localCustomers.length / ITEMS_PER_PAGE);
+
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localCustomers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localCustomers, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (customer: Customer | null = null) => {
     setEditingCustomer(customer);
@@ -148,7 +162,7 @@ export function CustomersClient() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {localCustomers.map((customer) => (
+          {paginatedCustomers.map((customer) => (
             <Card key={customer.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{customer.name}</h3>
@@ -165,6 +179,32 @@ export function CustomersClient() {
             </Card>
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-6">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>

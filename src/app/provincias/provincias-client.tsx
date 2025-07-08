@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,20 +25,35 @@ import { useTranslation } from '@/context/i18n-context';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function ProvinciasClient() {
   const { provincias, refreshData } = useAppData();
   const [localProvincias, setLocalProvincias] = useState<Provincia[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalProvincias(provincias);
-  }, [provincias]);
-  
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalProvincias(provincias);
+    setCurrentPage(1);
+  }, [provincias]);
+  
+  const totalPages = Math.ceil(localProvincias.length / ITEMS_PER_PAGE);
+
+  const paginatedProvincias = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localProvincias.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localProvincias, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
 
   const handleOpenDialog = (provincia: Provincia | null = null) => {
     setEditingProvincia(provincia);
@@ -158,7 +173,7 @@ export function ProvinciasClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localProvincias.map((provincia) => (
+                {paginatedProvincias.map((provincia) => (
                   <TableRow key={provincia.id}>
                     <TableCell className="font-medium">{provincia.nombre}</TableCell>
                     <TableCell className="text-right space-x-0">
@@ -174,6 +189,31 @@ export function ProvinciasClient() {
               </TableBody>
             </Table>
           </CardContent>
+           {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 

@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -13,9 +13,12 @@ import type { InventoryItem } from '@/lib/types';
 import { ItemForm } from './item-form';
 import { useTranslation } from '@/context/i18n-context';
 
+const ITEMS_PER_PAGE = 10;
+
 export function InventoryClient() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -23,6 +26,7 @@ export function InventoryClient() {
     try {
       const items = await getInventoryItems();
       setInventory(items);
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast({
@@ -38,18 +42,24 @@ export function InventoryClient() {
   }, [fetchItems]);
 
 
+  const totalPages = Math.ceil(inventory.length / ITEMS_PER_PAGE);
+
+  const paginatedInventory = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return inventory.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [inventory, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+
+
   const handleAddItem = async (newItemData: Omit<InventoryItem, 'id'>) => {
     setIsDialogOpen(false);
-    const tempId = `temp-${Date.now()}`;
-    const newItem = { ...newItemData, id: tempId };
-    setInventory(prev => [...prev, newItem]);
-
     try {
-      const newId = await addInventoryItem(newItemData);
-      setInventory(prev => prev.map(item => item.id === tempId ? { ...newItem, id: newId } : item));
+      await addInventoryItem(newItemData);
       toast({ title: 'Éxito', description: 'Ítem añadido correctamente.' });
+      fetchItems(); // Refetch to get the latest list
     } catch (error) {
-      setInventory(prev => prev.filter(item => item.id !== tempId));
       console.error("Error adding item:", error);
       toast({
         title: 'Error al Añadir',
@@ -98,7 +108,7 @@ export function InventoryClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventory.map((item) => (
+              {paginatedInventory.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.description}</TableCell>
@@ -110,6 +120,31 @@ export function InventoryClient() {
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+          <CardFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );

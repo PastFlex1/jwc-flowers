@@ -48,7 +48,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario }: InvoiceD
               </div>
               <div className="text-right flex flex-col items-end">
                 <Image
-                  src="https://placehold.co/150x50.png"
+                  src="/logo.png"
                   alt="JCW Flowers Logo"
                   width={150}
                   height={50}

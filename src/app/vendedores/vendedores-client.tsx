@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -22,23 +22,36 @@ import { VendedorForm } from './vendedor-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 
-
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
+
+const ITEMS_PER_PAGE = 10;
 
 export function VendedoresClient() {
   const { vendedores, refreshData } = useAppData();
   const [localVendedores, setLocalVendedores] = useState<Vendedor[]>([]);
   const { t } = useTranslation();
-
-  useEffect(() => {
-    setLocalVendedores(vendedores);
-  }, [vendedores]);
-
+  
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalVendedores(vendedores);
+    setCurrentPage(1);
+  }, [vendedores]);
+
+  const totalPages = Math.ceil(localVendedores.length / ITEMS_PER_PAGE);
+
+  const paginatedVendedores = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localVendedores.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localVendedores, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (vendedor: Vendedor | null = null) => {
     setEditingVendedor(vendedor);
@@ -145,7 +158,7 @@ export function VendedoresClient() {
         </Dialog>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {localVendedores.map((vendedor) => (
+          {paginatedVendedores.map((vendedor) => (
             <Card key={vendedor.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{vendedor.nombre}</h3>
@@ -163,6 +176,31 @@ export function VendedoresClient() {
             </Card>
           ))}
         </div>
+         {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-6">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <AlertDialog open={!!vendedorToDelete} onOpenChange={(open) => !open && setVendedorToDelete(null)}>

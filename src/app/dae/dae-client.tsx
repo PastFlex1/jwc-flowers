@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -25,20 +25,34 @@ import { useTranslation } from '@/context/i18n-context';
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 
+const ITEMS_PER_PAGE = 10;
+
 export function DaeClient() {
   const { daes, paises, refreshData } = useAppData();
   const [localDaes, setLocalDaes] = useState<Dae[]>([]);
   const { t } = useTranslation();
   
-  useEffect(() => {
-    setLocalDaes(daes);
-  }, [daes]);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDae, setEditingDae] = useState<Dae | null>(null);
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setLocalDaes(daes);
+    setCurrentPage(1);
+  }, [daes]);
+
+  const totalPages = Math.ceil(localDaes.length / ITEMS_PER_PAGE);
+
+  const paginatedDaes = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return localDaes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [localDaes, currentPage]);
+
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
   const handleOpenDialog = (dae: Dae | null = null) => {
     setEditingDae(dae);
@@ -160,7 +174,7 @@ export function DaeClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {localDaes.map((dae) => (
+                {paginatedDaes.map((dae) => (
                   <TableRow key={dae.id}>
                     <TableCell className="font-medium">{dae.pais}</TableCell>
                     <TableCell>{dae.numeroDae}</TableCell>
@@ -177,6 +191,31 @@ export function DaeClient() {
               </TableBody>
             </Table>
           </CardContent>
+          {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </CardFooter>
+          )}
         </Card>
       </div>
 
