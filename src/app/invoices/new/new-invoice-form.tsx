@@ -27,9 +27,11 @@ const lineItemSchema = z.object({
   id: z.string().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().positive("Debe ser > 0"),
+  fullBoxes: z.coerce.number().min(0, "Debe ser >= 0."),
   bunchCount: z.coerce.number().positive("Debe ser > 0"),
   bunchesPerBox: z.coerce.number().positive("Debe ser > 0"),
-  description: z.string().min(1, "Descripción requerida."),
+  product: z.string().min(1, "Producto requerido."),
+  variety: z.string().min(1, "Variedad requerida."),
   length: z.coerce.number().positive("Debe ser > 0"),
   stemCount: z.coerce.number().positive("Debe ser > 0"),
   purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
@@ -161,14 +163,6 @@ export function NewInvoiceForm() {
     const total = salePrice * totalStems;
     return { difference, total, totalStems };
   };
-
-  const handleEdit = (index: number) => {
-    console.log("Editing row", index);
-     toast({
-        title: 'Edición en línea',
-        description: 'Puede editar los valores directamente en la fila.',
-      });
-  }
   
   function handleAddSubItem(parentIndex: number) {
     const parentItem = form.getValues(`items.${parentIndex}`);
@@ -176,6 +170,8 @@ export function NewInvoiceForm() {
       ...parentItem,
       id: undefined, 
       isSubItem: true,
+      boxCount: 0,
+      fullBoxes: 0,
     };
     insert(parentIndex + 1, subItemData);
     toast({
@@ -304,7 +300,7 @@ export function NewInvoiceForm() {
               )}/>
                <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Referencia</FormLabel>
+                  <FormLabel>Referencia (Mark)</FormLabel>
                   <FormControl><Input placeholder="Referencia" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
@@ -345,9 +341,11 @@ export function NewInvoiceForm() {
                         <TableHead className="w-[50px]">N°</TableHead>
                         <TableHead>Tipo Caja</TableHead>
                         <TableHead>N° Cajas</TableHead>
+                        <TableHead>Full Boxes</TableHead>
                         <TableHead>N° Bunches</TableHead>
                         <TableHead>Bunches/Caja</TableHead>
-                        <TableHead>Descripción</TableHead>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Variedad</TableHead>
                         <TableHead>Longitud</TableHead>
                         <TableHead>Tallos/Bunch</TableHead>
                         <TableHead>Total Tallos</TableHead>
@@ -381,9 +379,11 @@ export function NewInvoiceForm() {
                                 </Select>
                             )} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.fullBoxes`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]"/>} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.description`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.product`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell className="min-w-[100px]">{totalStems}</TableCell>
@@ -405,7 +405,7 @@ export function NewInvoiceForm() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, description: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false })}>
+                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, fullBoxes: 0, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false })}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                 </Button>
               </CardContent>

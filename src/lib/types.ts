@@ -24,9 +24,11 @@ export interface LineItem {
   id?: string;
   boxType: 'qb' | 'eb' | 'hb';
   boxCount: number;
+  fullBoxes: number;
   bunchCount: number;
   bunchesPerBox: number;
-  description: string;
+  product: string;
+  variety: string;
   length: number;
   stemCount: number;
   purchasePrice: number;

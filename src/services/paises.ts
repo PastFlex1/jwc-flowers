@@ -7,12 +7,15 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  getDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Pais => {
+const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Pais => {
   const data = snapshot.data();
+  if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
     nombre: data.nombre,
@@ -23,7 +26,17 @@ export async function getPaises(): Promise<Pais[]> {
   if (!db) return [];
   const paisesCollection = collection(db, 'paises');
   const snapshot = await getDocs(paisesCollection);
-  return snapshot.docs.map(fromFirestore);
+  return snapshot.docs.map(d => fromFirestore(d));
+}
+
+export async function getPaisById(id: string): Promise<Pais | null> {
+    if (!db) return null;
+    const paisDoc = doc(db, 'paises', id);
+    const snapshot = await getDoc(paisDoc);
+    if (snapshot.exists()) {
+        return fromFirestore(snapshot);
+    }
+    return null;
 }
 
 export async function addPais(paisData: Omit<Pais, 'id'>): Promise<string> {

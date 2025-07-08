@@ -7,12 +7,15 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  getDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Carguera => {
+const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Carguera => {
   const data = snapshot.data();
+  if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
     nombreCarguera: data.nombreCarguera,
@@ -24,7 +27,17 @@ export async function getCargueras(): Promise<Carguera[]> {
   if (!db) return [];
   const carguerasCollection = collection(db, 'cargueras');
   const snapshot = await getDocs(carguerasCollection);
-  return snapshot.docs.map(fromFirestore);
+  return snapshot.docs.map(doc => fromFirestore(doc));
+}
+
+export async function getCargueraById(id: string): Promise<Carguera | null> {
+    if (!db) return null;
+    const cargueraDoc = doc(db, 'cargueras', id);
+    const snapshot = await getDoc(cargueraDoc);
+    if (snapshot.exists()) {
+        return fromFirestore(snapshot);
+    }
+    return null;
 }
 
 export async function addCarguera(cargueraData: Omit<Carguera, 'id'>): Promise<string> {
