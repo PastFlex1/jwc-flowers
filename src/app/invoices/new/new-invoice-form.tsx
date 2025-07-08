@@ -170,6 +170,7 @@ export function NewInvoiceForm() {
         }
         
         acc.fullBoxes += Number(item.fullBoxes) || 0;
+        acc.bunchCount += Number(item.bunchCount) || 0;
         acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
         
         const { total, totalStems } = getCalculations(watchItems[index]);
@@ -180,6 +181,7 @@ export function NewInvoiceForm() {
     }, {
         boxCount: 0,
         fullBoxes: 0,
+        bunchCount: 0,
         bunchesPerBox: 0,
         totalStemsByBox: 0,
         grandTotal: 0,
@@ -584,14 +586,26 @@ export function NewInvoiceForm() {
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
                         <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
-                        <TableCell>{totals.boxCount}</TableCell>
-                        <TableCell>{totals.fullBoxes.toFixed(2)}</TableCell>
-                        <TableCell></TableCell>
-                        <TableCell>{totals.bunchesPerBox}</TableCell>
+                        <TableCell>
+                          <Input value={totals.boxCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={totals.fullBoxes.toFixed(2)} disabled className="min-w-[100px] bg-muted font-bold text-center" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={totals.bunchCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
+                        </TableCell>
+                        <TableCell>
+                          <Input value={totals.bunchesPerBox} disabled className="min-w-[110px] bg-muted font-bold text-center" />
+                        </TableCell>
                         <TableCell colSpan={4}></TableCell>
-                        <TableCell>{totals.totalStemsByBox}</TableCell>
+                        <TableCell>
+                          <Input value={totals.totalStemsByBox} disabled className="min-w-[100px] bg-muted font-bold text-center" />
+                        </TableCell>
                         <TableCell colSpan={3}></TableCell>
-                        <TableCell>${totals.grandTotal.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Input value={`$${totals.grandTotal.toFixed(2)}`} disabled className="min-w-[100px] bg-muted font-bold text-right" />
+                        </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
                     </TableFooter>
