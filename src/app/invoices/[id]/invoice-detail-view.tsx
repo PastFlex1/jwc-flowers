@@ -102,7 +102,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                       alt="JCW Flowers Logo"
                       width={250}
                       height={80}
-                      data-ai-hint="logo company"
                     />
                     <div className="border p-2">
                         <div className="grid grid-cols-[auto,1fr] gap-x-2">
