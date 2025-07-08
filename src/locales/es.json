@@ -49,6 +49,11 @@
     "description": "Administra las fincas proveedoras.",
     "add": "Añadir Finca"
   },
+  "productos": {
+    "title": "Productos",
+    "description": "Administra tus productos.",
+    "add": "Añadir Producto"
+  },
   "consignatarios": {
     "title": "Consignatarios",
     "description": "Administra los consignatarios.",

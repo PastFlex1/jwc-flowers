@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
 import { getCustomers } from '@/services/customers';
@@ -12,6 +12,7 @@ import { getDaes } from '@/services/daes';
 import { getMarcaciones } from '@/services/marcaciones';
 import { getProvincias } from '@/services/provincias';
 import { getInvoices } from '@/services/invoices';
+import { getProductos } from '@/services/productos';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,6 +27,7 @@ type AppDataContextType = {
   marcaciones: Marcacion[];
   provincias: Provincia[];
   invoices: Invoice[];
+  productos: Producto[];
   isLoading: boolean;
   refreshData: () => Promise<void>;
 };
@@ -57,6 +59,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
   const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -74,6 +77,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         marcacionesData,
         provinciasData,
         invoicesData,
+        productosData,
       ] = await Promise.all([
         getPaises(),
         getVendedores(),
@@ -85,6 +89,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getMarcaciones(),
         getProvincias(),
         getInvoices(),
+        getProductos(),
       ]);
 
       setPaises(paisesData);
@@ -96,6 +101,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setMarcaciones(marcacionesData);
       setProvincias(provinciasData);
       setInvoices(invoicesData);
+      setProductos(productosData);
       
       // Only override the default cargueras if there's data in the DB
       if (dbCargueras.length > 0) {
@@ -131,6 +137,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     marcaciones,
     provincias,
     invoices,
+    productos,
     isLoading,
     refreshData: fetchData,
   };

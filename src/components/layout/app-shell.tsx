@@ -112,6 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <MenubarContent align="end">
                     <MenubarLabel>{t('header.masterTables')}</MenubarLabel>
                     <MenubarSeparator />
+                    <MenubarItem onClick={() => router.push('/productos')}>{t('productos.title')}</MenubarItem>
                     <MenubarItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</MenubarItem>
                     <MenubarItem onClick={() => router.push('/customers')}>{t('customers.title')}</MenubarItem>
                     <MenubarItem onClick={() => router.push('/consignatarios')}>{t('consignatarios.title')}</MenubarItem>

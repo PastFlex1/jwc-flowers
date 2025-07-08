@@ -49,6 +49,11 @@
     "description": "Manage the supplier farms.",
     "add": "Add Farm"
   },
+  "productos": {
+    "title": "Products",
+    "description": "Manage your products.",
+    "add": "Add Product"
+  },
   "consignatarios": {
     "title": "Consignees",
     "description": "Manage the consignees.",

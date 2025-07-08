@@ -108,3 +108,11 @@ export interface Consignatario {
   direccion: string;
   provincia: string;
 }
+
+export interface Producto {
+  id: string;
+  nombre: string;
+  tipo: string;
+  variedad: string;
+  color: string;
+}
