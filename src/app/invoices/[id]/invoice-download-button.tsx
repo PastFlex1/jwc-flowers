@@ -6,15 +6,8 @@ import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Invoice, Customer, Consignatario } from '@/lib/types';
 
-type InvoiceDownloadButtonProps = {
-  invoice: Invoice;
-  customer: Customer | null;
-  consignatario: Consignatario | null;
-};
-
-export default function InvoiceDownloadButton({ invoice, customer }: InvoiceDownloadButtonProps) {
+export default function InvoiceDownloadButton() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
@@ -29,14 +22,12 @@ export default function InvoiceDownloadButton({ invoice, customer }: InvoiceDown
       return null;
     }
     
-    const elementsToHide = document.querySelectorAll('.no-print');
-    elementsToHide.forEach(el => ((el as HTMLElement).style.display = 'none'));
-
     try {
       const canvas = await html2canvas(noteElement, {
         scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: null, // Use the element's background
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -55,25 +46,18 @@ export default function InvoiceDownloadButton({ invoice, customer }: InvoiceDown
         variant: "destructive",
       });
       return null;
-    } finally {
-      elementsToHide.forEach(el => ((el as HTMLElement).style.display = ''));
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (!customer) {
-      toast({
-        title: "Datos incompletos",
-        description: "No hay datos del cliente para generar el nombre del archivo.",
-        variant: "destructive",
-      });
-      return;
-    }
+    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-lg');
+    const invoiceNumber = invoiceNumberEl ? invoiceNumberEl.textContent : 'factura';
+
     setIsGenerating(true);
     try {
       const pdf = await generatePdf();
       if(pdf) {
-        const fileName = `Factura-${invoice.invoiceNumber}_${customer.name.replace(/\s/g, '_')}.pdf`;
+        const fileName = `Factura-${invoiceNumber}.pdf`;
         pdf.save(fileName);
         
         toast({

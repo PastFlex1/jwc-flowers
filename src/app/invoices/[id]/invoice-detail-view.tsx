@@ -59,18 +59,18 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     return (
        <React.Fragment key={item.id || index}>
         <div className="contents">
-          <div className="border-b border-l p-1 text-center">{isParent ? index + 1 : ''}</div>
-          <div className="border-b border-l p-1 text-center">{isParent ? item.boxCount : ''}</div>
-          <div className="border-b border-l p-1 text-center">{isParent ? item.boxType.toUpperCase() : ''}</div>
-          <div className="border-b border-l p-1">{item.product}</div>
-          <div className="border-b border-l p-1">{item.variety}</div>
-          <div className="border-b border-l p-1 text-center">{item.length}</div>
-          <div className="border-b border-l p-1 text-right">{item.fullBoxes.toFixed(2)}</div>
-          <div className="border-b border-l p-1 text-center">{item.stemCount}</div>
-          <div className="border-b border-l p-1 text-center">{item.bunchCount}</div>
-          <div className="border-b border-l p-1 text-center">{stemsByBox}</div>
-          <div className="border-b border-l p-1 text-right">{item.salePrice.toFixed(2)}</div>
-          <div className="border-b border-r border-l p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{isParent ? index + 1 : ''}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{isParent ? item.boxCount : ''}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{isParent ? item.boxType.toUpperCase() : ''}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1">{item.product}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1">{item.variety}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{item.length}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-right">{item.fullBoxes.toFixed(2)}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{item.stemCount}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{item.bunchCount}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-center">{stemsByBox}</div>
+          <div className="border-b border-l border-zinc-700 print:border-gray-200 p-1 text-right">{item.salePrice.toFixed(2)}</div>
+          <div className="border-b border-r border-l border-zinc-700 print:border-gray-200 p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
         </div>
        </React.Fragment>
     )
@@ -83,15 +83,12 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <InvoiceActions />
           <div className="flex gap-2">
              {customer && (
-                <InvoiceDownloadButton 
-                    invoice={invoice} 
-                    customer={customer} 
-                />
+                <InvoiceDownloadButton />
             )}
           </div>
         </div>
         
-        <Card className="p-4 sm:p-6 shadow-none border-0" id="invoice-to-print">
+        <Card className="p-4 sm:p-6 shadow-none border-0 bg-zinc-900 text-zinc-100 print:bg-white print:text-black" id="invoice-to-print">
           <CardContent className="p-0 text-[10px] leading-tight">
             {/* Header Section */}
             <div className="grid grid-cols-2 gap-4 mb-4">
@@ -104,7 +101,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                       height={80}
                       className="h-auto"
                     />
-                    <div className="border p-2">
+                    <div className="border border-zinc-700 print:border-gray-200 p-2">
                         <div className="grid grid-cols-[auto,1fr] gap-x-2">
                             <span className="font-bold">E-MAIL:</span><span>jcwf@outlook.es</span>
                             <span className="font-bold">PHONE:</span><span>+593 096 744 1343</span>
@@ -115,23 +112,23 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                 {/* Right Header */}
                 <div className="flex flex-col items-end space-y-2">
                      <h1 className="text-2xl font-bold">INVOICE</h1>
-                     <div className="grid grid-cols-2 border w-64">
-                         <div className="border-r p-1 font-bold text-center">DATE:</div>
+                     <div className="grid grid-cols-2 border border-zinc-700 print:border-gray-200 w-64">
+                         <div className="border-r border-zinc-700 print:border-gray-200 p-1 font-bold text-center">DATE:</div>
                          <div className="p-1 text-center">{format(parseISO(invoice.flightDate), 'P')}</div>
-                         <div className="border-t border-r p-1 font-bold text-center">No.</div>
-                         <div className="border-t p-1 text-center font-bold text-lg">{invoice.invoiceNumber}</div>
+                         <div className="border-t border-zinc-700 print:border-gray-200 border-r border-r-zinc-700 print:border-r-gray-200 p-1 font-bold text-center">No.</div>
+                         <div className="border-t border-zinc-700 print:border-gray-200 p-1 text-center font-bold text-lg">{invoice.invoiceNumber}</div>
                      </div>
-                     <div className="grid grid-cols-2 border w-64 mt-auto">
-                         <div className="border-r p-1 font-bold text-center">AWB:</div>
+                     <div className="grid grid-cols-2 border border-zinc-700 print:border-gray-200 w-64 mt-auto">
+                         <div className="border-r border-zinc-700 print:border-gray-200 p-1 font-bold text-center">AWB:</div>
                          <div className="p-1 text-center">{invoice.masterAWB}</div>
-                         <div className="border-t border-r p-1 font-bold text-center">HAWB:</div>
-                         <div className="border-t p-1 text-center">{invoice.houseAWB}</div>
+                         <div className="border-t border-zinc-700 print:border-gray-200 border-r border-r-zinc-700 print:border-r-gray-200 p-1 font-bold text-center">HAWB:</div>
+                         <div className="border-t border-zinc-700 print:border-gray-200 p-1 text-center">{invoice.houseAWB}</div>
                      </div>
                 </div>
             </div>
 
             {/* Client Info Section */}
-            <div className="border p-2 mb-4">
+            <div className="border border-zinc-700 print:border-gray-200 p-2 mb-4">
                  <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-1">
                     <span className="font-bold">Name Client:</span><span>{customer?.name}</span>
                     <span className="font-bold">Mark:</span><span>{invoice.reference}</span>
@@ -142,21 +139,21 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             </div>
 
             {/* Items Table */}
-            <div className="border-t border-l border-r grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px] font-bold text-center bg-gray-100">
-                <div className="border-b border-r p-1">CODE</div>
-                <div className="border-b border-r p-1">BOXES</div>
-                <div className="border-b border-r p-1">BOX TYPE</div>
-                <div className="border-b border-r p-1">PRODUCT</div>
-                <div className="border-b border-r p-1">VARIETY</div>
-                <div className="border-b border-r p-1">LENGTH</div>
-                <div className="border-b border-r p-1">FULL BOXES</div>
-                <div className="border-b border-r p-1">STEMS BY BUNCH</div>
-                <div className="border-b border-r p-1">BUNCH BY BOX</div>
-                <div className="border-b border-r p-1">STEMS BY BOX</div>
-                <div className="border-b border-r p-1">UNIT PRICE</div>
-                <div className="border-b p-1">TOTAL PRICE</div>
+            <div className="border-t border-l border-r border-zinc-700 print:border-gray-200 grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px] font-bold text-center bg-zinc-800 print:bg-gray-100">
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">CODE</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">BOXES</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">BOX TYPE</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">PRODUCT</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">VARIETY</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">LENGTH</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">FULL BOXES</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">STEMS BY BUNCH</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">BUNCH BY BOX</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">STEMS BY BOX</div>
+                <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1">UNIT PRICE</div>
+                <div className="border-b border-zinc-700 print:border-gray-200 p-1">TOTAL PRICE</div>
             </div>
-            <div className="border-l border-r grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px]">
+            <div className="border-l border-r border-b border-zinc-700 print:border-gray-200 grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px]">
                 {groupedItems.map((group, index) => (
                     <React.Fragment key={group.parent.id || index}>
                       {renderItemRow(group.parent, true, index)}
@@ -164,15 +161,15 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     </React.Fragment>
                 ))}
             </div>
-             <div className="border-t border-l border-r grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px] font-bold">
-                 <div className="border-b border-r p-1 col-span-1"></div>
-                 <div className="border-b border-r p-1 text-center">{totals.totalBoxes}</div>
-                 <div className="border-b border-r p-1 col-span-4 text-center font-bold">TOTALES</div>
-                 <div className="border-b border-r p-1 text-right">{totals.totalFullBoxes.toFixed(2)}</div>
-                 <div className="border-b border-r p-1"></div>
-                 <div className="border-b border-r p-1 text-center">{totals.totalBunchByBox}</div>
-                 <div className="border-b border-r p-1 text-center">{totals.totalStemsByBox}</div>
-                 <div className="border-b border-r p-1 col-span-2"></div>
+             <div className="border-l border-r border-zinc-700 print:border-gray-200 grid grid-cols-[25px,40px,40px,1fr,1fr,50px,60px,60px,60px,60px,60px,70px] font-bold">
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 col-span-1"></div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 text-center">{totals.totalBoxes}</div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 col-span-4 text-center font-bold">TOTALES</div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 text-right">{totals.totalFullBoxes.toFixed(2)}</div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1"></div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 text-center">{totals.totalBunchByBox}</div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 text-center">{totals.totalStemsByBox}</div>
+                 <div className="border-b border-r border-zinc-700 print:border-gray-200 p-1 col-span-2"></div>
             </div>
 
             {/* Footer */}
@@ -181,8 +178,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     All prices are FOB Quito. Please remember that you have 10 days after the date on the invoice to make a claim and that we do not accept credits for freight or handling charges in any case.
                 </p>
                 <div className="flex justify-end">
-                    <div className="grid grid-cols-2 border w-64 font-bold">
-                        <div className="p-1 border-r">TOTAL FOB</div>
+                    <div className="grid grid-cols-2 border border-zinc-700 print:border-gray-200 w-64 font-bold">
+                        <div className="p-1 border-r border-zinc-700 print:border-gray-200">TOTAL FOB</div>
                         <div className="p-1 text-right">${totals.totalFob.toFixed(2)}</div>
                     </div>
                 </div>
