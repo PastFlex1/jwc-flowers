@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
@@ -96,10 +97,12 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             <div className="grid grid-cols-2 gap-4 mb-4">
                 {/* Left Header */}
                 <div className="space-y-2">
-                    <img
+                    <Image
                       src="/logo.png"
                       alt="JCW Flowers Logo"
-                      style={{ width: '250px', height: 'auto' }}
+                      width={250}
+                      height={80}
+                      className="h-auto"
                     />
                     <div className="border p-2">
                         <div className="grid grid-cols-[auto,1fr] gap-x-2">
