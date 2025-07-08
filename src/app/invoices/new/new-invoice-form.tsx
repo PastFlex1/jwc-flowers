@@ -430,7 +430,6 @@ export function NewInvoiceForm() {
                         <TableHead className="w-[50px]">N°</TableHead>
                         <TableHead>Tipo Caja</TableHead>
                         <TableHead>N° Cajas</TableHead>
-                        <TableHead>N° Caja</TableHead>
                         <TableHead>Full Boxes</TableHead>
                         <TableHead>N° Bunches</TableHead>
                         <TableHead>Bunches/Caja</TableHead>
@@ -469,10 +468,15 @@ export function NewInvoiceForm() {
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
                             )} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]" disabled={isSubItem} />} /></TableCell>
-                            <TableCell>
-                              {isSubItem && (
-                                <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => <Input {...field} className="min-w-[80px]" disabled />} />
+                             <TableCell>
+                              {isSubItem ? (
+                                <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
+                                    <Input {...field} className="min-w-[80px]" disabled />
+                                )} />
+                              ) : (
+                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="min-w-[80px]" />
+                                )} />
                               )}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.fullBoxes`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
