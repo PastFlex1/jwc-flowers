@@ -31,19 +31,22 @@ export default function InvoiceDownloadButton() {
         scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
+        // Ensure the canvas captures the full scrollable width and height
+        width: noteElement.scrollWidth,
+        height: noteElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
       
-      // Create a PDF with dimensions based on the content itself
+      // Create a PDF with dimensions that exactly match the canvas
       const pdf = new jsPDF({
         orientation: canvas.width > canvas.height ? 'l' : 'p',
         unit: 'px',
-        format: [canvas.width + 40, canvas.height + 40] // Add 20px padding on all sides
+        format: [canvas.width, canvas.height]
       });
 
-      // Add the captured image to the PDF
-      pdf.addImage(imgData, 'PNG', 20, 20, canvas.width, canvas.height);
+      // Add the captured image to the PDF at position (0, 0)
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
       
       const fileName = `Factura-${invoiceNumber}.pdf`;
       pdf.save(fileName);
