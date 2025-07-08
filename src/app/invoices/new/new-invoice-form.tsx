@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,7 +62,7 @@ type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos } = useAppData();
 
   const [isHeaderSet, setIsHeaderSet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +86,20 @@ export function NewInvoiceForm() {
   
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
+
+  const productNames = useMemo(() => {
+    if (!productos) return [];
+    const names = productos.map(p => p.nombre);
+    return [...new Set(names)];
+  }, [productos]);
+
+  const getVarietiesForProduct = useCallback((productName: string): string[] => {
+      if (!productName || !productos) return [];
+      const varieties = productos
+          .filter(p => p.nombre === productName)
+          .map(p => p.variedad);
+      return [...new Set(varieties)];
+  }, [productos]);
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -192,11 +206,18 @@ export function NewInvoiceForm() {
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
     const bunchCount = Number(item.bunchCount) || 0;
+    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
+
+    // "Total Tallos" column displays stems per box, as requested
+    const stemsPerBox = bunchesPerBox * stemCount;
     
-    const totalStems = stemCount * bunchCount;
+    // Total price is calculated based on total number of stems for the line item
+    const totalStemsForLine = bunchCount * stemCount;
+    const total = salePrice * totalStemsForLine;
+    
     const difference = salePrice - purchasePrice;
-    const total = salePrice * totalStems;
-    return { difference, total, totalStems };
+    
+    return { difference, total, totalStems: stemsPerBox };
   };
 
   const getDisplayIndex = (index: number) => {
@@ -450,6 +471,8 @@ export function NewInvoiceForm() {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
                          const { difference, total, totalStems } = getCalculations(watchItems[index]);
+                         const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
+
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                             <TableCell className="relative">
@@ -468,7 +491,7 @@ export function NewInvoiceForm() {
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
                             )} /></TableCell>
-                             <TableCell>
+                            <TableCell>
                               {isSubItem ? (
                                 <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
                                     <Input {...field} className="min-w-[80px]" disabled />
@@ -487,8 +510,36 @@ export function NewInvoiceForm() {
                               )}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]"/>} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.product`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => <Input {...field} className="min-w-[150px]"/>} /></TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
+                                  <Select 
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                      form.setValue(`items.${index}.variety`, '');
+                                    }} 
+                                    value={field.value}
+                                  >
+                                    <FormControl><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                      {productNames.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                              )} />
+                            </TableCell>
+                            <TableCell>
+                              <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
+                                  <Select 
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                    disabled={!watchItems[index]?.product || varietiesForProduct.length === 0}
+                                  >
+                                    <FormControl><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                      {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                              )} />
+                            </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell className="min-w-[100px]">{totalStems}</TableCell>
