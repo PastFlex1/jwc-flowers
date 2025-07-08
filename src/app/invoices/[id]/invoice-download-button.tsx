@@ -12,7 +12,7 @@ export default function InvoiceDownloadButton() {
   const { toast } = useToast();
 
   const handleDownloadPdf = async () => {
-    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-lg');
+    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-base');
     const invoiceNumber = invoiceNumberEl ? invoiceNumberEl.textContent : 'factura';
     const noteElement = document.getElementById('invoice-to-print');
 
@@ -28,27 +28,28 @@ export default function InvoiceDownloadButton() {
     setIsGenerating(true);
     try {
       const canvas = await html2canvas(noteElement, {
-        scale: 2, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
         logging: false,
-        // Ensure the canvas captures the full scrollable width and height
         width: noteElement.scrollWidth,
         height: noteElement.scrollHeight,
+        windowWidth: noteElement.scrollWidth,
+        windowHeight: noteElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
-      
-      // Create a PDF with dimensions that exactly match the canvas
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'l' : 'p',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        orientation: imgWidth > imgHeight ? 'l' : 'p',
+        unit: "pt",
+        format: [imgWidth, imgHeight]
       });
 
-      // Add the captured image to the PDF at position (0, 0)
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
-      const fileName = `Factura-${invoiceNumber}.pdf`;
+      const fileName = `Factura-${invoiceNumber?.trim()}.pdf`;
       pdf.save(fileName);
       
       toast({
