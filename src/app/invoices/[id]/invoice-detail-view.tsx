@@ -78,7 +78,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
   return (
     <>
-      <div className="max-w-5xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex justify-between items-center no-print">
           <InvoiceActions />
           <div className="flex gap-2">
