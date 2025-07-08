@@ -11,69 +11,58 @@ export default function InvoiceDownloadButton() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const generatePdf = async () => {
+  const handleDownloadPdf = async () => {
+    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-lg');
+    const invoiceNumber = invoiceNumberEl ? invoiceNumberEl.textContent : 'factura';
     const noteElement = document.getElementById('invoice-to-print');
+
     if (!noteElement) {
       toast({
         title: "Error",
         description: "No se pudo encontrar el contenido de la factura para generar el PDF.",
         variant: "destructive",
       });
-      return null;
+      return;
     }
-    
+
+    setIsGenerating(true);
     try {
       const canvas = await html2canvas(noteElement, {
-        scale: 2,
+        scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
-        backgroundColor: null, // Use the element's background
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [canvas.width, canvas.height] 
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4',
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      return pdf;
-    } catch (error) {
-      console.error("Error during PDF generation:", error);
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      const fileName = `Factura-${invoiceNumber}.pdf`;
+      pdf.save(fileName);
+      
       toast({
-        title: "Error de PDF",
-        description: "Ocurrió un error al generar la imagen de la factura.",
-        variant: "destructive",
+          title: "Éxito",
+          description: `El archivo ${fileName} se ha descargado.`,
       });
-      return null;
-    }
-  };
 
-  const handleDownloadPdf = async () => {
-    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-lg');
-    const invoiceNumber = invoiceNumberEl ? invoiceNumberEl.textContent : 'factura';
-
-    setIsGenerating(true);
-    try {
-      const pdf = await generatePdf();
-      if(pdf) {
-        const fileName = `Factura-${invoiceNumber}.pdf`;
-        pdf.save(fileName);
-        
-        toast({
-            title: "Éxito",
-            description: `El archivo ${fileName} se ha descargado.`,
-        });
-      }
     } catch (error) {
-        console.error("Error processing PDF:", error);
-        toast({
-            title: "Error",
-            description: "Ocurrió un error inesperado al procesar el PDF.",
-            variant: "destructive",
-        });
+      console.error("Error processing PDF:", error);
+      toast({
+          title: "Error",
+          description: "Ocurrió un error inesperado al procesar el PDF.",
+          variant: "destructive",
+      });
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
