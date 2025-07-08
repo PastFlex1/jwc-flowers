@@ -34,41 +34,16 @@ export default function InvoiceDownloadButton() {
       });
 
       const imgData = canvas.toDataURL('image/png');
+      
+      // Create a PDF with dimensions based on the content itself
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'pt',
-        format: 'a4',
+        orientation: canvas.width > canvas.height ? 'l' : 'p',
+        unit: 'px',
+        format: [canvas.width + 40, canvas.height + 40] // Add 20px padding on all sides
       });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgWidth = imgProps.width;
-      const imgHeight = imgProps.height;
-      
-      // Add a margin
-      const margin = 40; // 40 points, approx 0.55 inches
-      
-      // Calculate the available content area
-      const availableWidth = pdfWidth - margin * 2;
-      const availableHeight = pdfHeight - margin * 2;
 
-      // Calculate the scale ratio to fit the image within the available area while maintaining aspect ratio
-      const widthRatio = availableWidth / imgWidth;
-      const heightRatio = availableHeight / imgHeight;
-      const ratio = Math.min(widthRatio, heightRatio);
-
-      // Calculate the final dimensions of the image in the PDF
-      const finalImgWidth = imgWidth * ratio;
-      const finalImgHeight = imgHeight * ratio;
-
-      // Calculate the top-left position to center the image
-      const x = (pdfWidth - finalImgWidth) / 2;
-      const y = (pdfHeight - finalImgHeight) / 2;
-
-      // Add the image to the PDF, centered and scaled
-      pdf.addImage(imgData, 'PNG', x, y, finalImgWidth, finalImgHeight);
+      // Add the captured image to the PDF
+      pdf.addImage(imgData, 'PNG', 20, 20, canvas.width, canvas.height);
       
       const fileName = `Factura-${invoiceNumber}.pdf`;
       pdf.save(fileName);
