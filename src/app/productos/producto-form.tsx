@@ -14,7 +14,6 @@ const formSchema = z.object({
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   tipo: z.string().min(2, { message: "El tipo debe tener al menos 2 caracteres." }),
   variedad: z.string().min(2, { message: "La variedad debe tener al menos 2 caracteres." }),
-  color: z.string().min(2, { message: "El color debe tener al menos 2 caracteres." }),
 });
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
@@ -33,7 +32,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: '',
       tipo: '',
       variedad: '',
-      color: '',
     },
   });
 
@@ -42,7 +40,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: '',
       tipo: '',
       variedad: '',
-      color: '',
     });
   }, [initialData, form]);
 
@@ -88,19 +85,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
               <FormLabel>Variedad</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Explorer" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="color"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Color</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Rojo" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

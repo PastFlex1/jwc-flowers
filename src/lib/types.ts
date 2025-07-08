@@ -114,5 +114,4 @@ export interface Producto {
   nombre: string;
   tipo: string;
   variedad: string;
-  color: string;
 }

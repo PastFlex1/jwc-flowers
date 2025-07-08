@@ -94,12 +94,12 @@ export function NewInvoiceForm() {
     return [...new Set(names)];
   }, [productos]);
 
-  const getColorsForProduct = useCallback((productName: string): string[] => {
+  const getVarietiesForProduct = useCallback((productName: string): string[] => {
       if (!productName || !productos) return [];
-      const colors = productos
+      const varieties = productos
           .filter(p => p.nombre === productName)
-          .map(p => p.color);
-      return [...new Set(colors)];
+          .map(p => p.variedad);
+      return [...new Set(varieties)];
   }, [productos]);
 
   useEffect(() => {
@@ -495,7 +495,7 @@ export function NewInvoiceForm() {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
                          const { difference, total, totalStems } = getCalculations(watchItems[index]);
-                         const colorsForProduct = getColorsForProduct(watchItems[index]?.product);
+                         const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
@@ -555,11 +555,11 @@ export function NewInvoiceForm() {
                                   <Select 
                                     onValueChange={field.onChange}
                                     value={field.value}
-                                    disabled={!watchItems[index]?.product || colorsForProduct.length === 0}
+                                    disabled={!watchItems[index]?.product || varietiesForProduct.length === 0}
                                   >
                                     <FormControl><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                      {colorsForProduct.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                      {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                               )} />

@@ -19,7 +19,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
     nombre: data.nombre,
     tipo: data.tipo,
     variedad: data.variedad,
-    color: data.color,
   };
 };
 
