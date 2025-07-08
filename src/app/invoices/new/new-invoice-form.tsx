@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -93,12 +94,12 @@ export function NewInvoiceForm() {
     return [...new Set(names)];
   }, [productos]);
 
-  const getVarietiesForProduct = useCallback((productName: string): string[] => {
+  const getColorsForProduct = useCallback((productName: string): string[] => {
       if (!productName || !productos) return [];
-      const varieties = productos
+      const colors = productos
           .filter(p => p.nombre === productName)
-          .map(p => p.variedad);
-      return [...new Set(varieties)];
+          .map(p => p.color);
+      return [...new Set(colors)];
   }, [productos]);
 
   useEffect(() => {
@@ -144,6 +145,42 @@ export function NewInvoiceForm() {
     });
     return () => subscription.unsubscribe();
   }, [form]);
+
+  const getCalculations = useCallback((item: any) => {
+    const purchasePrice = Number(item.purchasePrice) || 0;
+    const salePrice = Number(item.salePrice) || 0;
+    const stemCount = Number(item.stemCount) || 0;
+    const bunchCount = Number(item.bunchCount) || 0;
+    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
+
+    const stemsPerBox = bunchesPerBox * stemCount;
+    const totalStemsForLine = bunchCount * stemCount;
+    const total = salePrice * totalStemsForLine;
+    const difference = salePrice - purchasePrice;
+    
+    return { difference, total, totalStems: stemsPerBox };
+  }, []);
+
+  const totals = useMemo(() => {
+    const items = watchItems || [];
+    
+    return items.reduce((acc, item) => {
+        if (!item.isSubItem) {
+            acc.boxCount += Number(item.boxCount) || 0;
+            acc.fullBoxes += Number(item.fullBoxes) || 0;
+            acc.bunchCount += Number(item.bunchCount) || 0;
+            
+            const { total } = getCalculations(item);
+            acc.grandTotal += total;
+        }
+        return acc;
+    }, {
+        boxCount: 0,
+        fullBoxes: 0,
+        bunchCount: 0,
+        grandTotal: 0,
+    });
+  }, [watchItems, getCalculations]);
 
 
   async function handleHeaderSubmit() {
@@ -200,25 +237,6 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
-
-  const getCalculations = (item: any) => {
-    const purchasePrice = Number(item.purchasePrice) || 0;
-    const salePrice = Number(item.salePrice) || 0;
-    const stemCount = Number(item.stemCount) || 0;
-    const bunchCount = Number(item.bunchCount) || 0;
-    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
-
-    // "Total Tallos" column displays stems per box, as requested
-    const stemsPerBox = bunchesPerBox * stemCount;
-    
-    // Total price is calculated based on total number of stems for the line item
-    const totalStemsForLine = bunchCount * stemCount;
-    const total = salePrice * totalStemsForLine;
-    
-    const difference = salePrice - purchasePrice;
-    
-    return { difference, total, totalStems: stemsPerBox };
-  };
 
   const getDisplayIndex = (index: number) => {
       const items = form.getValues('items');
@@ -471,7 +489,7 @@ export function NewInvoiceForm() {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
                          const { difference, total, totalStems } = getCalculations(watchItems[index]);
-                         const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
+                         const colorsForProduct = getColorsForProduct(watchItems[index]?.product);
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
@@ -531,11 +549,11 @@ export function NewInvoiceForm() {
                                   <Select 
                                     onValueChange={field.onChange}
                                     value={field.value}
-                                    disabled={!watchItems[index]?.product || varietiesForProduct.length === 0}
+                                    disabled={!watchItems[index]?.product || colorsForProduct.length === 0}
                                   >
                                     <FormControl><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                      {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                      {colorsForProduct.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                               )} />
@@ -561,9 +579,32 @@ export function NewInvoiceForm() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => append({ boxType: 'qb', boxCount: 1, fullBoxes: 0, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
-                </Button>
+
+                <div className="mt-6 flex flex-col items-end gap-4">
+                    <div className="w-full max-w-xs space-y-3 rounded-md border p-4">
+                        <div className="flex justify-between font-medium">
+                            <span>Total Cajas</span>
+                            <span>{totals.boxCount}</span>
+                        </div>
+                        <div className="flex justify-between font-medium">
+                            <span>Total Full Boxes</span>
+                            <span>{totals.fullBoxes.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between font-medium">
+                            <span>Total Bunches</span>
+                            <span>{totals.bunchCount}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between text-lg font-bold">
+                            <span>Total General</span>
+                            <span>${totals.grandTotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, fullBoxes: 0, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
+                    </Button>
+                </div>
+
               </CardContent>
             </Card>
           )}
