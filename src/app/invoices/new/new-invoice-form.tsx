@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -164,20 +164,24 @@ export function NewInvoiceForm() {
   const totals = useMemo(() => {
     const items = watchItems || [];
     
-    return items.reduce((acc, item) => {
+    return items.reduce((acc, item, index) => {
         if (!item.isSubItem) {
             acc.boxCount += Number(item.boxCount) || 0;
-            acc.fullBoxes += Number(item.fullBoxes) || 0;
-            acc.bunchCount += Number(item.bunchCount) || 0;
-            
-            const { total } = getCalculations(item);
-            acc.grandTotal += total;
         }
+        
+        acc.fullBoxes += Number(item.fullBoxes) || 0;
+        acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
+        
+        const { total, totalStems } = getCalculations(watchItems[index]);
+        acc.totalStemsByBox += totalStems;
+        acc.grandTotal += total;
+
         return acc;
     }, {
         boxCount: 0,
         fullBoxes: 0,
-        bunchCount: 0,
+        bunchesPerBox: 0,
+        totalStemsByBox: 0,
         grandTotal: 0,
     });
   }, [watchItems, getCalculations]);
@@ -577,34 +581,27 @@ export function NewInvoiceForm() {
                         );
                       })}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
+                        <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
+                        <TableCell>{totals.boxCount}</TableCell>
+                        <TableCell>{totals.fullBoxes.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell>{totals.bunchesPerBox}</TableCell>
+                        <TableCell colSpan={4}></TableCell>
+                        <TableCell>{totals.totalStemsByBox}</TableCell>
+                        <TableCell colSpan={3}></TableCell>
+                        <TableCell>${totals.grandTotal.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableFooter>
                   </Table>
                 </div>
-
-                <div className="mt-6 flex flex-col items-end gap-4">
-                    <div className="w-full max-w-xs space-y-3 rounded-md border p-4">
-                        <div className="flex justify-between font-medium">
-                            <span>Total Cajas</span>
-                            <span>{totals.boxCount}</span>
-                        </div>
-                        <div className="flex justify-between font-medium">
-                            <span>Total Full Boxes</span>
-                            <span>{totals.fullBoxes.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between font-medium">
-                            <span>Total Bunches</span>
-                            <span>{totals.bunchCount}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between text-lg font-bold">
-                            <span>Total General</span>
-                            <span>${totals.grandTotal.toFixed(2)}</span>
-                        </div>
-                    </div>
+                <div className="mt-6 flex justify-end">
                     <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, fullBoxes: 0, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
                       <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                     </Button>
                 </div>
-
               </CardContent>
             </Card>
           )}
