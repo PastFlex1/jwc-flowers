@@ -29,7 +29,6 @@ const lineItemSchema = z.object({
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().positive("Debe ser > 0"),
   boxNumber: z.string().optional(),
-  fullBoxes: z.coerce.number().min(0, "Debe ser >= 0."),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
   bunchesPerBox: z.coerce.number().positive("Debe ser > 0"),
   product: z.string().min(1, "Producto requerido."),
@@ -169,7 +168,6 @@ export function NewInvoiceForm() {
             acc.boxCount += Number(item.boxCount) || 0;
         }
         
-        acc.fullBoxes += Number(item.fullBoxes) || 0;
         acc.bunchCount += Number(item.bunchCount) || 0;
         acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
         
@@ -180,7 +178,6 @@ export function NewInvoiceForm() {
         return acc;
     }, {
         boxCount: 0,
-        fullBoxes: 0,
         bunchCount: 0,
         bunchesPerBox: 0,
         totalStemsByBox: 0,
@@ -475,7 +472,6 @@ export function NewInvoiceForm() {
                         <TableHead className="w-[50px]">N°</TableHead>
                         <TableHead>Tipo Caja</TableHead>
                         <TableHead>N° Cajas</TableHead>
-                        <TableHead>Full Boxes</TableHead>
                         <TableHead>N° Bunches</TableHead>
                         <TableHead>Bunches/Caja</TableHead>
                         <TableHead>Producto</TableHead>
@@ -526,7 +522,6 @@ export function NewInvoiceForm() {
                                 )} />
                               )}
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.fullBoxes`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell>
                               <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} />
                               {!isSubItem && bunchWarnings[index] && (
@@ -590,10 +585,7 @@ export function NewInvoiceForm() {
                           <Input value={totals.boxCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
-                          <Input value={totals.fullBoxes.toFixed(2)} disabled className="min-w-[100px] bg-muted font-bold text-center" />
-                        </TableCell>
-                        <TableCell>
-                          <Input value={totals.bunchCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
+                           <Input value={totals.bunchCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
                           <Input value={totals.bunchesPerBox} disabled className="min-w-[110px] bg-muted font-bold text-center" />
@@ -612,7 +604,7 @@ export function NewInvoiceForm() {
                   </Table>
                 </div>
                 <div className="mt-6 flex justify-end">
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, fullBoxes: 0, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
                       <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                     </Button>
                 </div>

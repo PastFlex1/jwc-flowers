@@ -25,7 +25,6 @@ export interface LineItem {
   boxType: 'qb' | 'eb' | 'hb';
   boxCount: number;
   boxNumber?: string;
-  fullBoxes: number;
   bunchCount: number;
   bunchesPerBox: number;
   product: string;

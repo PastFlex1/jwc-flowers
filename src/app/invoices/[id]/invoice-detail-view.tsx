@@ -19,11 +19,10 @@ type InvoiceDetailViewProps = {
 export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais }: InvoiceDetailViewProps) {
   
   const totals = React.useMemo(() => {
-    if (!invoice?.items) return { totalBoxes: 0, totalFullBoxes: 0, totalBunchByBox: 0, totalStemsByBox: 0, totalFob: 0 };
+    if (!invoice?.items) return { totalBoxes: 0, totalBunchByBox: 0, totalStemsByBox: 0, totalFob: 0 };
     const allItems = invoice.items;
     
     const totalBoxes = allItems.reduce((acc, item) => acc + (item.isSubItem ? 0 : (item.boxCount || 0)), 0);
-    const totalFullBoxes = allItems.reduce((acc, item) => acc + (item.fullBoxes || 0), 0);
     const totalBunchByBox = allItems.reduce((acc, item) => acc + (item.bunchCount || 0), 0);
     const totalStemsByBox = allItems.reduce((acc, item) => acc + ((item.stemCount || 0) * (item.bunchCount || 0)), 0);
     const totalFob = allItems.reduce((acc, item) => {
@@ -31,7 +30,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
        return acc + (stems * (item.salePrice || 0));
     }, 0);
 
-    return { totalBoxes, totalFullBoxes, totalBunchByBox, totalStemsByBox, totalFob };
+    return { totalBoxes, totalBunchByBox, totalStemsByBox, totalFob };
   }, [invoice?.items]);
 
 
@@ -47,7 +46,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <div className="border-b border-l border-border p-1 text-left">{item.product}</div>
           <div className="border-b border-l border-border p-1 text-left">{item.variety}</div>
           <div className="border-b border-l border-border p-1 text-center">{item.length}</div>
-          <div className="border-b border-l border-border p-1 text-right">{item.fullBoxes.toFixed(2)}</div>
           <div className="border-b border-l border-border p-1 text-center">{item.stemCount}</div>
           <div className="border-b border-l border-border p-1 text-center">{item.bunchCount}</div>
           <div className="border-b border-l border-border p-1 text-center">{stemsByBox}</div>
@@ -120,14 +118,13 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
             {/* Items Table */}
             <section>
-                <div className="grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,60px,70px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[10px] leading-tight">
+                <div className="grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,70px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[10px] leading-tight">
                     <div className="p-1 border-r border-gray-300">CODE</div>
                     <div className="p-1 border-r border-gray-300">BOXES</div>
                     <div className="p-1 border-r border-gray-300">BOX TYPE</div>
                     <div className="p-1 border-r border-gray-300 text-left">PRODUCT</div>
                     <div className="p-1 border-r border-gray-300 text-left">VARIETY</div>
                     <div className="p-1 border-r border-gray-300">LENGTH</div>
-                    <div className="p-1 border-r border-gray-300">FULL BOXES</div>
                     <div className="p-1 border-r border-gray-300">STEMS BY BUNCH</div>
                     <div className="p-1 border-r border-gray-300">BUNCH BY BOX</div>
                     <div className="p-1 border-r border-gray-300">STEMS BY BOX</div>
@@ -135,15 +132,14 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="p-1">TOTAL PRICE</div>
                 </div>
                 
-                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,60px,70px]">
+                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,70px]">
                     {invoice.items.map((item, index) => renderItemRow(item, index))}
                 </div>
                 
-                <div className="grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,60px,70px] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
+                <div className="grid grid-cols-[30px,40px,50px,1fr,1fr,40px,60px,60px,60px,60px,70px] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
                     <div className="p-1 border-r border-gray-300 text-center">{totals.totalBoxes}</div>
                     <div className="p-1 border-r border-gray-300 col-span-4 text-center">TOTALES</div>
                     <div className="p-1 border-r border-gray-300"></div> {/* length */}
-                    <div className="p-1 border-r border-gray-300 text-right">{totals.totalFullBoxes.toFixed(2)}</div>
                     <div className="p-1 border-r border-gray-300"></div> {/* stems/bunch */}
                     <div className="p-1 border-r border-gray-300">{totals.totalBunchByBox}</div>
                     <div className="p-1 border-r border-gray-300">{totals.totalStemsByBox}</div>

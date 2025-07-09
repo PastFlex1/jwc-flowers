@@ -45,7 +45,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
       // Provide defaults for old documents that might not have these fields
       product: item.product || item.description || '', // Handle old `description` field
       variety: item.variety || '',
-      fullBoxes: item.fullBoxes || 0,
     })) as LineItem[],
     status: data.status || 'Pending',
     consignatarioId: data.consignatarioId,
