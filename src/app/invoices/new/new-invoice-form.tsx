@@ -79,7 +79,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove, insert } = useFieldArray({
+  const { fields, append, remove, insert, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -112,9 +112,30 @@ export function NewInvoiceForm() {
   }, [selectedCustomerId, consignatarios, form]);
 
   useEffect(() => {
-    const subscription = form.watch((values) => {
+    const subscription = form.watch((values, { name, type }) => {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
+
+        // Update sub-items when a parent's bunchesPerBox changes
+        if (type === 'change' && name?.match(/^items\.\d+\.bunchesPerBox$/)) {
+            const changedIndex = parseInt(name.split('.')[1], 10);
+            const parentItem = items[changedIndex];
+            if (!parentItem.isSubItem) {
+                const parentBunchesPerBox = Number(parentItem.bunchesPerBox) || 0;
+                for (let i = changedIndex + 1; i < items.length; i++) {
+                    if (items[i].isSubItem) {
+                        const currentSubItem = form.getValues(`items.${i}`);
+                        form.setValue(`items.${i}`, {
+                            ...currentSubItem,
+                            bunchesPerBox: parentBunchesPerBox,
+                            bunchCount: parentBunchesPerBox,
+                        });
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
 
         items.forEach((item, index) => {
             if (!item.isSubItem) {
@@ -161,17 +182,13 @@ export function NewInvoiceForm() {
   }, []);
 
   const totals = useMemo(() => {
-    const items = watchItems || [];
-    
-    return items.reduce((acc, item, index) => {
+    return watchItems.reduce((acc, item) => {
+        const { total, totalStems } = getCalculations(item);
         if (!item.isSubItem) {
-            acc.boxCount += Number(item.boxCount) || 0;
+             acc.boxCount += Number(item.boxCount) || 0;
         }
-        
         acc.bunchCount += Number(item.bunchCount) || 0;
         acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
-        
-        const { total, totalStems } = getCalculations(watchItems[index]);
         acc.totalStemsByBox += totalStems;
         acc.grandTotal += total;
 
@@ -299,7 +316,8 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      bunchCount: 0,
+      bunchCount: Number(parentItem.bunchesPerBox) || 0, // Auto-set bunches
+      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0, // Inherit from parent
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -478,7 +496,7 @@ export function NewInvoiceForm() {
                         <TableHead>Variedad</TableHead>
                         <TableHead>Longitud</TableHead>
                         <TableHead>Tallos/Bunch</TableHead>
-                        <TableHead>Total Tallos</TableHead>
+                        <TableHead>Total Tallos/Caja</TableHead>
                         <TableHead>P. Compra</TableHead>
                         <TableHead>P. Venta</TableHead>
                         <TableHead>Diferencia</TableHead>
@@ -523,12 +541,12 @@ export function NewInvoiceForm() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} />
+                              <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]" disabled={isSubItem} />} />
                               {!isSubItem && bunchWarnings[index] && (
                                 <p className="text-xs text-destructive mt-1 w-[120px]">{bunchWarnings[index]}</p>
                               )}
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]"/>} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]" disabled={isSubItem} />} /></TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
