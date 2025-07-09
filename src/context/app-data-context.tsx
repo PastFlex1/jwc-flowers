@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
 import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
@@ -126,7 +126,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     fetchData();
   }, [fetchData]);
 
-  const value = {
+  const value = useMemo(() => ({
     paises,
     vendedores,
     customers,
@@ -140,7 +140,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     productos,
     isLoading,
     refreshData: fetchData,
-  };
+  }), [
+    paises, 
+    vendedores, 
+    customers, 
+    fincas, 
+    cargueras, 
+    consignatarios, 
+    daes, 
+    marcaciones, 
+    provincias, 
+    invoices,
+    productos,
+    isLoading, 
+    fetchData
+  ]);
 
   return (
     <AppDataContext.Provider value={value}>
