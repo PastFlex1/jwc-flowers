@@ -47,7 +47,6 @@ export interface Invoice {
   farmId: string;
   carrierId: string;
   countryId: string;
-  pointOfSale: string;
   reference?: string;
   masterAWB: string;
   houseAWB: string;

@@ -36,7 +36,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     farmId: data.farmId,
     carrierId: data.carrierId,
     countryId: data.countryId,
-    pointOfSale: data.pointOfSale,
     reference: data.reference,
     masterAWB: data.masterAWB,
     houseAWB: data.houseAWB,

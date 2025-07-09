@@ -16,7 +16,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -50,7 +49,6 @@ const invoiceSchema = z.object({
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
-  pointOfSale: z.string().min(1, 'Punto de venta requerido.'),
   reference: z.string().optional(),
   masterAWB: z.string().min(1, 'Guía Madre requerida.'),
   houseAWB: z.string().min(1, 'Guía Hija requerida.'),
@@ -79,7 +77,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove, insert, update } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -116,7 +114,6 @@ export function NewInvoiceForm() {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
 
-        // Update sub-items when a parent's bunchesPerBox changes
         if (type === 'change' && name?.match(/^items\.\d+\.bunchesPerBox$/)) {
             const changedIndex = parseInt(name.split('.')[1], 10);
             const parentItem = items[changedIndex];
@@ -207,7 +204,7 @@ export function NewInvoiceForm() {
     const headerFields: (keyof InvoiceFormValues)[] = [
       'invoiceNumber',
       'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
-      'consignatarioId', 'farmId', 'carrierId', 'countryId', 'pointOfSale', 
+      'consignatarioId', 'farmId', 'carrierId', 'countryId', 
       'masterAWB', 'houseAWB'
     ];
     const result = await form.trigger(headerFields);
@@ -316,8 +313,8 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      bunchCount: Number(parentItem.bunchesPerBox) || 0, // Auto-set bunches
-      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0, // Inherit from parent
+      bunchCount: Number(parentItem.bunchesPerBox) || 0,
+      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0,
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -439,12 +436,6 @@ export function NewInvoiceForm() {
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="pointOfSale" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Punto de Venta</FormLabel>
-                  <FormControl><Input placeholder="Punto de Venta" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
                <FormField control={form.control} name="reference" render={({ field }) => (
