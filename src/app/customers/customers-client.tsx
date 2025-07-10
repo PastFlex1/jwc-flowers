@@ -27,7 +27,7 @@ type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function CustomersClient() {
-  const { customers, paises, cargueras, vendedores, refreshData } = useAppData();
+  const { customers, paises, cargueras, vendedores, daes, refreshData } = useAppData();
   const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
   const { t } = useTranslation();
 
@@ -156,6 +156,7 @@ export function CustomersClient() {
               paises={paises}
               cargueras={cargueras}
               vendedores={vendedores}
+              daes={daes}
               isSubmitting={isSubmitting}
             />
           </DialogContent>

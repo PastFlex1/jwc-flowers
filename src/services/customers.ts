@@ -28,6 +28,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     vendedor: data.vendedor,
     plazo: data.plazo,
     cupo: data.cupo,
+    daeId: data.daeId,
   };
 };
 

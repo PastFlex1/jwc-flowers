@@ -60,7 +60,7 @@ type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones } = useAppData();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
@@ -146,7 +146,6 @@ export function NewInvoiceForm() {
 
 
   const getCalculations = useCallback((item: any) => {
-    const purchasePrice = Number(item.purchasePrice) || 0;
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
     const bunchesPerBox = Number(item.bunchesPerBox) || 0;
@@ -163,21 +162,20 @@ export function NewInvoiceForm() {
     }
     
     const total = salePrice * totalStemsForLine;
-    const difference = salePrice - purchasePrice;
     
-    return { difference, total, totalStems: stemsPerBox };
+    return { total, totalStems: stemsPerBox };
   }, []);
 
   const totals = useMemo(() => {
     return watchItems.reduce((acc, item, index, allItems) => {
         const { totalStems, total } = getCalculations(item);
         const boxCount = Number(item.boxCount) || 0;
-        const totalBunchesForLine = Number(item.bunchCount) || 0;
+        const bunchCount = Number(item.bunchCount) || 0;
         const bunchesPerBoxForLine = Number(item.bunchesPerBox) || 0;
 
         if (!item.isSubItem) {
              acc.boxCount += boxCount;
-             acc.totalBunches += totalBunchesForLine;
+             acc.totalBunches += bunchCount;
         }
 
         acc.bunchesPerBox += bunchesPerBoxForLine * boxCount;
@@ -436,7 +434,21 @@ export function NewInvoiceForm() {
                <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Referencia (Mark)</FormLabel>
-                  <FormControl><Input placeholder="Referencia" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione una marcación" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {marcaciones.map(m => (
+                        <SelectItem key={m.id} value={m.numeroMarcacion}>
+                          {m.numeroMarcacion}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}/>
                <FormField control={form.control} name="masterAWB" render={({ field }) => (
@@ -474,10 +486,8 @@ export function NewInvoiceForm() {
                         <TableHead>Variedad</TableHead>
                         <TableHead>Longitud</TableHead>
                         <TableHead>Tallos/Bunch</TableHead>
-                        <TableHead>Total Tallos/Caja</TableHead>
-                        <TableHead>P. Compra</TableHead>
+                        <TableHead>Total Tallos</TableHead>
                         <TableHead>P. Venta</TableHead>
-                        <TableHead>Diferencia</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead className="w-[100px]">Acciones</TableHead>
                       </TableRow>
@@ -486,7 +496,7 @@ export function NewInvoiceForm() {
                       {fields.map((field, index) => {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { difference, total, totalStems } = getCalculations(watchItems[index]);
+                         const { total, totalStems } = getCalculations(watchItems[index]);
                          const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
 
                          return (
@@ -521,7 +531,7 @@ export function NewInvoiceForm() {
                             <TableCell>
                                <div className="relative">
                                 <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="min-w-[80px]" disabled={isSubItem} />
+                                    <Input type="number" {...field} className="min-w-[80px]" />
                                   )} />
                                 {!isSubItem && bunchWarnings[index] && (
                                     <div className="absolute top-full left-0 mt-1 w-full flex items-center gap-1 text-xs text-destructive">
@@ -531,7 +541,25 @@ export function NewInvoiceForm() {
                                 )}
                                </div>
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]" />} /></TableCell>
+                            <TableCell>
+                              <FormField 
+                                control={form.control} 
+                                name={`items.${index}.bunchesPerBox`} 
+                                render={({ field }) => (
+                                  <Input 
+                                    type="number" 
+                                    {...field} 
+                                    className="min-w-[110px]" 
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      if (isSubItem) {
+                                        form.setValue(`items.${index}.bunchCount`, Number(e.target.value));
+                                      }
+                                    }}
+                                  />
+                                )} 
+                              />
+                            </TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
@@ -565,9 +593,7 @@ export function NewInvoiceForm() {
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell className="min-w-[100px]">{totalStems}</TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
-                            <TableCell className="min-w-[100px]">${difference.toFixed(2)}</TableCell>
                             <TableCell className="min-w-[100px]">${total.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
                               {!isSubItem && (
@@ -587,7 +613,7 @@ export function NewInvoiceForm() {
                         <TableCell>
                           <Input value={totals.boxCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell>
+                         <TableCell>
                            <Input value={totals.totalBunches} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
@@ -597,7 +623,7 @@ export function NewInvoiceForm() {
                         <TableCell>
                           <Input value={totals.totalStemsByBox} disabled className="min-w-[100px] bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={3}></TableCell>
+                        <TableCell></TableCell>
                         <TableCell>
                           <Input value={`$${totals.grandTotal.toFixed(2)}`} disabled className="min-w-[100px] bg-muted font-bold text-right" />
                         </TableCell>

@@ -10,6 +10,7 @@ export interface Customer {
   vendedor: string;
   plazo: number;
   cupo: number;
+  daeId?: string;
 }
 
 export interface InventoryItem {

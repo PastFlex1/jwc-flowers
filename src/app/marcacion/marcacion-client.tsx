@@ -28,7 +28,7 @@ type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function MarcacionClient() {
-  const { marcaciones, refreshData } = useAppData();
+  const { marcaciones, customers, refreshData } = useAppData();
   const [localMarcaciones, setLocalMarcaciones] = useState<Marcacion[]>([]);
   const { t } = useTranslation();
   
@@ -44,6 +44,13 @@ export function MarcacionClient() {
     setCurrentPage(1);
   }, [marcaciones]);
   
+  const customerMap = useMemo(() => {
+    return customers.reduce((acc, customer) => {
+        acc[customer.id] = customer.name;
+        return acc;
+    }, {} as Record<string, string>);
+  }, [customers]);
+
   const totalPages = Math.ceil(localMarcaciones.length / ITEMS_PER_PAGE);
 
   const paginatedMarcaciones = useMemo(() => {
@@ -154,6 +161,7 @@ export function MarcacionClient() {
               onClose={handleCloseDialog}
               initialData={editingMarcacion}
               isSubmitting={isSubmitting}
+              customers={customers}
             />
           </DialogContent>
         </Dialog>
@@ -176,7 +184,7 @@ export function MarcacionClient() {
                 {paginatedMarcaciones.map((marcacion) => (
                   <TableRow key={marcacion.id}>
                     <TableCell className="font-medium">{marcacion.numeroMarcacion}</TableCell>
-                    <TableCell>{marcacion.cliente}</TableCell>
+                    <TableCell>{customerMap[marcacion.cliente] || 'N/A'}</TableCell>
                     <TableCell className="text-right space-x-0">
                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(marcacion)}>
                            <Edit className="h-4 w-4" />

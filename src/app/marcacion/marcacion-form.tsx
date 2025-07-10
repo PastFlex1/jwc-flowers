@@ -7,12 +7,13 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Marcacion } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Marcacion, Customer } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   numeroMarcacion: z.string().min(1, { message: "El número de marcación es requerido." }),
-  cliente: z.string().min(2, { message: "El nombre del cliente debe tener al menos 2 caracteres." }),
+  cliente: z.string().min(1, { message: "Por favor seleccione un cliente." }),
 });
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
@@ -22,9 +23,10 @@ type MarcacionFormProps = {
   onClose: () => void;
   initialData?: Marcacion | null;
   isSubmitting: boolean;
+  customers: Customer[];
 };
 
-export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting }: MarcacionFormProps) {
+export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting, customers }: MarcacionFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
@@ -67,9 +69,20 @@ export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting }: 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cliente</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Elena Rodriguez" {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccione un cliente" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {customers.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

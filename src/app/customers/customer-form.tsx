@@ -9,12 +9,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Customer, Pais, Carguera, Vendedor } from '@/lib/types';
+import type { Customer, Pais, Carguera, Vendedor, Dae } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   pais: z.string().min(1, { message: "El país es requerido." }),
+  daeId: z.string().optional(),
   estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
   address: z.string().min(10, { message: "La dirección es muy corta." }),
   email: z.string().email({ message: "Correo electrónico no válido." }),
@@ -34,10 +35,11 @@ type CustomerFormProps = {
   paises: Pais[];
   cargueras: Carguera[];
   vendedores: Vendedor[];
+  daes: Dae[];
   isSubmitting: boolean;
 };
 
-export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, isSubmitting }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, daes, isSubmitting }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -47,6 +49,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
     } : {
       name: '',
       pais: '',
+      daeId: '',
       estadoCiudad: '',
       address: '',
       email: '',
@@ -66,6 +69,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
     } : {
       name: '',
       pais: '',
+      daeId: '',
       estadoCiudad: '',
       address: '',
       email: '',
@@ -243,6 +247,31 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
                 <FormControl>
                   <Input type="number" placeholder="5000" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="daeId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>DAE</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un DAE por país" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Ninguno</SelectItem>
+                    {daes.map(d => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.pais} ({d.numeroDae})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
