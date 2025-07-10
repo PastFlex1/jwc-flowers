@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -50,7 +51,7 @@ const invoiceSchema = z.object({
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
-  reference: z.string().optional(),
+  reference: z.string().min(1, "Referencia es requerida."),
   masterAWB: z.string().min(1, 'Guía Madre requerida.'),
   houseAWB: z.string().min(1, 'Guía Hija requerida.'),
   items: z.array(lineItemSchema).min(0),
@@ -146,28 +147,28 @@ export function NewInvoiceForm() {
 }, [form]);
 
 
-  const getCalculations = useCallback((item: any) => {
-    const salePrice = Number(item.salePrice) || 0;
-    const stemCount = Number(item.stemCount) || 0;
-    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
-
+  const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
+    const salePrice = Number(item?.salePrice) || 0;
+    const stemCount = Number(item?.stemCount) || 0;
+    
+    // For a sub-item or a main item, bunchesPerBox is what matters for that line's calculation.
+    const bunchesPerBox = Number(item?.bunchesPerBox) || 0;
     const stemsPerBox = bunchesPerBox * stemCount;
 
-    // For a sub-item, bunchCount is the same as bunchesPerBox.
-    // For a main item, it's the total for all its boxes.
-    const bunchCount = item.isSubItem ? bunchesPerBox : (Number(item.bunchCount) || 0);
-    const boxCount = item.isSubItem ? 1 : (Number(item.boxCount) || 0);
+    // A sub-item always represents 1 box.
+    const boxCount = isSubItem ? 1 : (Number(item?.boxCount) || 0);
 
-    const totalStems = bunchCount * stemCount;
+    // Total for this line (could be 1 or more boxes)
+    const lineTotal = salePrice * stemCount * bunchesPerBox * boxCount;
     
-    // Total for one line (which could be one or more boxes if it's a main item without subitems)
-    const total = salePrice * totalStems;
-    
-    return { total, stemsPerBox, bunchCount, boxCount, bunchesPerBox };
+    return {
+      stemsPerBox,
+      lineTotal,
+    };
   }, []);
 
 
-  const totals = useMemo(() => {
+ const totals = useMemo(() => {
     let totalBoxCount = 0;
     let totalBunches = 0;
     let totalBunchesPerBox = 0;
@@ -176,36 +177,39 @@ export function NewInvoiceForm() {
 
     for (let i = 0; i < watchItems.length; i++) {
         const item = watchItems[i];
-        if (!item) continue;
+        if (!item || item.isSubItem) continue;
 
-        if (!item.isSubItem) {
-            let hasSubItems = false;
-            // Check if this main item has any sub-items
-            if (i + 1 < watchItems.length && watchItems[i + 1]?.isSubItem) {
-                hasSubItems = true;
-            }
+        const mainItemBoxCount = Number(item.boxCount) || 0;
+        totalBoxCount += mainItemBoxCount;
+        totalBunches += Number(item.bunchCount) || 0;
 
-            if (!hasSubItems) {
-                // This is a standalone main item, calculate its totals
-                const calc = getCalculations(item);
-                totalBoxCount += calc.boxCount;
-                totalBunches += calc.bunchCount;
-                totalBunchesPerBox += calc.bunchesPerBox * calc.boxCount;
-                totalStemsByBox += calc.stemsPerBox * calc.boxCount;
-                grandTotal += calc.total * calc.boxCount;
-            } else {
-                // This main item has sub-items, so its own values are for reference.
-                // We add its boxCount and total bunches, but calculations come from sub-items.
-                totalBoxCount += Number(item.boxCount) || 0;
-                totalBunches += Number(item.bunchCount) || 0;
+        // Check for sub-items
+        let hasSubItems = false;
+        let j = i + 1;
+        while(j < watchItems.length && watchItems[j]?.isSubItem) {
+            hasSubItems = true;
+            const subItem = watchItems[j];
+            if(subItem) {
+                const subItemBunchesPerBox = Number(subItem.bunchesPerBox) || 0;
+                const subItemStemCount = Number(subItem.stemCount) || 0;
+                const subItemSalePrice = Number(subItem.salePrice) || 0;
+                
+                totalBunchesPerBox += subItemBunchesPerBox;
+                totalStemsByBox += subItemBunchesPerBox * subItemStemCount;
+                grandTotal += subItemBunchesPerBox * subItemStemCount * subItemSalePrice;
             }
-        } else {
-            // This is a sub-item, calculate its totals
-            const calc = getCalculations(item);
-            // Don't add to boxCount as it's part of the parent
-            totalBunchesPerBox += calc.bunchesPerBox;
-            totalStemsByBox += calc.stemsPerBox;
-            grandTotal += calc.total;
+            j++;
+        }
+
+        if (!hasSubItems) {
+            // It's a main item with no sub-items, so it counts itself.
+            const itemBunchesPerBox = Number(item.bunchesPerBox) || 0;
+            const itemStemCount = Number(item.stemCount) || 0;
+            const itemSalePrice = Number(item.salePrice) || 0;
+            
+            totalBunchesPerBox += itemBunchesPerBox * mainItemBoxCount;
+            totalStemsByBox += itemBunchesPerBox * itemStemCount * mainItemBoxCount;
+            grandTotal += itemBunchesPerBox * itemStemCount * itemSalePrice * mainItemBoxCount;
         }
     }
 
@@ -216,7 +220,7 @@ export function NewInvoiceForm() {
         totalStemsByBox: totalStemsByBox,
         grandTotal: grandTotal,
     };
-}, [watchItems, getCalculations]);
+}, [watchItems]);
 
 
   async function handleAddItem() {
@@ -503,17 +507,17 @@ export function NewInvoiceForm() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[40px] text-center">N°</TableHead>
-                        <TableHead className="min-w-[100px]">Tipo Caja</TableHead>
-                        <TableHead className="min-w-[100px]">N° Cajas</TableHead>
-                        <TableHead className="min-w-[110px]">N° Bunches</TableHead>
-                        <TableHead className="min-w-[130px]">Bunches/Caja</TableHead>
+                        <TableHead className="w-[100px]">Tipo Caja</TableHead>
+                        <TableHead className="w-[100px]">N° Cajas</TableHead>
+                        <TableHead className="w-[110px]">N° Bunches</TableHead>
+                        <TableHead className="w-[130px]">Bunches/Caja</TableHead>
                         <TableHead className="min-w-[150px]">Producto</TableHead>
                         <TableHead className="min-w-[150px]">Variedad</TableHead>
-                        <TableHead className="min-w-[100px]">Longitud</TableHead>
-                        <TableHead className="min-w-[120px]">Tallos/Bunch</TableHead>
-                        <TableHead className="min-w-[140px] text-center">Total Tallos/Caja</TableHead>
-                        <TableHead className="min-w-[100px]">P. Venta</TableHead>
-                        <TableHead className="min-w-[120px] text-right">Total</TableHead>
+                        <TableHead className="w-[100px]">Longitud</TableHead>
+                        <TableHead className="w-[120px]">Tallos/Bunch</TableHead>
+                        <TableHead className="w-[140px] text-center">Total Tallos/Caja</TableHead>
+                        <TableHead className="w-[100px]">P. Venta</TableHead>
+                        <TableHead className="w-[120px] text-right">Total</TableHead>
                         <TableHead className="w-[100px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -522,7 +526,7 @@ export function NewInvoiceForm() {
                          const currentItem = watchItems[index];
                          const isSubItem = currentItem.isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { total, stemsPerBox } = getCalculations(currentItem);
+                         const { lineTotal, stemsPerBox } = getCalculations(currentItem, isSubItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
 
                          return (
@@ -619,7 +623,7 @@ export function NewInvoiceForm() {
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
                             <TableCell className="text-center">{stemsPerBox}</TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />} /></TableCell>
-                            <TableCell className="font-semibold text-right pr-4">${total.toFixed(2)}</TableCell>
+                            <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
                               {!isSubItem && (
                                 <Button type="button" variant="ghost" size="icon" onClick={() => handleAddSubItem(index)} title="Crear sub-fila">
@@ -636,21 +640,21 @@ export function NewInvoiceForm() {
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
                         <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
                         <TableCell>
-                          <Input value={totals.boxCount} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.boxCount || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
                          <TableCell>
-                           <Input value={totals.totalBunches} disabled className="bg-muted font-bold text-center" />
+                           <Input value={totals.totalBunches || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
-                          <Input value={totals.bunchesPerBox} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell colSpan={4}></TableCell>
                         <TableCell>
-                          <Input value={totals.totalStemsByBox} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell></TableCell>
                         <TableCell>
-                          <Input value={`$${totals.grandTotal.toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4" />
+                           <Input value={`$${(totals.grandTotal || 0).toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4" />
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
@@ -680,3 +684,4 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
