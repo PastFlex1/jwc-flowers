@@ -130,7 +130,7 @@ export function NewInvoiceForm() {
                 
                 for (let i = index + 1; i < items.length; i++) {
                     if (items[i]?.isSubItem) {
-                        subItemsBunchSum += Number(items[i].bunchCount) || 0;
+                        subItemsBunchSum += Number(items[i].bunchesPerBox) || 0;
                         subItemCount++;
                     } else {
                         break;
@@ -159,11 +159,9 @@ export function NewInvoiceForm() {
     const stemCount = Number(item.stemCount) || 0;
     const bunchCount = Number(item.bunchCount) || 0;
     const bunchesPerBox = Number(item.bunchesPerBox) || 0;
-    const boxCount = Number(item.boxCount) || 0;
 
     const stemsPerBox = bunchesPerBox * stemCount;
-    // For main items, totalStemsForLine is based on total bunches. For sub-items, it's the same as stemsPerBox.
-    const totalStemsForLine = item.isSubItem ? stemsPerBox : bunchCount * stemCount;
+    const totalStemsForLine = bunchCount * stemCount;
     const total = salePrice * totalStemsForLine;
     const difference = salePrice - purchasePrice;
     
@@ -172,14 +170,14 @@ export function NewInvoiceForm() {
 
   const totals = useMemo(() => {
     return watchItems.reduce((acc, item) => {
-        const { total, totalStems } = getCalculations(item);
         if (!item.isSubItem) {
+             const { total, totalStems } = getCalculations(item);
              acc.boxCount += Number(item.boxCount) || 0;
              acc.bunchCount += Number(item.bunchCount) || 0;
              acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
              acc.totalStemsByBox += totalStems * (Number(item.boxCount) || 0);
+             acc.grandTotal += total;
         }
-        acc.grandTotal += total;
 
         return acc;
     }, {
