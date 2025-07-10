@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -145,7 +146,7 @@ export function NewInvoiceForm() {
 }, [form]);
 
 
-  const getCalculations = useCallback((item: any) => {
+  const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
     const bunchesPerBox = Number(item.bunchesPerBox) || 0;
@@ -155,32 +156,40 @@ export function NewInvoiceForm() {
     const stemsPerBox = bunchesPerBox * stemCount;
 
     let totalStemsForLine;
-    if (item.isSubItem) {
+    let total;
+
+    if (isSubItem) {
+        // For a sub-item, bunchCount is the number of bunches in THAT box.
         totalStemsForLine = bunchCount * stemCount;
+        total = salePrice * totalStemsForLine;
     } else {
-        totalStemsForLine = bunchCount * stemCount * boxCount;
+        // For a main item, it's per box, then multiplied by number of boxes.
+        totalStemsForLine = bunchCount * stemCount;
+        total = salePrice * totalStemsForLine;
     }
     
-    const total = salePrice * totalStemsForLine;
-    
-    return { total, totalStems: stemsPerBox };
+    return { total, stemsPerBox };
   }, []);
 
   const totals = useMemo(() => {
-    return watchItems.reduce((acc, item, index, allItems) => {
-        const { totalStems, total } = getCalculations(item);
-        const boxCount = Number(item.boxCount) || 0;
-        const bunchCount = Number(item.bunchCount) || 0;
-        const bunchesPerBoxForLine = Number(item.bunchesPerBox) || 0;
-
+    return watchItems.reduce((acc, item) => {
+        const { stemsPerBox, total } = getCalculations(item, item.isSubItem);
+        
         if (!item.isSubItem) {
-             acc.boxCount += boxCount;
-             acc.totalBunches += bunchCount;
+             acc.boxCount += Number(item.boxCount) || 0;
+             acc.totalBunches += Number(item.bunchCount) || 0;
+             acc.bunchesPerBox += (Number(item.bunchesPerBox) || 0);
+             acc.totalStemsByBox += stemsPerBox * (Number(item.boxCount) || 0);
+        } else {
+            // For sub-items, we need to add their individual totals
+            acc.grandTotal += total;
         }
 
-        acc.bunchesPerBox += bunchesPerBoxForLine * boxCount;
-        acc.totalStemsByBox += totalStems * boxCount;
-        acc.grandTotal += total;
+        // Add total for main items only if they don't have sub-items
+        const hasSubItems = watchItems.some((sub, i) => i > watchItems.indexOf(item) && sub.isSubItem && !watchItems.slice(watchItems.indexOf(item) + 1, i).some(si => !si.isSubItem));
+        if (!item.isSubItem && !hasSubItems) {
+            acc.grandTotal += total;
+        }
 
         return acc;
     }, {
@@ -486,7 +495,7 @@ export function NewInvoiceForm() {
                         <TableHead>Variedad</TableHead>
                         <TableHead>Longitud</TableHead>
                         <TableHead>Tallos/Bunch</TableHead>
-                        <TableHead>Total Tallos</TableHead>
+                        <TableHead>Total Tallos/Caja</TableHead>
                         <TableHead>P. Venta</TableHead>
                         <TableHead>Total</TableHead>
                         <TableHead className="w-[100px]">Acciones</TableHead>
@@ -494,10 +503,11 @@ export function NewInvoiceForm() {
                     </TableHeader>
                     <TableBody>
                       {fields.map((field, index) => {
-                         const isSubItem = watchItems[index].isSubItem;
+                         const currentItem = watchItems[index];
+                         const isSubItem = currentItem.isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { total, totalStems } = getCalculations(watchItems[index]);
-                         const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
+                         const { total, stemsPerBox } = getCalculations(currentItem, isSubItem);
+                         const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
@@ -581,7 +591,7 @@ export function NewInvoiceForm() {
                                   <Select 
                                     onValueChange={field.onChange}
                                     value={field.value}
-                                    disabled={!watchItems[index]?.product || varietiesForProduct.length === 0}
+                                    disabled={!currentItem?.product || varietiesForProduct.length === 0}
                                   >
                                     <FormControl><SelectTrigger className="min-w-[150px]"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                     <SelectContent>
@@ -592,7 +602,7 @@ export function NewInvoiceForm() {
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]"/>} /></TableCell>
-                            <TableCell className="min-w-[100px]">{totalStems}</TableCell>
+                            <TableCell className="min-w-[100px] text-center">{stemsPerBox}</TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="min-w-[100px]"/>} /></TableCell>
                             <TableCell className="min-w-[100px]">${total.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
@@ -655,3 +665,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
