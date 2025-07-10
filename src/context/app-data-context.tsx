@@ -15,6 +15,7 @@ import { getInvoices } from '@/services/invoices';
 import { getProductos } from '@/services/productos';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { Flower2 } from 'lucide-react';
 
 type AppDataContextType = {
   paises: Pais[];
@@ -38,10 +39,7 @@ function AppDataLoadingScreen() {
     return (
         <div className="flex h-screen w-screen items-center justify-center bg-background">
              <div className="flex flex-col items-center gap-4">
-                <svg className="animate-spin h-10 w-10 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <Flower2 className="h-12 w-12 text-primary animate-pulse" />
                 <p className="text-muted-foreground">Sincronizando datos...</p>
             </div>
         </div>
@@ -63,8 +61,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchData = useCallback(async () => {
-    // We don't set isLoading to true here on purpose, so that refreshes don't show the main loading screen.
+  const fetchData = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setIsLoading(true);
+    }
     try {
       const [
         paisesData,
@@ -103,7 +103,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setInvoices(invoicesData);
       setProductos(productosData);
       
-      // Only override the default cargueras if there's data in the DB
       if (dbCargueras.length > 0) {
         setCargueras(dbCargueras);
       }
@@ -117,13 +116,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         duration: 10000,
       });
     } finally {
-      // This will only be set to false once on initial load, hiding the loading screen.
-      setIsLoading(false);
+      if (isInitialLoad) {
+        setIsLoading(false);
+      }
     }
   }, [toast]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(true);
   }, [fetchData]);
 
   const value = useMemo(() => ({
@@ -139,7 +139,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     invoices,
     productos,
     isLoading,
-    refreshData: fetchData,
+    refreshData: () => fetchData(false),
   }), [
     paises, 
     vendedores, 

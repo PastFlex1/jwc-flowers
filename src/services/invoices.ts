@@ -41,8 +41,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     houseAWB: data.houseAWB,
     items: data.items.map((item: any) => ({
       ...item,
-      // Provide defaults for old documents that might not have these fields
-      product: item.product || item.description || '', // Handle old `description` field
+      product: item.product || item.description || '', 
       variety: item.variety || '',
     })) as LineItem[],
     status: data.status || 'Pending',

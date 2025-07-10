@@ -76,7 +76,6 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {/* This is a fallback, in a real app this should be dynamic */}
                     <SelectItem value="Internacional">Internacional</SelectItem>
                     <SelectItem value="Nacional">Nacional</SelectItem>
                   </SelectContent>

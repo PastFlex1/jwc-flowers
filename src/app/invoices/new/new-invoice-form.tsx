@@ -6,7 +6,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, CornerDownRight } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, CornerDownRight, AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -62,7 +62,6 @@ export function NewInvoiceForm() {
   const { toast } = useToast();
   const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos } = useAppData();
 
-  const [isHeaderSet, setIsHeaderSet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
   const [bunchWarnings, setBunchWarnings] = useState<Record<number, string | null>>({});
@@ -84,6 +83,7 @@ export function NewInvoiceForm() {
   
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
+  const isHeaderSet = watchItems.length > 0;
 
   const productNames = useMemo(() => {
     if (!productos) return [];
@@ -120,14 +120,15 @@ export function NewInvoiceForm() {
                 let subItemCount = 0;
                 
                 for (let i = index + 1; i < items.length; i++) {
-                    if (items[i]?.isSubItem) {
-                        subItemsBunchSum += Number(items[i].bunchesPerBox) || 0;
+                    const subItem = items[i];
+                    if (subItem?.isSubItem) {
+                        subItemsBunchSum += Number(subItem.bunchesPerBox) || 0;
                         subItemCount++;
                     } else {
                         break;
                     }
                 }
-
+                
                 if (subItemCount > 0) {
                     const parentBunchCount = Number(item.bunchCount) || 0;
                     if (subItemsBunchSum > parentBunchCount) {
@@ -144,69 +145,45 @@ export function NewInvoiceForm() {
 }, [form]);
 
 
-  const getCalculations = useCallback((item: any, index: number, allItems: any[]) => {
+  const getCalculations = useCallback((item: any) => {
     const purchasePrice = Number(item.purchasePrice) || 0;
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
-
-    let bunchCountForCalc: number;
-    let bunchesPerBoxForCalc: number;
+    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
+    const bunchCount = Number(item.bunchCount) || 0;
+    const boxCount = Number(item.boxCount) || 0;
     
+    const stemsPerBox = bunchesPerBox * stemCount;
+
+    let totalStemsForLine;
     if (item.isSubItem) {
-        bunchesPerBoxForCalc = Number(item.bunchesPerBox) || 0;
-        bunchCountForCalc = bunchesPerBoxForCalc; // For sub-items, bunch count is per box.
+        totalStemsForLine = bunchCount * stemCount;
     } else {
-        let subItemCount = 0;
-        for (let i = index + 1; i < allItems.length; i++) {
-            if (allItems[i]?.isSubItem) {
-                subItemCount++;
-            } else {
-                break;
-            }
-        }
-        bunchCountForCalc = Number(item.bunchCount) || 0;
-        bunchesPerBoxForCalc = (subItemCount > 0) ? 0 : (Number(item.bunchesPerBox) || 0); // Only count parent's bunchesPerBox if no subitems
+        totalStemsForLine = bunchCount * stemCount * boxCount;
     }
     
-    const stemsPerBox = bunchesPerBoxForCalc * stemCount;
-    const totalStemsForLine = bunchCountForCalc * stemCount;
     const total = salePrice * totalStemsForLine;
     const difference = salePrice - purchasePrice;
     
-    return { difference, total, totalStems: stemsPerBox, totalStemsForLine };
+    return { difference, total, totalStems: stemsPerBox };
   }, []);
 
   const totals = useMemo(() => {
     return watchItems.reduce((acc, item, index, allItems) => {
-        const { totalStemsForLine } = getCalculations(item, index, allItems);
+        const { totalStems, total } = getCalculations(item);
         const boxCount = Number(item.boxCount) || 0;
         const totalBunchesForLine = Number(item.bunchCount) || 0;
+        const bunchesPerBoxForLine = Number(item.bunchesPerBox) || 0;
 
         if (!item.isSubItem) {
              acc.boxCount += boxCount;
              acc.totalBunches += totalBunchesForLine;
-             acc.grandTotal += totalStemsForLine * (Number(item.salePrice) || 0);
-             
-             let subItemBunchesPerBoxSum = 0;
-             let subItemCount = 0;
-             for (let i = index + 1; i < allItems.length; i++) {
-                if(allItems[i]?.isSubItem) {
-                    subItemBunchesPerBoxSum += Number(allItems[i].bunchesPerBox) || 0;
-                    subItemCount++;
-                } else {
-                    break;
-                }
-             }
-            
-             if(subItemCount > 0) {
-                 acc.bunchesPerBox += subItemBunchesPerBoxSum;
-                 acc.totalStemsByBox += subItemBunchesPerBoxSum * (Number(item.stemCount) || 0);
-             } else {
-                 const parentBunchesPerBox = Number(item.bunchesPerBox) || 0;
-                 acc.bunchesPerBox += parentBunchesPerBox;
-                 acc.totalStemsByBox += parentBunchesPerBox * (Number(item.stemCount) || 0) * boxCount;
-             }
         }
+
+        acc.bunchesPerBox += bunchesPerBoxForLine * boxCount;
+        acc.totalStemsByBox += totalStems * boxCount;
+        acc.grandTotal += total;
+
         return acc;
     }, {
         boxCount: 0,
@@ -218,8 +195,8 @@ export function NewInvoiceForm() {
   }, [watchItems, getCalculations]);
 
 
-  async function handleHeaderSubmit() {
-    const headerFields: (keyof InvoiceFormValues)[] = [
+  async function handleAddItem() {
+     const headerFields: (keyof InvoiceFormValues)[] = [
       'invoiceNumber',
       'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
       'consignatarioId', 'farmId', 'carrierId', 'countryId', 
@@ -227,11 +204,11 @@ export function NewInvoiceForm() {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
-      setIsHeaderSet(true);
+       append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })
     } else {
        toast({
         title: 'Error de Validación',
-        description: 'Por favor, complete todos los campos del encabezado.',
+        description: 'Por favor, complete todos los campos del encabezado antes de añadir ítems.',
         variant: 'destructive',
       });
     }
@@ -331,8 +308,8 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      bunchCount: 0,
-      bunchesPerBox: 0, 
+      bunchCount: Number(parentItem.bunchesPerBox) || 0,
+      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0, 
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -477,15 +454,7 @@ export function NewInvoiceForm() {
             </CardContent>
           </Card>
 
-          {!isHeaderSet && (
-             <div className="flex justify-end">
-              <Button type="button" onClick={handleHeaderSubmit}>
-                Crear Factura y Añadir Items
-              </Button>
-            </div>
-          )}
-
-          {isHeaderSet && (
+          
             <Card>
               <CardHeader>
                 <CardTitle>Items de la Factura</CardTitle>
@@ -517,7 +486,7 @@ export function NewInvoiceForm() {
                       {fields.map((field, index) => {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { difference, total, totalStems } = getCalculations(watchItems[index], index, watchItems);
+                         const { difference, total, totalStems } = getCalculations(watchItems[index]);
                          const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
 
                          return (
@@ -550,14 +519,17 @@ export function NewInvoiceForm() {
                               )}
                             </TableCell>
                             <TableCell>
-                               <div className={cn(isSubItem && 'hidden')}>
-                                  <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="min-w-[80px]" />
+                               <div className="relative">
+                                <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="min-w-[80px]" disabled={isSubItem} />
                                   )} />
+                                {!isSubItem && bunchWarnings[index] && (
+                                    <div className="absolute top-full left-0 mt-1 w-full flex items-center gap-1 text-xs text-destructive">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        <span>{bunchWarnings[index]}</span>
+                                    </div>
+                                )}
                                </div>
-                              {!isSubItem && bunchWarnings[index] && (
-                                <p className="text-xs text-destructive mt-1 w-[120px]">{bunchWarnings[index]}</p>
-                              )}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]" />} /></TableCell>
                             <TableCell>
@@ -635,13 +607,13 @@ export function NewInvoiceForm() {
                   </Table>
                 </div>
                 <div className="mt-6 flex justify-end">
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
                       <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                     </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
+          
 
           {isHeaderSet && (
             <div className="flex justify-end gap-2">
