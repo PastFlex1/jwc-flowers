@@ -46,10 +46,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       ...initialData,
       plazo: Number(initialData.plazo),
       cupo: Number(initialData.cupo),
+      daeId: initialData.daeId || undefined,
     } : {
       name: '',
       pais: '',
-      daeId: '',
+      daeId: undefined,
       estadoCiudad: '',
       address: '',
       email: '',
@@ -66,10 +67,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       ...initialData,
       plazo: Number(initialData.plazo),
       cupo: Number(initialData.cupo),
+      daeId: initialData.daeId || undefined,
     } : {
       name: '',
       pais: '',
-      daeId: '',
+      daeId: undefined,
       estadoCiudad: '',
       address: '',
       email: '',
@@ -82,7 +84,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
   }, [initialData, form]);
 
   function handleSubmit(values: z.infer<typeof formSchema>) {
-    const dataToSubmit: CustomerFormData = initialData ? { ...values, id: initialData.id } : values;
+    const dataToSubmit: CustomerFormData = {
+      ...values,
+      daeId: values.daeId === '__none__' ? '' : values.daeId,
+      id: initialData?.id,
+    };
     onSubmit(dataToSubmit);
   }
 
@@ -264,7 +270,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Ninguno</SelectItem>
+                    <SelectItem value="__none__">Ninguno</SelectItem>
                     {daes.map(d => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.pais} ({d.numeroDae})
