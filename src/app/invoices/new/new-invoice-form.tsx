@@ -114,15 +114,6 @@ export function NewInvoiceForm() {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
 
-        if (name?.match(/^items\.\d+\.bunchesPerBox$/) && type === 'change') {
-            const changedIndex = parseInt(name.split('.')[1], 10);
-            const currentItem = items[changedIndex];
-            if (currentItem.isSubItem) {
-                // For sub-items, bunchCount should mirror bunchesPerBox since it's a single box.
-                form.setValue(`items.${changedIndex}.bunchCount`, Number(currentItem.bunchesPerBox) || 0, { shouldValidate: true });
-            }
-        }
-
         items.forEach((item, index) => {
             if (!item.isSubItem) {
                 let subItemsBunchSum = 0;
@@ -140,9 +131,9 @@ export function NewInvoiceForm() {
                 if (subItemCount > 0) {
                     const parentBunchCount = Number(item.bunchCount) || 0;
                     if (subItemsBunchSum > parentBunchCount) {
-                        newWarnings[index] = `Suma (${subItemsBunchSum}) excede total (${parentBunchCount}).`;
+                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentBunchCount}).`;
                     } else if (subItemsBunchSum < parentBunchCount) {
-                        newWarnings[index] = `Suma (${subItemsBunchSum}) es menor al total (${parentBunchCount}).`;
+                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentBunchCount}).`;
                     }
                 }
             }
@@ -153,36 +144,73 @@ export function NewInvoiceForm() {
 }, [form]);
 
 
-  const getCalculations = useCallback((item: any) => {
+  const getCalculations = useCallback((item: any, index: number, allItems: any[]) => {
     const purchasePrice = Number(item.purchasePrice) || 0;
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
-    const bunchCount = Number(item.bunchCount) || 0;
-    const bunchesPerBox = Number(item.bunchesPerBox) || 0;
 
-    const stemsPerBox = bunchesPerBox * stemCount;
-    const totalStemsForLine = bunchCount * stemCount;
+    let bunchCountForCalc: number;
+    let bunchesPerBoxForCalc: number;
+    
+    if (item.isSubItem) {
+        bunchesPerBoxForCalc = Number(item.bunchesPerBox) || 0;
+        bunchCountForCalc = bunchesPerBoxForCalc; // For sub-items, bunch count is per box.
+    } else {
+        let subItemCount = 0;
+        for (let i = index + 1; i < allItems.length; i++) {
+            if (allItems[i]?.isSubItem) {
+                subItemCount++;
+            } else {
+                break;
+            }
+        }
+        bunchCountForCalc = Number(item.bunchCount) || 0;
+        bunchesPerBoxForCalc = (subItemCount > 0) ? 0 : (Number(item.bunchesPerBox) || 0); // Only count parent's bunchesPerBox if no subitems
+    }
+    
+    const stemsPerBox = bunchesPerBoxForCalc * stemCount;
+    const totalStemsForLine = bunchCountForCalc * stemCount;
     const total = salePrice * totalStemsForLine;
     const difference = salePrice - purchasePrice;
     
-    return { difference, total, totalStems: stemsPerBox };
+    return { difference, total, totalStems: stemsPerBox, totalStemsForLine };
   }, []);
 
   const totals = useMemo(() => {
-    return watchItems.reduce((acc, item) => {
-        if (!item.isSubItem) {
-             const { total, totalStems } = getCalculations(item);
-             acc.boxCount += Number(item.boxCount) || 0;
-             acc.bunchCount += Number(item.bunchCount) || 0;
-             acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
-             acc.totalStemsByBox += totalStems * (Number(item.boxCount) || 0);
-             acc.grandTotal += total;
-        }
+    return watchItems.reduce((acc, item, index, allItems) => {
+        const { totalStemsForLine } = getCalculations(item, index, allItems);
+        const boxCount = Number(item.boxCount) || 0;
+        const totalBunchesForLine = Number(item.bunchCount) || 0;
 
+        if (!item.isSubItem) {
+             acc.boxCount += boxCount;
+             acc.totalBunches += totalBunchesForLine;
+             acc.grandTotal += totalStemsForLine * (Number(item.salePrice) || 0);
+             
+             let subItemBunchesPerBoxSum = 0;
+             let subItemCount = 0;
+             for (let i = index + 1; i < allItems.length; i++) {
+                if(allItems[i]?.isSubItem) {
+                    subItemBunchesPerBoxSum += Number(allItems[i].bunchesPerBox) || 0;
+                    subItemCount++;
+                } else {
+                    break;
+                }
+             }
+            
+             if(subItemCount > 0) {
+                 acc.bunchesPerBox += subItemBunchesPerBoxSum;
+                 acc.totalStemsByBox += subItemBunchesPerBoxSum * (Number(item.stemCount) || 0);
+             } else {
+                 const parentBunchesPerBox = Number(item.bunchesPerBox) || 0;
+                 acc.bunchesPerBox += parentBunchesPerBox;
+                 acc.totalStemsByBox += parentBunchesPerBox * (Number(item.stemCount) || 0) * boxCount;
+             }
+        }
         return acc;
     }, {
         boxCount: 0,
-        bunchCount: 0,
+        totalBunches: 0,
         bunchesPerBox: 0,
         totalStemsByBox: 0,
         grandTotal: 0,
@@ -303,7 +331,6 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      // Default sub-item bunches to 0, user should fill this.
       bunchCount: 0,
       bunchesPerBox: 0, 
     };
@@ -490,7 +517,7 @@ export function NewInvoiceForm() {
                       {fields.map((field, index) => {
                          const isSubItem = watchItems[index].isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { difference, total, totalStems } = getCalculations(watchItems[index]);
+                         const { difference, total, totalStems } = getCalculations(watchItems[index], index, watchItems);
                          const varietiesForProduct = getVarietiesForProduct(watchItems[index]?.product);
 
                          return (
@@ -523,7 +550,11 @@ export function NewInvoiceForm() {
                               )}
                             </TableCell>
                             <TableCell>
-                              <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => <Input type="number" {...field} className="min-w-[80px]" disabled={isSubItem} />} />
+                               <div className={cn(isSubItem && 'hidden')}>
+                                  <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="min-w-[80px]" />
+                                  )} />
+                               </div>
                               {!isSubItem && bunchWarnings[index] && (
                                 <p className="text-xs text-destructive mt-1 w-[120px]">{bunchWarnings[index]}</p>
                               )}
@@ -585,7 +616,7 @@ export function NewInvoiceForm() {
                           <Input value={totals.boxCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
-                           <Input value={totals.bunchCount} disabled className="min-w-[80px] bg-muted font-bold text-center" />
+                           <Input value={totals.totalBunches} disabled className="min-w-[80px] bg-muted font-bold text-center" />
                         </TableCell>
                         <TableCell>
                           <Input value={totals.bunchesPerBox} disabled className="min-w-[110px] bg-muted font-bold text-center" />
