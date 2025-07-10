@@ -172,7 +172,6 @@ const totals = useMemo(() => {
 
     const itemIndicesWithSubItems = new Set<number>();
     
-    // First, find all parent items that have sub-items
     watchItems.forEach((item, index) => {
         if (item && !item.isSubItem && index + 1 < watchItems.length && watchItems[index + 1]?.isSubItem) {
             itemIndicesWithSubItems.add(index);
@@ -183,14 +182,12 @@ const totals = useMemo(() => {
         if (!item) return;
 
         if (item.isSubItem) {
-            // This is a sub-item, its parent total will be ignored, so we just calculate its contribution
             const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
             grandTotal += subItemTotal;
             totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
             totalStemsByBox += subItemStems;
             
         } else if (!itemIndicesWithSubItems.has(index)) {
-            // This is a main item WITHOUT sub-items
             const { lineTotal: mainItemTotal, stemsPerBox: mainItemStems } = getCalculations(item, false);
             const boxCount = Number(item.boxCount) || 0;
             
@@ -200,8 +197,6 @@ const totals = useMemo(() => {
             totalStemsByBox += mainItemStems * boxCount;
             grandTotal += mainItemTotal;
         } else {
-            // This is a main item WITH sub-items. We only count its boxes and total bunches.
-            // Its financial and stem contributions are handled by its sub-items.
             totalBoxCount += Number(item.boxCount) || 0;
             totalBunches += Number(item.bunchCount) || 0;
         }
@@ -331,7 +326,7 @@ const totals = useMemo(() => {
       boxCount: 1,
       boxNumber: newBoxNumber,
       bunchesPerBox: Number(parentItem.bunchesPerBox) || 0,
-      bunchCount: Number(parentItem.bunchesPerBox) || 0, // In sub-item, bunchCount === bunchesPerBox
+      bunchCount: Number(parentItem.bunchesPerBox) || 0,
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -678,4 +673,3 @@ const totals = useMemo(() => {
     </div>
   );
 }
-
