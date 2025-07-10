@@ -12,7 +12,7 @@ import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, CornerDownRight, Al
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -149,89 +149,74 @@ export function NewInvoiceForm() {
   const getCalculations = useCallback((item: any) => {
     const salePrice = Number(item.salePrice) || 0;
     const stemCount = Number(item.stemCount) || 0;
-    const isSubItem = item.isSubItem;
-
-    // For main item, bunchCount is the total for all boxes. For sub-item, it's what's in that single box.
-    const bunchCount = isSubItem ? (Number(item.bunchesPerBox) || 0) : (Number(item.bunchCount) || 0);
-    
-    // For main item, bunchesPerBox is a reference value. For sub-item, it is the distribution value for that box.
     const bunchesPerBox = Number(item.bunchesPerBox) || 0;
 
     const stemsPerBox = bunchesPerBox * stemCount;
 
-    // A sub-item always represents one box. A main item can represent multiple boxes.
-    const boxCount = isSubItem ? 1 : (Number(item.boxCount) || 0);
+    // For a sub-item, bunchCount is the same as bunchesPerBox.
+    // For a main item, it's the total for all its boxes.
+    const bunchCount = item.isSubItem ? bunchesPerBox : (Number(item.bunchCount) || 0);
+    const boxCount = item.isSubItem ? 1 : (Number(item.boxCount) || 0);
 
-    const totalStemsForLine = bunchCount * stemCount;
+    const totalStems = bunchCount * stemCount;
     
-    // Calculate total price based on the total stems for that line item.
-    let total = salePrice * totalStemsForLine;
+    // Total for one line (which could be one or more boxes if it's a main item without subitems)
+    const total = salePrice * totalStems;
     
-    // If it's a main item, we multiply by box count ONLY IF it doesn't have sub-items.
-    const hasSubItems = watchItems.some((sub, i) => i > watchItems.indexOf(item) && sub.isSubItem && !watchItems.slice(watchItems.indexOf(item) + 1, i).some(si => !si.isSubItem));
-    
-    if (!isSubItem && !hasSubItems) {
-      // Total price for a main item without sub-items is based on its own values multiplied by the number of boxes.
-      const totalStemsForAllBoxes = totalStemsForLine * boxCount;
-      total = salePrice * totalStemsForAllBoxes;
-    } else if (isSubItem) {
-      // Total for a sub-item is just for that single box.
-      total = salePrice * totalStemsForLine;
-    } else {
-      // If a main item has sub-items, its own total is effectively zero; the sum comes from its children.
-      total = 0;
-    }
-    
-    return { total, stemsPerBox };
-  }, [watchItems]);
+    return { total, stemsPerBox, bunchCount, boxCount, bunchesPerBox };
+  }, []);
 
 
   const totals = useMemo(() => {
-    return watchItems.reduce((acc, item, index) => {
-        const { stemsPerBox } = getCalculations(item);
-        
-        let subItemsTotal = 0;
-        let subItemsStems = 0;
+    let totalBoxCount = 0;
+    let totalBunches = 0;
+    let totalBunchesPerBox = 0;
+    let totalStemsByBox = 0;
+    let grandTotal = 0;
 
-        // Check if current item is a main item
+    for (let i = 0; i < watchItems.length; i++) {
+        const item = watchItems[i];
+        if (!item) continue;
+
         if (!item.isSubItem) {
-            acc.boxCount += Number(item.boxCount) || 0;
-            acc.totalBunches += Number(item.bunchCount) || 0;
-            acc.bunchesPerBox += (Number(item.bunchesPerBox) || 0) * (Number(item.boxCount) || 0);
-
-            // Find its sub-items
             let hasSubItems = false;
-            for (let i = index + 1; i < watchItems.length; i++) {
-                if (watchItems[i].isSubItem) {
-                    hasSubItems = true;
-                    const subItemCalc = getCalculations(watchItems[i]);
-                    subItemsTotal += subItemCalc.total;
-                    subItemsStems += (Number(watchItems[i].bunchesPerBox) || 0) * (Number(watchItems[i].stemCount) || 0);
-                } else {
-                    break; 
-                }
+            // Check if this main item has any sub-items
+            if (i + 1 < watchItems.length && watchItems[i + 1]?.isSubItem) {
+                hasSubItems = true;
             }
 
-            if (hasSubItems) {
-                acc.grandTotal += subItemsTotal;
-                acc.totalStemsByBox += subItemsStems;
+            if (!hasSubItems) {
+                // This is a standalone main item, calculate its totals
+                const calc = getCalculations(item);
+                totalBoxCount += calc.boxCount;
+                totalBunches += calc.bunchCount;
+                totalBunchesPerBox += calc.bunchesPerBox * calc.boxCount;
+                totalStemsByBox += calc.stemsPerBox * calc.boxCount;
+                grandTotal += calc.total * calc.boxCount;
             } else {
-                // If no sub-items, add its own total and stems
-                const mainItemCalc = getCalculations(item);
-                acc.grandTotal += mainItemCalc.total;
-                acc.totalStemsByBox += stemsPerBox * (Number(item.boxCount) || 0);
+                // This main item has sub-items, so its own values are for reference.
+                // We add its boxCount and total bunches, but calculations come from sub-items.
+                totalBoxCount += Number(item.boxCount) || 0;
+                totalBunches += Number(item.bunchCount) || 0;
             }
+        } else {
+            // This is a sub-item, calculate its totals
+            const calc = getCalculations(item);
+            // Don't add to boxCount as it's part of the parent
+            totalBunchesPerBox += calc.bunchesPerBox;
+            totalStemsByBox += calc.stemsPerBox;
+            grandTotal += calc.total;
         }
-        
-        return acc;
-    }, {
-        boxCount: 0,
-        totalBunches: 0,
-        bunchesPerBox: 0,
-        totalStemsByBox: 0,
-        grandTotal: 0,
-    });
-  }, [watchItems, getCalculations]);
+    }
+
+    return {
+        boxCount: totalBoxCount,
+        totalBunches: totalBunches,
+        bunchesPerBox: totalBunchesPerBox,
+        totalStemsByBox: totalStemsByBox,
+        grandTotal: grandTotal,
+    };
+}, [watchItems, getCalculations]);
 
 
   async function handleAddItem() {
@@ -347,9 +332,8 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      // In a sub-item, bunchCount and bunchesPerBox are the same for that single box.
-      bunchCount: Number(parentItem.bunchesPerBox) || 0, 
       bunchesPerBox: Number(parentItem.bunchesPerBox) || 0,
+      bunchCount: Number(parentItem.bunchesPerBox) || 0, // In sub-item, bunchCount === bunchesPerBox
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -512,14 +496,13 @@ export function NewInvoiceForm() {
             <Card>
               <CardHeader>
                 <CardTitle>Items de la Factura</CardTitle>
-                <CardDescription>Añada los productos a la factura.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[40px]">N°</TableHead>
+                        <TableHead className="w-[40px] text-center">N°</TableHead>
                         <TableHead className="min-w-[100px]">Tipo Caja</TableHead>
                         <TableHead className="min-w-[100px]">N° Cajas</TableHead>
                         <TableHead className="min-w-[110px]">N° Bunches</TableHead>
@@ -528,9 +511,9 @@ export function NewInvoiceForm() {
                         <TableHead className="min-w-[150px]">Variedad</TableHead>
                         <TableHead className="min-w-[100px]">Longitud</TableHead>
                         <TableHead className="min-w-[120px]">Tallos/Bunch</TableHead>
-                        <TableHead className="min-w-[140px]">Total Tallos/Caja</TableHead>
+                        <TableHead className="min-w-[140px] text-center">Total Tallos/Caja</TableHead>
                         <TableHead className="min-w-[100px]">P. Venta</TableHead>
-                        <TableHead className="min-w-[120px]">Total</TableHead>
+                        <TableHead className="min-w-[120px] text-right">Total</TableHead>
                         <TableHead className="w-[100px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -544,13 +527,13 @@ export function NewInvoiceForm() {
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell className="relative">
+                            <TableCell className="relative text-center">
                                 {isSubItem && (
                                     <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                         <CornerDownRight className="h-4 w-4 text-muted-foreground" />
                                     </div>
                                 )}
-                                <span className={cn(isSubItem && "pl-6")}>
+                                <span className={cn(isSubItem && "pl-4")}>
                                     {displayIndex}
                                 </span>
                             </TableCell>
