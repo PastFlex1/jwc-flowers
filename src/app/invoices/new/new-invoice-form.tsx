@@ -147,71 +147,65 @@ export function NewInvoiceForm() {
 }, [form]);
 
 
-  const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
+ const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
     const salePrice = Number(item?.salePrice) || 0;
     const stemCount = Number(item?.stemCount) || 0;
-    
-    // For a sub-item or a main item, bunchesPerBox is what matters for that line's calculation.
     const bunchesPerBox = Number(item?.bunchesPerBox) || 0;
     const stemsPerBox = bunchesPerBox * stemCount;
 
-    // A sub-item always represents 1 box.
-    const boxCount = isSubItem ? 1 : (Number(item?.boxCount) || 0);
-
-    // Total for this line (could be 1 or more boxes)
-    const lineTotal = salePrice * stemCount * bunchesPerBox * boxCount;
+    const boxCount = isSubItem ? 1 : Number(item?.boxCount) || 0;
+    const lineTotal = salePrice * stemsPerBox * boxCount;
     
     return {
       stemsPerBox,
       lineTotal,
     };
-  }, []);
+}, []);
 
 
- const totals = useMemo(() => {
+const totals = useMemo(() => {
     let totalBoxCount = 0;
     let totalBunches = 0;
     let totalBunchesPerBox = 0;
     let totalStemsByBox = 0;
     let grandTotal = 0;
 
-    for (let i = 0; i < watchItems.length; i++) {
-        const item = watchItems[i];
-        if (!item || item.isSubItem) continue;
-
-        const mainItemBoxCount = Number(item.boxCount) || 0;
-        totalBoxCount += mainItemBoxCount;
-        totalBunches += Number(item.bunchCount) || 0;
-
-        // Check for sub-items
-        let hasSubItems = false;
-        let j = i + 1;
-        while(j < watchItems.length && watchItems[j]?.isSubItem) {
-            hasSubItems = true;
-            const subItem = watchItems[j];
-            if(subItem) {
-                const subItemBunchesPerBox = Number(subItem.bunchesPerBox) || 0;
-                const subItemStemCount = Number(subItem.stemCount) || 0;
-                const subItemSalePrice = Number(subItem.salePrice) || 0;
-                
-                totalBunchesPerBox += subItemBunchesPerBox;
-                totalStemsByBox += subItemBunchesPerBox * subItemStemCount;
-                grandTotal += subItemBunchesPerBox * subItemStemCount * subItemSalePrice;
-            }
-            j++;
+    const itemIndicesWithSubItems = new Set<number>();
+    
+    // First, find all parent items that have sub-items
+    watchItems.forEach((item, index) => {
+        if (item && !item.isSubItem && index + 1 < watchItems.length && watchItems[index + 1]?.isSubItem) {
+            itemIndicesWithSubItems.add(index);
         }
+    });
 
-        if (!hasSubItems) {
-            // It's a main item with no sub-items, so it counts itself.
-            const itemBunchesPerBox = Number(item.bunchesPerBox) || 0;
-            const itemStemCount = Number(item.stemCount) || 0;
-            const itemSalePrice = Number(item.salePrice) || 0;
+    watchItems.forEach((item, index) => {
+        if (!item) return;
+
+        if (item.isSubItem) {
+            // This is a sub-item, its parent total will be ignored, so we just calculate its contribution
+            const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
+            grandTotal += subItemTotal;
+            totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
+            totalStemsByBox += subItemStems;
             
-            totalBunchesPerBox += itemBunchesPerBox * mainItemBoxCount;
-            totalStemsByBox += itemBunchesPerBox * itemStemCount * mainItemBoxCount;
-            grandTotal += itemBunchesPerBox * itemStemCount * itemSalePrice * mainItemBoxCount;
+        } else if (!itemIndicesWithSubItems.has(index)) {
+            // This is a main item WITHOUT sub-items
+            const { lineTotal: mainItemTotal, stemsPerBox: mainItemStems } = getCalculations(item, false);
+            const boxCount = Number(item.boxCount) || 0;
+            
+            totalBoxCount += boxCount;
+            totalBunches += Number(item.bunchCount) || 0;
+            totalBunchesPerBox += (Number(item.bunchesPerBox) || 0) * boxCount;
+            totalStemsByBox += mainItemStems * boxCount;
+            grandTotal += mainItemTotal;
+        } else {
+            // This is a main item WITH sub-items. We only count its boxes and total bunches.
+            // Its financial and stem contributions are handled by its sub-items.
+            totalBoxCount += Number(item.boxCount) || 0;
+            totalBunches += Number(item.bunchCount) || 0;
         }
-    }
+    });
 
     return {
         boxCount: totalBoxCount,
@@ -220,7 +214,7 @@ export function NewInvoiceForm() {
         totalStemsByBox: totalStemsByBox,
         grandTotal: grandTotal,
     };
-}, [watchItems]);
+}, [watchItems, getCalculations]);
 
 
   async function handleAddItem() {
@@ -526,7 +520,7 @@ export function NewInvoiceForm() {
                          const currentItem = watchItems[index];
                          const isSubItem = currentItem.isSubItem;
                          const displayIndex = getDisplayIndex(index);
-                         const { lineTotal, stemsPerBox } = getCalculations(currentItem, isSubItem);
+                         const { lineTotal, stemsPerBox } = getCalculations(currentItem, !!isSubItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
 
                          return (
