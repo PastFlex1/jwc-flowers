@@ -29,7 +29,7 @@ const lineItemSchema = z.object({
   boxCount: z.coerce.number().positive("Debe ser > 0"),
   boxNumber: z.string().optional(),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
-  bunchesPerBox: z.coerce.number().positive("Debe ser > 0"),
+  bunchesPerBox: z.coerce.number().min(0, "Debe ser >= 0"),
   product: z.string().min(1, "Producto requerido."),
   variety: z.string().min(1, "Variedad requerida."),
   length: z.coerce.number().positive("Debe ser > 0"),
@@ -108,29 +108,18 @@ export function NewInvoiceForm() {
       setFilteredConsignatarios([]);
     }
   }, [selectedCustomerId, consignatarios, form]);
-
+  
   useEffect(() => {
     const subscription = form.watch((values, { name, type }) => {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
 
-        if (type === 'change' && name?.match(/^items\.\d+\.bunchesPerBox$/)) {
+        if (name?.match(/^items\.\d+\.bunchesPerBox$/) && type === 'change') {
             const changedIndex = parseInt(name.split('.')[1], 10);
-            const parentItem = items[changedIndex];
-            if (!parentItem.isSubItem) {
-                const parentBunchesPerBox = Number(parentItem.bunchesPerBox) || 0;
-                for (let i = changedIndex + 1; i < items.length; i++) {
-                    if (items[i].isSubItem) {
-                        const currentSubItem = form.getValues(`items.${i}`);
-                        form.setValue(`items.${i}`, {
-                            ...currentSubItem,
-                            bunchesPerBox: parentBunchesPerBox,
-                            bunchCount: parentBunchesPerBox,
-                        });
-                    } else {
-                        break;
-                    }
-                }
+            const currentItem = items[changedIndex];
+            if (currentItem.isSubItem) {
+                // For sub-items, bunchCount should mirror bunchesPerBox since it's a single box.
+                form.setValue(`items.${changedIndex}.bunchCount`, Number(currentItem.bunchesPerBox) || 0, { shouldValidate: true });
             }
         }
 
@@ -161,7 +150,8 @@ export function NewInvoiceForm() {
         setBunchWarnings(newWarnings);
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+}, [form]);
+
 
   const getCalculations = useCallback((item: any) => {
     const purchasePrice = Number(item.purchasePrice) || 0;
@@ -169,9 +159,11 @@ export function NewInvoiceForm() {
     const stemCount = Number(item.stemCount) || 0;
     const bunchCount = Number(item.bunchCount) || 0;
     const bunchesPerBox = Number(item.bunchesPerBox) || 0;
+    const boxCount = Number(item.boxCount) || 0;
 
     const stemsPerBox = bunchesPerBox * stemCount;
-    const totalStemsForLine = bunchCount * stemCount;
+    // For main items, totalStemsForLine is based on total bunches. For sub-items, it's the same as stemsPerBox.
+    const totalStemsForLine = item.isSubItem ? stemsPerBox : bunchCount * stemCount;
     const total = salePrice * totalStemsForLine;
     const difference = salePrice - purchasePrice;
     
@@ -183,10 +175,10 @@ export function NewInvoiceForm() {
         const { total, totalStems } = getCalculations(item);
         if (!item.isSubItem) {
              acc.boxCount += Number(item.boxCount) || 0;
+             acc.bunchCount += Number(item.bunchCount) || 0;
+             acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
+             acc.totalStemsByBox += totalStems * (Number(item.boxCount) || 0);
         }
-        acc.bunchCount += Number(item.bunchCount) || 0;
-        acc.bunchesPerBox += Number(item.bunchesPerBox) || 0;
-        acc.totalStemsByBox += totalStems;
         acc.grandTotal += total;
 
         return acc;
@@ -313,8 +305,9 @@ export function NewInvoiceForm() {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      bunchCount: Number(parentItem.bunchesPerBox) || 0,
-      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0,
+      // Default sub-item bunches to 0, user should fill this.
+      bunchCount: 0,
+      bunchesPerBox: 0, 
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -537,7 +530,7 @@ export function NewInvoiceForm() {
                                 <p className="text-xs text-destructive mt-1 w-[120px]">{bunchWarnings[index]}</p>
                               )}
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]" disabled={isSubItem} />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="min-w-[110px]" />} /></TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
@@ -613,7 +606,7 @@ export function NewInvoiceForm() {
                   </Table>
                 </div>
                 <div className="mt-6 flex justify-end">
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 1, bunchesPerBox: 1, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })}>
                       <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
                     </Button>
                 </div>
