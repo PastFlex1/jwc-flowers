@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -28,7 +27,7 @@ import { useAppData } from '@/context/app-data-context';
 const lineItemSchema = z.object({
   id: z.string().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
-  boxCount: z.coerce.number().positive("Debe ser > 0"),
+  boxCount: z.coerce.number().min(0, "Debe ser >= 0"),
   boxNumber: z.string().optional(),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
   bunchesPerBox: z.coerce.number().min(0, "Debe ser >= 0"),
@@ -101,6 +100,33 @@ export function NewInvoiceForm() {
           .map(p => p.variedad);
       return [...new Set(varieties)];
   }, [productos]);
+  
+  const getDisplayIndex = useCallback((index: number) => {
+      const items = form.getValues('items');
+      if (!items || !items[index]) return (index + 1).toString();
+      
+      const currentItem = items[index];
+
+      if (!currentItem.isSubItem) {
+          const mainItemIndex = items.slice(0, index + 1).filter(item => !item.isSubItem).length;
+          return mainItemIndex.toString();
+      }
+
+      let parentIndex = -1;
+      for (let i = index - 1; i >= 0; i--) {
+          if (!items[i].isSubItem) {
+              parentIndex = i;
+              break;
+          }
+      }
+      
+      if (parentIndex === -1) return `${index + 1}`;
+
+      const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+      const subItemIndexForParent = items.slice(parentIndex + 1, index + 1).filter(item => item.isSubItem).length;
+      
+      return `${mainParentDisplayIndex}.${subItemIndexForParent}`;
+  }, [form]);
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -120,22 +146,53 @@ export function NewInvoiceForm() {
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   useEffect(() => {
-    const subscription = form.watch((values, { name, type }) => {
+    const subscription = form.watch((values, { name }) => {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
 
-        if (name && name.startsWith('items.') && name.endsWith('.boxType')) {
+        if (name && name.startsWith('items.')) {
             const parts = name.split('.');
             const index = parseInt(parts[1], 10);
+            const fieldName = parts[2];
+            
             const parentItem = items[index];
+
             if (parentItem && !parentItem.isSubItem) {
-                const newBoxType = parentItem.boxType;
-                for (let i = index + 1; i < items.length; i++) {
-                    const currentItem = items[i];
-                    if (currentItem && currentItem.isSubItem) {
+                if (fieldName === 'boxType') {
+                    const newBoxType = parentItem.boxType;
+                    for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
                         form.setValue(`items.${i}.boxType`, newBoxType, { shouldDirty: true });
-                    } else {
-                        break;
+                    }
+                }
+
+                if (fieldName === 'boxCount') {
+                    const parentBoxCount = Number(parentItem.boxCount) || 0;
+                    const mainParentDisplayIndex = items.slice(0, index + 1).filter(item => !item.isSubItem).length;
+                    
+                    let subItemsForParent: { item: any, index: number }[] = [];
+                    for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
+                        subItemsForParent.push({ item: items[i], index: i });
+                    }
+                    
+                    const currentSubItemCount = subItemsForParent.length;
+
+                    if (currentSubItemCount < parentBoxCount) {
+                        for (let i = currentSubItemCount; i < parentBoxCount; i++) {
+                           const subItemData = { ...parentItem, id: undefined, isSubItem: true, boxCount: 1, boxNumber: `${mainParentDisplayIndex}-${i + 1}`, bunchesPerBox: 0, bunchCount: 0, purchasePrice: 0 };
+                           insert(index + 1 + i, subItemData);
+                        }
+                    } else if (currentSubItemCount > parentBoxCount) {
+                        const indicesToRemove = subItemsForParent.slice(parentBoxCount).map(si => si.index);
+                        remove(indicesToRemove);
+                    }
+                    
+                    // Re-number existing ones just in case
+                    for (let i = 0; i < Math.min(currentSubItemCount, parentBoxCount); i++) {
+                        const subItemIndex = subItemsForParent[i].index;
+                        const newBoxNumber = `${mainParentDisplayIndex}-${i + 1}`;
+                        if (items[subItemIndex]?.boxNumber !== newBoxNumber) {
+                           form.setValue(`items.${subItemIndex}.boxNumber`, newBoxNumber, { shouldDirty: true });
+                        }
                     }
                 }
             }
@@ -169,7 +226,7 @@ export function NewInvoiceForm() {
         setBunchWarnings(newWarnings);
     });
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, insert, remove]);
 
 
   const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
@@ -215,7 +272,7 @@ export function NewInvoiceForm() {
             const boxCount = Number(item.boxCount) || 0;
             
             totalBoxCount += boxCount;
-            totalBunches += (Number(item.bunchCount) || 0);
+            totalBunches += (Number(item.bunchCount) || 0) * boxCount;
             totalBunchesPerBox += (Number(item.bunchesPerBox) || 0) * boxCount;
             totalStemsByBox += mainItemStems * boxCount;
             grandTotal += mainItemTotal;
@@ -233,7 +290,7 @@ export function NewInvoiceForm() {
         totalStemsByBox: totalStemsByBox,
         grandTotal: grandTotal,
     };
-}, [watchItems, getCalculations]);
+  }, [watchItems, getCalculations]);
 
 
   const handleAddItem = async () => {
@@ -291,66 +348,58 @@ export function NewInvoiceForm() {
     }
   }
 
-  const getDisplayIndex = (index: number) => {
-      const items = form.getValues('items');
-      if (!items || !items[index]) return (index + 1).toString();
-      
-      const currentItem = items[index];
-
-      if (!currentItem.isSubItem) {
-          const mainItemIndex = items.slice(0, index + 1).filter(item => !item.isSubItem).length;
-          return mainItemIndex.toString();
-      }
-
-      let parentIndex = -1;
-      for (let i = index - 1; i >= 0; i--) {
-          if (!items[i].isSubItem) {
-              parentIndex = i;
-              break;
-          }
-      }
-      
-      if (parentIndex === -1) return `${index + 1}`;
-
-      const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
-      const subItemIndexForParent = items.slice(parentIndex + 1, index + 1).filter(item => item.isSubItem).length;
-      
-      return `${mainParentDisplayIndex}.${subItemIndexForParent}`;
-  };
   
   function handleAddSubItem(parentIndex: number) {
     const items = form.getValues('items');
     const parentItem = items[parentIndex];
 
+    const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+    
+    const parentBoxCount = Number(parentItem.boxCount) || 0;
+
+    if (parentBoxCount <= 0) {
+        toast({
+            title: 'Número de Cajas Inválido',
+            description: 'La fila principal debe tener al menos 1 caja para añadir sub-filas.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    const subItemsToInsert = Array.from({ length: parentBoxCount }, (_, i) => {
+        return {
+            ...parentItem,
+            id: undefined, 
+            isSubItem: true,
+            boxCount: 1,
+            boxNumber: `${mainParentDisplayIndex}-${i + 1}`,
+            bunchesPerBox: 0,
+            bunchCount: 0, 
+            purchasePrice: 0,
+        };
+    });
+
+    // Remove existing sub-items for this parent before inserting new ones
     let subItemsForParentCount = 0;
     for (let i = parentIndex + 1; i < items.length; i++) {
-      if (items[i].isSubItem) {
-        subItemsForParentCount++;
-      } else {
-        break;
-      }
+        if (items[i].isSubItem) {
+            subItemsForParentCount++;
+        } else {
+            break;
+        }
+    }
+    if(subItemsForParentCount > 0){
+        remove(Array.from({length: subItemsForParentCount}, (_, i) => parentIndex + 1 + i));
     }
     
-    const mainParentDisplayIndex = getDisplayIndex(parentIndex);
-    const newBoxNumber = `${mainParentDisplayIndex}-${subItemsForParentCount + 1}`;
-    
-    const subItemData: InvoiceFormValues['items'][number] = {
-      ...parentItem,
-      id: undefined, 
-      isSubItem: true,
-      boxCount: 1,
-      boxNumber: newBoxNumber,
-      bunchesPerBox: 0,
-      bunchCount: 0, 
-      purchasePrice: 0,
-    };
-    
-    const insertionIndex = parentIndex + 1 + subItemsForParentCount;
+    // Insert new sub-items
+    subItemsToInsert.forEach((item, i) => {
+       insert(parentIndex + 1 + i, item);
+    });
 
-    insert(insertionIndex, subItemData);
     toast({
-      title: 'Sub-ítem añadido',
-      description: `Añadido debajo de la fila ${mainParentDisplayIndex}.`,
+      title: 'Sub-ítems añadidos',
+      description: `Añadidos ${parentBoxCount} sub-ítems debajo de la fila ${mainParentDisplayIndex}.`,
     });
   }
 
@@ -525,15 +574,15 @@ export function NewInvoiceForm() {
                       <TableRow>
                         <TableHead className="w-[60px]">N°</TableHead>
                         <TableHead className="min-w-[130px]">Tipo Caja</TableHead>
-                        <TableHead className="min-w-[120px]">N° Cajas</TableHead>
-                        <TableHead className="min-w-[130px]">N° Bunches</TableHead>
-                        <TableHead className="min-w-[140px]">Bunches/Caja</TableHead>
+                        <TableHead className="w-40">N° Cajas</TableHead>
+                        <TableHead className="w-40">N° Bunches</TableHead>
+                        <TableHead className="w-40">Bunches/Caja</TableHead>
                         <TableHead className="min-w-[160px]">Producto</TableHead>
                         <TableHead className="min-w-[160px]">Variedad</TableHead>
-                        <TableHead className="min-w-[120px]">Longitud</TableHead>
-                        <TableHead className="min-w-[140px]">Tallos/Bunch</TableHead>
-                        <TableHead className="min-w-[130px]">P. Compra</TableHead>
-                        <TableHead className="min-w-[130px]">P. Venta</TableHead>
+                        <TableHead className="w-40">Longitud</TableHead>
+                        <TableHead className="w-40">Tallos/Bunch</TableHead>
+                        <TableHead className="w-40">P. Compra</TableHead>
+                        <TableHead className="w-40">P. Venta</TableHead>
                         <TableHead className="min-w-[160px]">Total Tallos/Caja</TableHead>
                         <TableHead className="min-w-[140px] text-right">Total</TableHead>
                         <TableHead className="w-[120px]">Acciones</TableHead>
@@ -560,7 +609,7 @@ export function NewInvoiceForm() {
                                 </span>
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubItem}>
                                   <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
@@ -702,3 +751,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
