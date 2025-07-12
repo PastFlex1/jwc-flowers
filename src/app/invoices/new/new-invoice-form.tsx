@@ -162,8 +162,7 @@ export function NewInvoiceForm() {
     };
   }, []);
 
-
-const totals = useMemo(() => {
+  const totals = useMemo(() => {
     let totalBoxCount = 0;
     let totalBunches = 0;
     let totalBunchesPerBox = 0;
@@ -182,7 +181,7 @@ const totals = useMemo(() => {
         if (!item) return;
 
         if (item.isSubItem) {
-             const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
+            const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
             grandTotal += subItemTotal;
             totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
             totalStemsByBox += subItemStems;
@@ -196,7 +195,7 @@ const totals = useMemo(() => {
             totalStemsByBox += mainItemStems * boxCount;
             grandTotal += mainItemTotal;
         } else {
-             // It's a parent item with sub-items, only count its boxes and main bunches
+            // It's a parent item with sub-items, only count its boxes and main bunches
             totalBoxCount += Number(item.boxCount) || 0;
             totalBunches += Number(item.bunchCount) || 0;
         }
@@ -209,7 +208,7 @@ const totals = useMemo(() => {
         totalStemsByBox: totalStemsByBox,
         grandTotal: grandTotal,
     };
-}, [watchItems, getCalculations]);
+  }, [watchItems, getCalculations]);
 
 
   async function handleAddItem() {
