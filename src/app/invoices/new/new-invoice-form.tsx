@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, AlertTriangle, CornerDownRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -182,11 +182,10 @@ const totals = useMemo(() => {
         if (!item) return;
 
         if (item.isSubItem) {
-            const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
+             const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
             grandTotal += subItemTotal;
             totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
             totalStemsByBox += subItemStems;
-            
         } else if (!itemIndicesWithSubItems.has(index)) {
             const { lineTotal: mainItemTotal, stemsPerBox: mainItemStems } = getCalculations(item, false);
             const boxCount = Number(item.boxCount) || 0;
@@ -197,6 +196,7 @@ const totals = useMemo(() => {
             totalStemsByBox += mainItemStems * boxCount;
             grandTotal += mainItemTotal;
         } else {
+             // It's a parent item with sub-items, only count its boxes and main bunches
             totalBoxCount += Number(item.boxCount) || 0;
             totalBunches += Number(item.bunchCount) || 0;
         }
@@ -317,7 +317,8 @@ const totals = useMemo(() => {
       boxCount: 1,
       boxNumber: newBoxNumber,
       bunchesPerBox: 0,
-      bunchCount: 0,
+      bunchCount: 0, // This is derived from bunchesPerBox for sub-items
+      purchasePrice: 0,
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -408,7 +409,7 @@ const totals = useMemo(() => {
               <FormField control={form.control} name="consignatarioId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Consignatario</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
+                  <Select onValueChange={field.onChange} value={field.value || ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
                     <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
                     <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -448,7 +449,7 @@ const totals = useMemo(() => {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccione una marcación" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       {marcaciones.map(m => (
@@ -512,7 +513,7 @@ const totals = useMemo(() => {
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell className="relative text-center">
+                            <TableCell className="relative text-center font-medium">
                                 {isSubItem && (
                                     <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                         <CornerDownRight className="h-4 w-4 text-muted-foreground" />
@@ -531,7 +532,7 @@ const totals = useMemo(() => {
                             <TableCell>
                               {isSubItem ? (
                                 <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                                    <Input {...field} disabled />
+                                    <Input {...field} disabled value={field.value || ''} />
                                 )} />
                               ) : (
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
@@ -602,7 +603,7 @@ const totals = useMemo(() => {
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                            <TableCell className="text-center">{stemsPerBox}</TableCell>
+                            <TableCell className="text-center font-medium">{stemsPerBox}</TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />} /></TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
@@ -666,3 +667,6 @@ const totals = useMemo(() => {
     </div>
   );
 }
+
+
+    
