@@ -119,19 +119,19 @@ export function NewInvoiceForm() {
         items.forEach((item, index) => {
             if (!item.isSubItem) {
                 let subItemsBunchSum = 0;
-                let subItemCount = 0;
+                let hasSubItems = false;
                 
                 for (let i = index + 1; i < items.length; i++) {
                     const subItem = items[i];
                     if (subItem?.isSubItem) {
+                        hasSubItems = true;
                         subItemsBunchSum += Number(subItem.bunchesPerBox) || 0;
-                        subItemCount++;
                     } else {
                         break;
                     }
                 }
                 
-                if (subItemCount > 0) {
+                if (hasSubItems) {
                     const parentBunchCount = Number(item.bunchCount) || 0;
                     if (subItemsBunchSum > parentBunchCount) {
                         newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentBunchCount}).`;
@@ -306,15 +306,6 @@ const totals = useMemo(() => {
         break;
       }
     }
-
-    if (subItemsForParentCount >= (parentItem.boxCount || 0)) {
-      toast({
-        title: 'Límite de Cajas Alcanzado',
-        description: `No puede añadir más de ${parentItem.boxCount} sub-ítems para esta fila.`,
-        variant: 'destructive',
-      });
-      return;
-    }
     
     const mainParentDisplayIndex = getDisplayIndex(parentIndex);
     const newBoxNumber = `${mainParentDisplayIndex}-${subItemsForParentCount + 1}`;
@@ -325,8 +316,8 @@ const totals = useMemo(() => {
       isSubItem: true,
       boxCount: 1,
       boxNumber: newBoxNumber,
-      bunchesPerBox: Number(parentItem.bunchesPerBox) || 0,
-      bunchCount: Number(parentItem.bunchesPerBox) || 0,
+      bunchesPerBox: 0,
+      bunchCount: 0,
     };
     
     const insertionIndex = parentIndex + 1 + subItemsForParentCount;
@@ -496,7 +487,7 @@ const totals = useMemo(() => {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[40px] text-center">N°</TableHead>
-                        <TableHead className="min-w-[100px]">Tipo Caja</TableHead>
+                        <TableHead className="w-[100px]">Tipo Caja</TableHead>
                         <TableHead className="w-[100px]">N° Cajas</TableHead>
                         <TableHead className="w-[110px]">N° Bunches</TableHead>
                         <TableHead className="w-[130px]">Bunches/Caja</TableHead>
@@ -639,7 +630,7 @@ const totals = useMemo(() => {
                         <TableCell>
                           <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={4}></TableCell>
+                        <TableCell colSpan={5}></TableCell>
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
