@@ -1,6 +1,5 @@
 
 
-
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -110,8 +109,13 @@ export function NewInvoiceForm() {
       const currentItem = items[index];
 
       if (!currentItem.isSubItem) {
-          const mainItemIndex = items.slice(0, index + 1).filter(item => !item.isSubItem).length;
-          return mainItemIndex.toString();
+        let mainItemIndex = 1;
+        for (let i = 0; i < index; i++) {
+          if (!items[i].isSubItem) {
+            mainItemIndex += Number(items[i].boxCount) || 0;
+          }
+        }
+        return mainItemIndex.toString();
       }
 
       let parentIndex = -1;
@@ -124,11 +128,17 @@ export function NewInvoiceForm() {
       
       if (parentIndex === -1) return `${index + 1}`;
 
-      const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+      let mainParentDisplayIndex = 1;
+        for (let i = 0; i < parentIndex; i++) {
+          if (!items[i].isSubItem) {
+            mainParentDisplayIndex += Number(items[i].boxCount) || 0;
+          }
+        }
       const subItemIndexForParent = items.slice(parentIndex + 1, index + 1).filter(item => item.isSubItem).length;
       
       return `${mainParentDisplayIndex}.${subItemIndexForParent}`;
   }, [form]);
+
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -152,7 +162,13 @@ export function NewInvoiceForm() {
     const parentItem = items[parentIndex];
     if (!parentItem || parentItem.isSubItem) return;
 
-    const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+     let mainParentDisplayIndex = 1;
+      for (let i = 0; i < parentIndex; i++) {
+        if (!items[i].isSubItem) {
+          mainParentDisplayIndex += Number(items[i].boxCount) || 0;
+        }
+      }
+
     const parentBoxCount = (Number(parentItem.boxCount) || 0);
 
     let subItemsForParentCount = 0;
@@ -189,10 +205,10 @@ export function NewInvoiceForm() {
             const parentItem = items[index];
 
             if (parentItem && !parentItem.isSubItem) {
-                if (fieldName === 'boxType' || fieldName === 'bunchesPerBox') {
-                    const newValue = parentItem[fieldName];
+                 if (fieldName === 'boxType' || fieldName === 'bunchesPerBox' || fieldName === 'product' || fieldName === 'variety' || fieldName === 'length' || fieldName === 'stemCount' || fieldName === 'purchasePrice' || fieldName === 'salePrice') {
+                    const newValue = parentItem[fieldName as keyof typeof parentItem];
                     for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
-                        form.setValue(`items.${i}.${fieldName}`, newValue, { shouldDirty: true });
+                        form.setValue(`items.${i}.${fieldName as 'boxType'}`, newValue as any, { shouldDirty: true });
                     }
                 }
 
@@ -203,7 +219,7 @@ export function NewInvoiceForm() {
         }
         
         items.forEach((item, index) => {
-            if (!item.isSubItem) {
+            if (item && !item.isSubItem) {
                 let subItemsBunchSum = Number(item.bunchesPerBox) || 0;
                 
                 for (let i = index + 1; i < items.length; i++) {
@@ -293,7 +309,22 @@ export function NewInvoiceForm() {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
-       append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' });
+       const currentItems = form.getValues('items');
+       const nextBoxNumber = (currentItems.reduce((acc, item) => acc + (item.isSubItem ? 0 : (Number(item.boxCount) || 0)), 0)) + 1;
+       append({ 
+         boxType: 'qb', 
+         boxCount: 1, 
+         bunchCount: 0, 
+         bunchesPerBox: 0, 
+         product: '', 
+         variety: '', 
+         length: 70, 
+         stemCount: 25, 
+         purchasePrice: 0, 
+         salePrice: 0, 
+         isSubItem: false, 
+         boxNumber: nextBoxNumber.toString() 
+       });
     } else {
        toast({
         title: 'Error de Validación',
