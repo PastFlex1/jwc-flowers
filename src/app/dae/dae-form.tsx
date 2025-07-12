@@ -29,6 +29,7 @@ type DaeFormProps = {
 export function DaeForm({ onSubmit, onClose, initialData, isSubmitting, paises }: DaeFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       pais: '',
       numeroDae: '',

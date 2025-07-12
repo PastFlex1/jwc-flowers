@@ -42,6 +42,7 @@ type CustomerFormProps = {
 export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, daes, isSubmitting }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData ? {
       ...initialData,
       plazo: Number(initialData.plazo),

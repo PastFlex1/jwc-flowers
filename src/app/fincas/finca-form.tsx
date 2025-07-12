@@ -31,6 +31,7 @@ type FincaFormProps = {
 export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: FincaFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       name: '',
       address: '',

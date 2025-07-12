@@ -29,6 +29,7 @@ type ProductoFormProps = {
 export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: ProductoFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       tipo: '',
       variedad: '',

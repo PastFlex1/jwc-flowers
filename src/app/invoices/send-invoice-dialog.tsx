@@ -42,6 +42,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
   });
 
   useEffect(() => {

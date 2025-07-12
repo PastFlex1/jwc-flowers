@@ -71,6 +71,7 @@ export function NewInvoiceForm() {
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
+    mode: 'onChange',
     defaultValues: {
       items: [],
       reference: '',
@@ -103,40 +104,44 @@ export function NewInvoiceForm() {
   }, [productos]);
   
   const getDisplayIndex = useCallback((index: number) => {
-      const items = form.getValues('items');
-      if (!items || !items[index]) return (index + 1).toString();
-      
-      const currentItem = items[index];
+    const items = form.getValues('items');
+    if (!items || !items[index]) return (index + 1).toString();
+    
+    const currentItem = items[index];
+    let parentIndex = -1;
+    let mainParentDisplayIndex = 0;
 
-      if (!currentItem.isSubItem) {
-        let mainItemIndex = 1;
-        for (let i = 0; i < index; i++) {
-          if (!items[i].isSubItem) {
-            mainItemIndex += Number(items[i].boxCount) || 0;
-          }
+    // Find the parent of the current item if it's a sub-item
+    if (currentItem.isSubItem) {
+        for (let i = index - 1; i >= 0; i--) {
+            if (!items[i].isSubItem) {
+                parentIndex = i;
+                break;
+            }
         }
-        return mainItemIndex.toString();
-      }
+    }
 
-      let parentIndex = -1;
-      for (let i = index - 1; i >= 0; i--) {
-          if (!items[i].isSubItem) {
-              parentIndex = i;
-              break;
-          }
-      }
-      
-      if (parentIndex === -1) return `${index + 1}`;
-
-      let mainParentDisplayIndex = 1;
-        for (let i = 0; i < parentIndex; i++) {
-          if (!items[i].isSubItem) {
-            mainParentDisplayIndex += Number(items[i].boxCount) || 0;
-          }
+    // Calculate the display index for the parent
+    let runningBoxCount = 0;
+    for (let i = 0; i < (parentIndex !== -1 ? parentIndex : index); i++) {
+        if (!items[i].isSubItem) {
+            runningBoxCount += Number(items[i].boxCount) || 0;
         }
-      const subItemIndexForParent = items.slice(parentIndex + 1, index + 1).filter(item => item.isSubItem).length;
-      
-      return `${mainParentDisplayIndex}.${subItemIndexForParent}`;
+    }
+    mainParentDisplayIndex = runningBoxCount + 1;
+
+    if (currentItem.isSubItem) {
+        // Find how many sub-items came before this one for this parent
+        let subItemCounter = 1; // Start from 1 for the first sub-item
+        for (let i = parentIndex + 1; i < index; i++) {
+            if (items[i].isSubItem) {
+                subItemCounter++;
+            }
+        }
+        return `${mainParentDisplayIndex}.${subItemCounter}`;
+    } else {
+        return (mainParentDisplayIndex).toString();
+    }
   }, [form]);
 
 
@@ -162,40 +167,30 @@ export function NewInvoiceForm() {
     const parentItem = items[parentIndex];
     if (!parentItem || parentItem.isSubItem) return;
 
-    let mainParentDisplayIndex = 1;
-    for (let i = 0; i < parentIndex; i++) {
-      if (!items[i].isSubItem) {
-        mainParentDisplayIndex += Number(items[i].boxCount) || 0;
-      }
-    }
-
-    const parentBoxCount = Number(parentItem.boxCount) || 0;
-    const parentBoxNumber = mainParentDisplayIndex;
-
-    const subItemsForParent = items.slice(parentIndex + 1).filter((item, i) => {
-      let isSub = true;
-      for (let j = parentIndex + 1; j <= parentIndex + 1 + i; j++) {
-        if (!items[j]?.isSubItem) {
-          isSub = false;
-          break;
+    // First, remove existing sub-items for this parent
+    const subItemsToRemove = [];
+    for (let i = parentIndex + 1; i < items.length; i++) {
+        if (items[i].isSubItem) {
+            subItemsToRemove.push(i);
+        } else {
+            break; // Stop when we hit the next main item
         }
-      }
-      return isSub;
-    });
-
-    const subItemsToRemove = subItemsForParent.length;
-    if (subItemsToRemove > 0) {
-      remove(Array.from({ length: subItemsToRemove }, (_, i) => parentIndex + 1 + i));
     }
-    
+    if (subItemsToRemove.length > 0) {
+        remove(subItemsToRemove.reverse());
+    }
+
+    // Now, add the correct number of new sub-items
+    const parentBoxCount = Number(parentItem.boxCount) || 0;
     if (parentBoxCount > 1) {
-      const subItemsToInsert = Array.from({ length: parentBoxCount - 1 }, (_, i) => ({
+      const subItemsToInsert = Array.from({ length: parentBoxCount - 1 }, () => ({
         ...parentItem,
         id: undefined,
         isSubItem: true,
-        boxCount: 1,
-        boxNumber: `${parentBoxNumber}-${i + 1}`,
+        boxCount: 1, // Each sub-item represents one box
+        boxNumber: '', // This will be set by getDisplayIndex
       }));
+      // Use insert to add all new sub-items right after the parent
       subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
     }
   }, [form, remove, insert]);
@@ -214,7 +209,7 @@ export function NewInvoiceForm() {
             const parentItem = items[index];
 
             if (parentItem && !parentItem.isSubItem) {
-                 if (['boxType', 'bunchesPerBox', 'product', 'variety', 'length', 'stemCount', 'purchasePrice', 'salePrice'].includes(fieldName)) {
+                 if (['boxType', 'bunchesPerBox','product', 'variety', 'length', 'stemCount', 'purchasePrice', 'salePrice'].includes(fieldName)) {
                     const newValue = parentItem[fieldName as keyof typeof parentItem];
                     for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
                         form.setValue(`items.${i}.${fieldName as 'boxType'}`, newValue as any, { shouldDirty: true });
@@ -243,9 +238,9 @@ export function NewInvoiceForm() {
                 const parentTotalBunchCount = Number(item.bunchCount) || 0;
                 
                 if (subItemsBunchSum > parentTotalBunchCount) {
-                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentTotalBunchCount}).`;
+                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total (${parentTotalBunchCount}).`;
                 } else if (subItemsBunchSum < parentTotalBunchCount) {
-                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentTotalBunchCount}).`;
+                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total (${parentTotalBunchCount}).`;
                 }
             }
         });
@@ -589,9 +584,7 @@ export function NewInvoiceForm() {
                             )} /></TableCell>
                             <TableCell>
                               {isSubItem ? (
-                                <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                                    <Input {...field} disabled value={field.value || ''} className="w-20" />
-                                )} />
+                                <span className="flex items-center justify-center h-10 w-20">{currentItem.boxNumber}</span>
                               ) : (
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
                                     <Input type="number" {...field} className="w-20" />
@@ -670,8 +663,8 @@ export function NewInvoiceForm() {
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
                         <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
-                        <TableCell>
-                          <Input value={totals.boxCount || 0} disabled className="bg-muted font-bold text-center h-10 w-20" />
+                        <TableCell className="text-center">
+                          {totals.boxCount || 0}
                         </TableCell>
                          <TableCell>
                            <Input value={totals.totalBunches || 0} disabled className="bg-muted font-bold text-center h-10 w-20" />

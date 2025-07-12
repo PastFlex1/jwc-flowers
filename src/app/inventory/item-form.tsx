@@ -24,6 +24,7 @@ type ItemFormProps = {
 export function ItemForm({ onSubmit, onClose }: ItemFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       name: '',
       description: '',

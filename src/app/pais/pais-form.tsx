@@ -26,6 +26,7 @@ type PaisFormProps = {
 export function PaisForm({ onSubmit, onClose, initialData, isSubmitting }: PaisFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       nombre: '',
     },

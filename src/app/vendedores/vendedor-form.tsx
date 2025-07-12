@@ -27,6 +27,7 @@ type VendedorFormProps = {
 export function VendedorForm({ onSubmit, onClose, initialData, isSubmitting }: VendedorFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       nombre: '',
       siglas: '',

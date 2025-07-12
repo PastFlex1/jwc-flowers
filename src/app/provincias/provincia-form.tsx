@@ -26,6 +26,7 @@ type ProvinciaFormProps = {
 export function ProvinciaForm({ onSubmit, onClose, initialData, isSubmitting }: ProvinciaFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       nombre: '',
     },

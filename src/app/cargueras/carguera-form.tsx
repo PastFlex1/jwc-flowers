@@ -29,6 +29,7 @@ type CargueraFormProps = {
 export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: CargueraFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       nombreCarguera: '',
       pais: '',

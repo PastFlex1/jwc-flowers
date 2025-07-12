@@ -29,6 +29,7 @@ type MarcacionFormProps = {
 export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting, customers }: MarcacionFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: initialData || {
       numeroMarcacion: '',
       cliente: '',
