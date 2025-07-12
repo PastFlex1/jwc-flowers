@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, Consignatario } from '@/lib/types';
+import type { Invoice, Consignatario, Marcacion } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
@@ -66,6 +66,7 @@ export function NewInvoiceForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
+  const [filteredMarcaciones, setFilteredMarcaciones] = useState<Marcacion[]>([]);
   const [bunchWarnings, setBunchWarnings] = useState<Record<number, string | null>>({});
 
   const form = useForm<InvoiceFormValues>({
@@ -106,10 +107,15 @@ export function NewInvoiceForm() {
       const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
       form.setValue('consignatarioId', '');
+      
+      const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
+      setFilteredMarcaciones(relatedMarcaciones);
+      form.setValue('reference', '');
     } else {
       setFilteredConsignatarios([]);
+      setFilteredMarcaciones([]);
     }
-  }, [selectedCustomerId, consignatarios, form]);
+  }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   useEffect(() => {
     const subscription = form.watch((values, { name, type }) => {
@@ -211,7 +217,7 @@ export function NewInvoiceForm() {
   }, [watchItems, getCalculations]);
 
 
-  async function handleAddItem() {
+  const handleAddItem = async () => {
      const headerFields: (keyof InvoiceFormValues)[] = [
       'invoiceNumber',
       'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
@@ -444,20 +450,32 @@ export function NewInvoiceForm() {
                <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Referencia (Mark)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione una marcación" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {marcaciones.map(m => (
-                        <SelectItem key={m.id} value={m.numeroMarcacion}>
-                          {m.numeroMarcacion}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ''} 
+                      disabled={isHeaderSet || !selectedCustomerId || filteredMarcaciones.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue 
+                            placeholder={
+                              !selectedCustomerId 
+                                ? "Seleccione un cliente primero" 
+                                : filteredMarcaciones.length === 0 
+                                  ? "El cliente no tiene marcaciones" 
+                                  : "Seleccione una marcación"
+                            } 
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredMarcaciones.map(m => (
+                          <SelectItem key={m.id} value={m.numeroMarcacion}>
+                            {m.numeroMarcacion}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   <FormMessage />
                 </FormItem>
               )}/>
@@ -487,18 +505,18 @@ export function NewInvoiceForm() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[50px]">N°</TableHead>
-                        <TableHead className="w-[120px]">Tipo Caja</TableHead>
-                        <TableHead className="w-[100px]">N° Cajas</TableHead>
-                        <TableHead className="w-[120px]">N° Bunches</TableHead>
-                        <TableHead className="w-[130px]">Bunches/Caja</TableHead>
-                        <TableHead className="w-[150px]">Producto</TableHead>
-                        <TableHead className="w-[150px]">Variedad</TableHead>
-                        <TableHead className="w-[100px]">Longitud</TableHead>
-                        <TableHead className="w-[120px]">Tallos/Bunch</TableHead>
-                        <TableHead className="w-[150px]">P. Compra</TableHead>
-                        <TableHead className="w-[120px]">P. Venta</TableHead>
-                        <TableHead className="w-[150px]">Total Tallos/Caja</TableHead>
-                        <TableHead className="w-[130px] text-right">Total</TableHead>
+                        <TableHead className="min-w-[120px]">Tipo Caja</TableHead>
+                        <TableHead className="min-w-[110px]">N° Cajas</TableHead>
+                        <TableHead className="min-w-[120px]">N° Bunches</TableHead>
+                        <TableHead className="min-w-[130px]">Bunches/Caja</TableHead>
+                        <TableHead className="min-w-[150px]">Producto</TableHead>
+                        <TableHead className="min-w-[150px]">Variedad</TableHead>
+                        <TableHead className="min-w-[110px]">Longitud</TableHead>
+                        <TableHead className="min-w-[130px]">Tallos/Bunch</TableHead>
+                        <TableHead className="min-w-[120px]">P. Compra</TableHead>
+                        <TableHead className="min-w-[120px]">P. Venta</TableHead>
+                        <TableHead className="min-w-[150px]">Total Tallos/Caja</TableHead>
+                        <TableHead className="min-w-[130px] text-right">Total</TableHead>
                         <TableHead className="w-[110px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -531,18 +549,18 @@ export function NewInvoiceForm() {
                             <TableCell>
                               {isSubItem ? (
                                 <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                                    <Input {...field} disabled value={field.value || ''} />
+                                    <Input {...field} disabled value={field.value || ''} className="w-24" />
                                 )} />
                               ) : (
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} />
+                                    <Input type="number" {...field} className="w-24" />
                                 )} />
                               )}
                             </TableCell>
                             <TableCell>
                                <div className="relative">
                                 <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} disabled={isSubItem} />
+                                    <Input type="number" {...field} disabled={isSubItem} className="w-24" />
                                   )} />
                                 {!isSubItem && bunchWarnings[index] && (
                                     <div className="absolute top-full left-0 mt-1 w-full flex items-center gap-1 text-xs text-destructive">
@@ -559,7 +577,8 @@ export function NewInvoiceForm() {
                                 render={({ field }) => (
                                   <Input 
                                     type="number" 
-                                    {...field} 
+                                    {...field}
+                                    className="w-28"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       if (isSubItem) {
@@ -600,10 +619,10 @@ export function NewInvoiceForm() {
                                   </Select>
                               )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-24" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-28" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-28" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-28" />} /></TableCell>
                             <TableCell className="text-center font-medium">{stemsPerBox}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
@@ -630,11 +649,10 @@ export function NewInvoiceForm() {
                         <TableCell>
                           <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={5}></TableCell>
+                        <TableCell colSpan={6}></TableCell>
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={2}></TableCell>
                         <TableCell>
                            <Input value={`$${(totals.grandTotal || 0).toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4" />
                         </TableCell>
