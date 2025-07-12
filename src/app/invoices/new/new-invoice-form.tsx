@@ -144,7 +144,7 @@ export function NewInvoiceForm() {
         setBunchWarnings(newWarnings);
     });
     return () => subscription.unsubscribe();
-}, [form]);
+  }, [form]);
 
 
  const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
@@ -160,7 +160,7 @@ export function NewInvoiceForm() {
       stemsPerBox,
       lineTotal,
     };
-}, []);
+  }, []);
 
 
 const totals = useMemo(() => {
@@ -221,7 +221,7 @@ const totals = useMemo(() => {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
-       append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' })
+       append({ boxType: 'qb', boxCount: 1, bunchCount: 0, bunchesPerBox: 0, product: '', variety: '', length: 70, stemCount: 25, purchasePrice: 0, salePrice: 0, isSubItem: false, boxNumber: '' });
     } else {
        toast({
         title: 'Error de Validación',
@@ -487,20 +487,20 @@ const totals = useMemo(() => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[40px] text-center">N°</TableHead>
-                        <TableHead className="w-[100px]">Tipo Caja</TableHead>
-                        <TableHead className="w-[100px]">N° Cajas</TableHead>
-                        <TableHead className="w-[110px]">N° Bunches</TableHead>
-                        <TableHead className="w-[130px]">Bunches/Caja</TableHead>
-                        <TableHead className="min-w-[150px]">Producto</TableHead>
-                        <TableHead className="min-w-[150px]">Variedad</TableHead>
-                        <TableHead className="w-[100px]">Longitud</TableHead>
-                        <TableHead className="w-[120px]">Tallos/Bunch</TableHead>
-                        <TableHead className="w-[140px] text-center">Total Tallos/Caja</TableHead>
-                        <TableHead className="w-[110px]">P. Compra</TableHead>
-                        <TableHead className="w-[110px]">P. Venta</TableHead>
-                        <TableHead className="w-[120px] text-right">Total</TableHead>
-                        <TableHead className="w-[100px]">Acciones</TableHead>
+                        <TableHead className="w-[50px] min-w-[50px]">N°</TableHead>
+                        <TableHead className="w-[120px] min-w-[120px]">Tipo Caja</TableHead>
+                        <TableHead className="w-[100px] min-w-[100px]">N° Cajas</TableHead>
+                        <TableHead className="w-[120px] min-w-[120px]">N° Bunches</TableHead>
+                        <TableHead className="w-[130px] min-w-[130px]">Bunches/Caja</TableHead>
+                        <TableHead className="w-[150px] min-w-[150px]">Producto</TableHead>
+                        <TableHead className="w-[150px] min-w-[150px]">Variedad</TableHead>
+                        <TableHead className="w-[100px] min-w-[100px]">Longitud</TableHead>
+                        <TableHead className="w-[120px] min-w-[120px]">Tallos/Bunch</TableHead>
+                        <TableHead className="w-[150px] min-w-[150px] text-center">Total Tallos/Caja</TableHead>
+                        <TableHead className="w-[120px] min-w-[120px]">P. Compra</TableHead>
+                        <TableHead className="w-[120px] min-w-[120px]">P. Venta</TableHead>
+                        <TableHead className="w-[130px] min-w-[130px] text-right">Total</TableHead>
+                        <TableHead className="w-[110px] min-w-[110px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -631,7 +631,7 @@ const totals = useMemo(() => {
                         <TableCell>
                           <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={4}></TableCell>
+                        <TableCell colSpan={5}></TableCell>
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
@@ -667,6 +667,3 @@ const totals = useMemo(() => {
     </div>
   );
 }
-
-
-    
