@@ -1,5 +1,6 @@
 
 
+
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -88,16 +89,16 @@ export function NewInvoiceForm() {
   const watchItems = form.watch('items');
   const isHeaderSet = watchItems.length > 0;
 
-  const productNames = useMemo(() => {
+  const productTypes = useMemo(() => {
     if (!productos) return [];
-    const names = productos.map(p => p.nombre);
-    return [...new Set(names)];
+    const types = productos.map(p => p.tipo);
+    return [...new Set(types)];
   }, [productos]);
 
-  const getVarietiesForProduct = useCallback((productName: string): string[] => {
-      if (!productName || !productos) return [];
+  const getVarietiesForProduct = useCallback((productType: string): string[] => {
+      if (!productType || !productos) return [];
       const varieties = productos
-          .filter(p => p.nombre === productName)
+          .filter(p => p.tipo === productType)
           .map(p => p.variedad);
       return [...new Set(varieties)];
   }, [productos]);
@@ -169,7 +170,7 @@ export function NewInvoiceForm() {
             id: undefined, 
             isSubItem: true,
             boxCount: 1, 
-            boxNumber: `${mainParentDisplayIndex}-${i + 1}`,
+            boxNumber: `${mainParentDisplayIndex}.${i + 1}`,
         }));
         subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
     }
@@ -203,7 +204,7 @@ export function NewInvoiceForm() {
         
         items.forEach((item, index) => {
             if (!item.isSubItem) {
-                let subItemsBunchSum = Number(item.bunchesPerBox) || 0; // Include parent's bunches
+                let subItemsBunchSum = Number(item.bunchesPerBox) || 0;
                 
                 for (let i = index + 1; i < items.length; i++) {
                     const subItem = items[i];
@@ -597,7 +598,7 @@ export function NewInvoiceForm() {
                                   >
                                     <FormControl><SelectTrigger><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                     <SelectContent>
-                                      {productNames.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                                      {productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
                               )} />

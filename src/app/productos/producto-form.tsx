@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -11,9 +12,9 @@ import type { Producto } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
   tipo: z.string().min(2, { message: "El tipo debe tener al menos 2 caracteres." }),
   variedad: z.string().min(2, { message: "La variedad debe tener al menos 2 caracteres." }),
+  nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
 });
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
@@ -29,17 +30,17 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
-      nombre: '',
       tipo: '',
       variedad: '',
+      nombre: '',
     },
   });
 
   useEffect(() => {
     form.reset(initialData || {
-      nombre: '',
       tipo: '',
       variedad: '',
+      nombre: '',
     });
   }, [initialData, form]);
 
@@ -51,19 +52,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="nombre"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nombre</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Rosa" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="tipo"
@@ -85,6 +73,19 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
               <FormLabel>Variedad</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Explorer" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="nombre"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Rosa" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
