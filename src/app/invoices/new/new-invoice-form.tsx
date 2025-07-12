@@ -79,7 +79,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove, insert } = useFieldArray({
+  const { fields, append, remove, insert, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -114,6 +114,8 @@ export function NewInvoiceForm() {
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
+      form.setValue('consignatarioId', '');
+      form.setValue('reference', '');
     }
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
@@ -122,6 +124,23 @@ export function NewInvoiceForm() {
         const items = values.items || [];
         const newWarnings: Record<number, string | null> = {};
 
+        if (name && name.startsWith('items.') && name.endsWith('.boxType')) {
+            const parts = name.split('.');
+            const index = parseInt(parts[1], 10);
+            const parentItem = items[index];
+            if (parentItem && !parentItem.isSubItem) {
+                const newBoxType = parentItem.boxType;
+                for (let i = index + 1; i < items.length; i++) {
+                    const currentItem = items[i];
+                    if (currentItem && currentItem.isSubItem) {
+                        form.setValue(`items.${i}.boxType`, newBoxType, { shouldDirty: true });
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        
         items.forEach((item, index) => {
             if (!item.isSubItem) {
                 let subItemsBunchSum = 0;
@@ -169,52 +188,52 @@ export function NewInvoiceForm() {
   }, []);
 
   const totals = useMemo(() => {
-      let totalBoxCount = 0;
-      let totalBunches = 0;
-      let totalBunchesPerBox = 0;
-      let totalStemsByBox = 0;
-      let grandTotal = 0;
+    let totalBoxCount = 0;
+    let totalBunches = 0;
+    let totalBunchesPerBox = 0;
+    let totalStemsByBox = 0;
+    let grandTotal = 0;
 
-      const itemIndicesWithSubItems = new Set<number>();
-      
-      watchItems.forEach((item, index) => {
-          if (item && !item.isSubItem && index + 1 < watchItems.length && watchItems[index + 1]?.isSubItem) {
-              itemIndicesWithSubItems.add(index);
-          }
-      });
+    const itemIndicesWithSubItems = new Set<number>();
+    
+    watchItems.forEach((item, index) => {
+        if (item && !item.isSubItem && index + 1 < watchItems.length && watchItems[index + 1]?.isSubItem) {
+            itemIndicesWithSubItems.add(index);
+        }
+    });
 
-      watchItems.forEach((item, index) => {
-          if (!item) return;
+    watchItems.forEach((item, index) => {
+        if (!item) return;
 
-          if (item.isSubItem) {
-              const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
-              grandTotal += subItemTotal;
-              totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
-              totalStemsByBox += subItemStems;
-          } else if (!itemIndicesWithSubItems.has(index)) {
-              const { lineTotal: mainItemTotal, stemsPerBox: mainItemStems } = getCalculations(item, false);
-              const boxCount = Number(item.boxCount) || 0;
-              
-              totalBoxCount += boxCount;
-              totalBunches += Number(item.bunchCount) || 0;
-              totalBunchesPerBox += (Number(item.bunchesPerBox) || 0) * boxCount;
-              totalStemsByBox += mainItemStems * boxCount;
-              grandTotal += mainItemTotal;
-          } else {
-              // It's a parent item with sub-items, only count its boxes and main bunches
-              totalBoxCount += Number(item.boxCount) || 0;
-              totalBunches += Number(item.bunchCount) || 0;
-          }
-      });
+        if (item.isSubItem) {
+            const { lineTotal: subItemTotal, stemsPerBox: subItemStems } = getCalculations(item, true);
+            grandTotal += subItemTotal;
+            totalBunchesPerBox += Number(item.bunchesPerBox) || 0;
+            totalStemsByBox += subItemStems;
+        } else if (!itemIndicesWithSubItems.has(index)) {
+            const { lineTotal: mainItemTotal, stemsPerBox: mainItemStems } = getCalculations(item, false);
+            const boxCount = Number(item.boxCount) || 0;
+            
+            totalBoxCount += boxCount;
+            totalBunches += (Number(item.bunchCount) || 0);
+            totalBunchesPerBox += (Number(item.bunchesPerBox) || 0) * boxCount;
+            totalStemsByBox += mainItemStems * boxCount;
+            grandTotal += mainItemTotal;
+        } else {
+            // It's a parent item with sub-items, only count its boxes and main bunches
+            totalBoxCount += Number(item.boxCount) || 0;
+            totalBunches += (Number(item.bunchCount) || 0);
+        }
+    });
 
-      return {
-          boxCount: totalBoxCount,
-          totalBunches: totalBunches,
-          bunchesPerBox: totalBunchesPerBox,
-          totalStemsByBox: totalStemsByBox,
-          grandTotal: grandTotal,
-      };
-  }, [watchItems, getCalculations]);
+    return {
+        boxCount: totalBoxCount,
+        totalBunches: totalBunches,
+        bunchesPerBox: totalBunchesPerBox,
+        totalStemsByBox: totalStemsByBox,
+        grandTotal: grandTotal,
+    };
+}, [watchItems, getCalculations]);
 
 
   const handleAddItem = async () => {
@@ -504,20 +523,20 @@ export function NewInvoiceForm() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50px]">N°</TableHead>
-                        <TableHead className="min-w-[120px]">Tipo Caja</TableHead>
-                        <TableHead className="min-w-[110px]">N° Cajas</TableHead>
-                        <TableHead className="min-w-[120px]">N° Bunches</TableHead>
-                        <TableHead className="min-w-[130px]">Bunches/Caja</TableHead>
-                        <TableHead className="min-w-[150px]">Producto</TableHead>
-                        <TableHead className="min-w-[150px]">Variedad</TableHead>
-                        <TableHead className="min-w-[110px]">Longitud</TableHead>
-                        <TableHead className="min-w-[130px]">Tallos/Bunch</TableHead>
-                        <TableHead className="min-w-[120px]">P. Compra</TableHead>
-                        <TableHead className="min-w-[120px]">P. Venta</TableHead>
-                        <TableHead className="min-w-[150px]">Total Tallos/Caja</TableHead>
-                        <TableHead className="min-w-[130px] text-right">Total</TableHead>
-                        <TableHead className="w-[110px]">Acciones</TableHead>
+                        <TableHead className="w-[60px]">N°</TableHead>
+                        <TableHead className="min-w-[130px]">Tipo Caja</TableHead>
+                        <TableHead className="min-w-[120px]">N° Cajas</TableHead>
+                        <TableHead className="min-w-[130px]">N° Bunches</TableHead>
+                        <TableHead className="min-w-[140px]">Bunches/Caja</TableHead>
+                        <TableHead className="min-w-[160px]">Producto</TableHead>
+                        <TableHead className="min-w-[160px]">Variedad</TableHead>
+                        <TableHead className="min-w-[120px]">Longitud</TableHead>
+                        <TableHead className="min-w-[140px]">Tallos/Bunch</TableHead>
+                        <TableHead className="min-w-[130px]">P. Compra</TableHead>
+                        <TableHead className="min-w-[130px]">P. Venta</TableHead>
+                        <TableHead className="min-w-[160px]">Total Tallos/Caja</TableHead>
+                        <TableHead className="min-w-[140px] text-right">Total</TableHead>
+                        <TableHead className="w-[120px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -541,7 +560,7 @@ export function NewInvoiceForm() {
                                 </span>
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubItem}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
@@ -549,18 +568,18 @@ export function NewInvoiceForm() {
                             <TableCell>
                               {isSubItem ? (
                                 <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                                    <Input {...field} disabled value={field.value || ''} className="w-24" />
+                                    <Input {...field} disabled value={field.value || ''} className="w-full h-10" />
                                 )} />
                               ) : (
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-24" />
+                                    <Input type="number" {...field} className="w-full h-10" />
                                 )} />
                               )}
                             </TableCell>
                             <TableCell>
                                <div className="relative">
                                 <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} disabled={isSubItem} className="w-24" />
+                                    <Input type="number" {...field} disabled={isSubItem} className="w-full h-10" />
                                   )} />
                                 {!isSubItem && bunchWarnings[index] && (
                                     <div className="absolute top-full left-0 mt-1 w-full flex items-center gap-1 text-xs text-destructive">
@@ -578,7 +597,7 @@ export function NewInvoiceForm() {
                                   <Input 
                                     type="number" 
                                     {...field}
-                                    className="w-28"
+                                    className="w-full h-10"
                                     onChange={(e) => {
                                       field.onChange(e);
                                       if (isSubItem) {
@@ -619,10 +638,10 @@ export function NewInvoiceForm() {
                                   </Select>
                               )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-24" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-28" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-28" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-28" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-full h-10" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-full h-10" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-full h-10" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-full h-10" />} /></TableCell>
                             <TableCell className="text-center font-medium">{stemsPerBox}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
@@ -641,20 +660,20 @@ export function NewInvoiceForm() {
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
                         <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
                         <TableCell>
-                          <Input value={totals.boxCount || 0} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.boxCount || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
                          <TableCell>
-                           <Input value={totals.totalBunches || 0} disabled className="bg-muted font-bold text-center" />
+                           <Input value={totals.totalBunches || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
                         <TableCell>
-                          <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
                         <TableCell colSpan={6}></TableCell>
                         <TableCell>
-                          <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
+                          <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
                         <TableCell>
-                           <Input value={`$${(totals.grandTotal || 0).toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4" />
+                           <Input value={`$${(totals.grandTotal || 0).toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4 h-10" />
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
