@@ -79,7 +79,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove, insert, update } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -170,9 +170,6 @@ export function NewInvoiceForm() {
             isSubItem: true,
             boxCount: 1, 
             boxNumber: `${mainParentDisplayIndex}-${i + 1}`,
-            bunchCount: 0,
-            bunchesPerBox: 0,
-            purchasePrice: 0,
         }));
         subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
     }
@@ -191,10 +188,10 @@ export function NewInvoiceForm() {
             const parentItem = items[index];
 
             if (parentItem && !parentItem.isSubItem) {
-                if (fieldName === 'boxType') {
-                    const newBoxType = parentItem.boxType;
+                if (fieldName === 'boxType' || fieldName === 'bunchesPerBox') {
+                    const newValue = parentItem[fieldName];
                     for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
-                        form.setValue(`items.${i}.boxType`, newBoxType, { shouldDirty: true });
+                        form.setValue(`items.${i}.${fieldName}`, newValue, { shouldDirty: true });
                     }
                 }
 
@@ -206,25 +203,25 @@ export function NewInvoiceForm() {
         
         items.forEach((item, index) => {
             if (!item.isSubItem) {
-                let subItemsBunchSum = 0;
-                let hasSubItems = false;
+                let subItemsBunchSum = Number(item.bunchesPerBox) || 0; // Include parent's bunches
                 
                 for (let i = index + 1; i < items.length; i++) {
                     const subItem = items[i];
                     if (subItem?.isSubItem) {
-                        hasSubItems = true;
                         subItemsBunchSum += Number(subItem.bunchesPerBox) || 0;
                     } else {
                         break;
                     }
                 }
                 
-                if (hasSubItems) {
-                    const parentBunchCount = Number(item.bunchCount) || 0;
-                    if (subItemsBunchSum > parentBunchCount) {
-                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentBunchCount}).`;
-                    } else if (subItemsBunchSum < parentBunchCount) {
-                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentBunchCount}).`;
+                const parentTotalBunchCount = Number(item.bunchCount) || 0;
+                const totalBoxes = Number(item.boxCount) || 0;
+
+                if (totalBoxes > 0) {
+                    if (subItemsBunchSum > parentTotalBunchCount) {
+                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentTotalBunchCount}).`;
+                    } else if (subItemsBunchSum < parentTotalBunchCount) {
+                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentTotalBunchCount}).`;
                     }
                 }
             }
@@ -238,12 +235,9 @@ export function NewInvoiceForm() {
   const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
     const salePrice = Number(item?.salePrice) || 0;
     const stemCount = Number(item?.stemCount) || 0;
-    
-    // For main items, bunch count comes from bunchCount. For sub-items, from bunchesPerBox
-    const bunchCount = isSubItem ? (Number(item?.bunchesPerBox) || 0) : (Number(item?.bunchCount) || 0);
-    const boxCount = Number(item?.boxCount) || 0;
+    const bunchesPerBox = Number(item?.bunchesPerBox) || 0;
 
-    const stemsPerBox = bunchCount * stemCount;
+    const stemsPerBox = bunchesPerBox * stemCount;
     const lineTotal = salePrice * stemsPerBox;
     
     return {
@@ -268,23 +262,15 @@ export function NewInvoiceForm() {
       const stemCount = Number(item.stemCount) || 0;
       const salePrice = Number(item.salePrice) || 0;
   
-      if (item.isSubItem) {
-        totalStemsByBox += bunchesPerBox * stemCount;
-        grandTotal += bunchesPerBox * stemCount * salePrice;
-        totalBunchesPerBox += bunchesPerBox;
-      } else {
+      if (!item.isSubItem) {
         totalBoxCount += boxCount;
         totalBunches += bunchCount;
-        
-        // If it has sub-items, its own bunchesPerBox is not counted towards the total sum of bunches.
-        // The sum will come from its children.
-        const hasSubItems = watchItems.some((sub, i) => i > watchItems.indexOf(item) && sub?.isSubItem);
-        if(!hasSubItems) {
-           totalBunchesPerBox += bunchesPerBox * boxCount;
-           totalStemsByBox += bunchesPerBox * stemCount * boxCount;
-           grandTotal += bunchesPerBox * stemCount * salePrice * boxCount;
-        }
       }
+      
+      totalBunchesPerBox += bunchesPerBox;
+      const currentStems = bunchesPerBox * stemCount;
+      totalStemsByBox += currentStems;
+      grandTotal += currentStems * salePrice;
     });
   
     return {
@@ -596,12 +582,6 @@ export function NewInvoiceForm() {
                                     type="number" 
                                     {...field}
                                     className="w-20"
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      if (isSubItem) {
-                                        form.setValue(`items.${index}.bunchCount`, Number(e.target.value));
-                                      }
-                                    }}
                                   />
                                 )} 
                               />
