@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -145,6 +146,38 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
+  const handleAddSubItems = useCallback((parentIndex: number) => {
+    const items = form.getValues('items');
+    const parentItem = items[parentIndex];
+    if (!parentItem || parentItem.isSubItem) return;
+
+    const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+    const parentBoxCount = Number(parentItem.boxCount) || 0;
+
+    let subItemsForParentCount = 0;
+    for (let i = parentIndex + 1; i < items.length && items[i]?.isSubItem; i++) {
+        subItemsForParentCount++;
+    }
+
+    if (subItemsForParentCount > 0) {
+        remove(Array.from({length: subItemsForParentCount}, (_, i) => parentIndex + 1 + i));
+    }
+
+    if (parentBoxCount > 0) {
+        const subItemsToInsert = Array.from({ length: parentBoxCount }, (_, i) => ({
+            ...parentItem,
+            id: undefined, 
+            isSubItem: true,
+            boxCount: 1, 
+            boxNumber: `${mainParentDisplayIndex}-${i + 1}`,
+            bunchesPerBox: 0,
+            bunchCount: 0, 
+            purchasePrice: 0,
+        }));
+        subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
+    }
+  }, [form, remove, insert]);
+
   useEffect(() => {
     const subscription = form.watch((values, { name }) => {
         const items = values.items || [];
@@ -166,34 +199,7 @@ export function NewInvoiceForm() {
                 }
 
                 if (fieldName === 'boxCount') {
-                    const parentBoxCount = Number(parentItem.boxCount) || 0;
-                    const mainParentDisplayIndex = items.slice(0, index + 1).filter(item => !item.isSubItem).length;
-                    
-                    let subItemsForParent: { item: any, index: number }[] = [];
-                    for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
-                        subItemsForParent.push({ item: items[i], index: i });
-                    }
-                    
-                    const currentSubItemCount = subItemsForParent.length;
-
-                    if (currentSubItemCount < parentBoxCount) {
-                        for (let i = currentSubItemCount; i < parentBoxCount; i++) {
-                           const subItemData = { ...parentItem, id: undefined, isSubItem: true, boxCount: 1, boxNumber: `${mainParentDisplayIndex}-${i + 1}`, bunchesPerBox: 0, bunchCount: 0, purchasePrice: 0 };
-                           insert(index + 1 + i, subItemData);
-                        }
-                    } else if (currentSubItemCount > parentBoxCount) {
-                        const indicesToRemove = subItemsForParent.slice(parentBoxCount).map(si => si.index);
-                        remove(indicesToRemove);
-                    }
-                    
-                    // Re-number existing ones just in case
-                    for (let i = 0; i < Math.min(currentSubItemCount, parentBoxCount); i++) {
-                        const subItemIndex = subItemsForParent[i].index;
-                        const newBoxNumber = `${mainParentDisplayIndex}-${i + 1}`;
-                        if (items[subItemIndex]?.boxNumber !== newBoxNumber) {
-                           form.setValue(`items.${subItemIndex}.boxNumber`, newBoxNumber, { shouldDirty: true });
-                        }
-                    }
+                   handleAddSubItems(index);
                 }
             }
         }
@@ -226,7 +232,7 @@ export function NewInvoiceForm() {
         setBunchWarnings(newWarnings);
     });
     return () => subscription.unsubscribe();
-  }, [form, insert, remove]);
+  }, [form, handleAddSubItems]);
 
 
   const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
@@ -346,61 +352,6 @@ export function NewInvoiceForm() {
     } finally {
       setIsSubmitting(false);
     }
-  }
-
-  
-  function handleAddSubItem(parentIndex: number) {
-    const items = form.getValues('items');
-    const parentItem = items[parentIndex];
-
-    const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
-    
-    const parentBoxCount = Number(parentItem.boxCount) || 0;
-
-    if (parentBoxCount <= 0) {
-        toast({
-            title: 'Número de Cajas Inválido',
-            description: 'La fila principal debe tener al menos 1 caja para añadir sub-filas.',
-            variant: 'destructive',
-        });
-        return;
-    }
-
-    const subItemsToInsert = Array.from({ length: parentBoxCount }, (_, i) => {
-        return {
-            ...parentItem,
-            id: undefined, 
-            isSubItem: true,
-            boxCount: 1,
-            boxNumber: `${mainParentDisplayIndex}-${i + 1}`,
-            bunchesPerBox: 0,
-            bunchCount: 0, 
-            purchasePrice: 0,
-        };
-    });
-
-    // Remove existing sub-items for this parent before inserting new ones
-    let subItemsForParentCount = 0;
-    for (let i = parentIndex + 1; i < items.length; i++) {
-        if (items[i].isSubItem) {
-            subItemsForParentCount++;
-        } else {
-            break;
-        }
-    }
-    if(subItemsForParentCount > 0){
-        remove(Array.from({length: subItemsForParentCount}, (_, i) => parentIndex + 1 + i));
-    }
-    
-    // Insert new sub-items
-    subItemsToInsert.forEach((item, i) => {
-       insert(parentIndex + 1 + i, item);
-    });
-
-    toast({
-      title: 'Sub-ítems añadidos',
-      description: `Añadidos ${parentBoxCount} sub-ítems debajo de la fila ${mainParentDisplayIndex}.`,
-    });
   }
 
   return (
@@ -574,18 +525,18 @@ export function NewInvoiceForm() {
                       <TableRow>
                         <TableHead className="w-[60px]">N°</TableHead>
                         <TableHead className="min-w-[130px]">Tipo Caja</TableHead>
-                        <TableHead className="w-40">N° Cajas</TableHead>
-                        <TableHead className="w-40">N° Bunches</TableHead>
-                        <TableHead className="w-40">Bunches/Caja</TableHead>
+                        <TableHead className="w-24">N° Cajas</TableHead>
+                        <TableHead className="w-24">N° Bunches</TableHead>
+                        <TableHead className="w-24">Bunches/Caja</TableHead>
                         <TableHead className="min-w-[160px]">Producto</TableHead>
                         <TableHead className="min-w-[160px]">Variedad</TableHead>
-                        <TableHead className="w-40">Longitud</TableHead>
-                        <TableHead className="w-40">Tallos/Bunch</TableHead>
-                        <TableHead className="w-40">P. Compra</TableHead>
-                        <TableHead className="w-40">P. Venta</TableHead>
+                        <TableHead className="w-24">Longitud</TableHead>
+                        <TableHead className="w-24">Tallos/Bunch</TableHead>
+                        <TableHead className="w-24">P. Compra</TableHead>
+                        <TableHead className="w-24">P. Venta</TableHead>
                         <TableHead className="min-w-[160px]">Total Tallos/Caja</TableHead>
                         <TableHead className="min-w-[140px] text-right">Total</TableHead>
-                        <TableHead className="w-[120px]">Acciones</TableHead>
+                        <TableHead className="w-[80px]">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -694,11 +645,6 @@ export function NewInvoiceForm() {
                             <TableCell className="text-center font-medium">{stemsPerBox}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
-                              {!isSubItem && (
-                                <Button type="button" variant="ghost" size="icon" onClick={() => handleAddSubItem(index)} title="Crear sub-fila">
-                                  <GitFork className="h-4 w-4" />
-                                </Button>
-                              )}
                               <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                             </TableCell>
                           </TableRow>
