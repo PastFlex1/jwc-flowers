@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, CornerDownRight, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, GitFork, Loader2, AlertTriangle } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -288,10 +288,10 @@ const totals = useMemo(() => {
       
       if (parentIndex === -1) return `${index + 1}`;
 
-      const mainParentIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
+      const mainParentDisplayIndex = items.slice(0, parentIndex + 1).filter(item => !item.isSubItem).length;
       const subItemIndexForParent = items.slice(parentIndex + 1, index + 1).filter(item => item.isSubItem).length;
       
-      return `${mainParentIndex}.${subItemIndexForParent}`;
+      return `${mainParentDisplayIndex}.${subItemIndexForParent}`;
   };
   
   function handleAddSubItem(parentIndex: number) {
@@ -630,7 +630,7 @@ const totals = useMemo(() => {
                         <TableCell>
                           <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
-                        <TableCell colSpan={5}></TableCell>
+                        <TableCell colSpan={4}></TableCell>
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center" />
                         </TableCell>
