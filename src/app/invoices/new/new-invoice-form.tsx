@@ -157,40 +157,49 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
-  const handleAddSubItems = useCallback((parentIndex: number) => {
+ const handleAddSubItems = useCallback((parentIndex: number) => {
     const items = form.getValues('items');
     const parentItem = items[parentIndex];
     if (!parentItem || parentItem.isSubItem) return;
 
-     let mainParentDisplayIndex = 1;
-      for (let i = 0; i < parentIndex; i++) {
-        if (!items[i].isSubItem) {
-          mainParentDisplayIndex += Number(items[i].boxCount) || 0;
+    let mainParentDisplayIndex = 1;
+    for (let i = 0; i < parentIndex; i++) {
+      if (!items[i].isSubItem) {
+        mainParentDisplayIndex += Number(items[i].boxCount) || 0;
+      }
+    }
+
+    const parentBoxCount = Number(parentItem.boxCount) || 0;
+    const parentBoxNumber = mainParentDisplayIndex;
+
+    const subItemsForParent = items.slice(parentIndex + 1).filter((item, i) => {
+      let isSub = true;
+      for (let j = parentIndex + 1; j <= parentIndex + 1 + i; j++) {
+        if (!items[j]?.isSubItem) {
+          isSub = false;
+          break;
         }
       }
+      return isSub;
+    });
 
-    const parentBoxCount = (Number(parentItem.boxCount) || 0);
-
-    let subItemsForParentCount = 0;
-    for (let i = parentIndex + 1; i < items.length && items[i]?.isSubItem; i++) {
-        subItemsForParentCount++;
+    const subItemsToRemove = subItemsForParent.length;
+    if (subItemsToRemove > 0) {
+      remove(Array.from({ length: subItemsToRemove }, (_, i) => parentIndex + 1 + i));
     }
-
-    if (subItemsForParentCount > 0) {
-        remove(Array.from({length: subItemsForParentCount}, (_, i) => parentIndex + 1 + i));
-    }
-
+    
     if (parentBoxCount > 1) {
-        const subItemsToInsert = Array.from({ length: parentBoxCount -1 }, (_, i) => ({
-            ...parentItem,
-            id: undefined, 
-            isSubItem: true,
-            boxCount: 1, 
-            boxNumber: `${mainParentDisplayIndex}.${i + 1}`,
-        }));
-        subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
+      const subItemsToInsert = Array.from({ length: parentBoxCount - 1 }, (_, i) => ({
+        ...parentItem,
+        id: undefined,
+        isSubItem: true,
+        boxCount: 1,
+        boxNumber: `${parentBoxNumber}-${i + 1}`,
+      }));
+      subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
     }
   }, [form, remove, insert]);
+
 
   useEffect(() => {
     const subscription = form.watch((values, { name }) => {
@@ -205,7 +214,7 @@ export function NewInvoiceForm() {
             const parentItem = items[index];
 
             if (parentItem && !parentItem.isSubItem) {
-                 if (fieldName === 'boxType' || fieldName === 'bunchesPerBox' || fieldName === 'product' || fieldName === 'variety' || fieldName === 'length' || fieldName === 'stemCount' || fieldName === 'purchasePrice' || fieldName === 'salePrice') {
+                 if (['boxType', 'bunchesPerBox', 'product', 'variety', 'length', 'stemCount', 'purchasePrice', 'salePrice'].includes(fieldName)) {
                     const newValue = parentItem[fieldName as keyof typeof parentItem];
                     for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
                         form.setValue(`items.${i}.${fieldName as 'boxType'}`, newValue as any, { shouldDirty: true });
@@ -232,14 +241,11 @@ export function NewInvoiceForm() {
                 }
                 
                 const parentTotalBunchCount = Number(item.bunchCount) || 0;
-                const totalBoxes = Number(item.boxCount) || 0;
-
-                if (totalBoxes > 0) {
-                    if (subItemsBunchSum > parentTotalBunchCount) {
-                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentTotalBunchCount}).`;
-                    } else if (subItemsBunchSum < parentTotalBunchCount) {
-                        newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentTotalBunchCount}).`;
-                    }
+                
+                if (subItemsBunchSum > parentTotalBunchCount) {
+                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total de la fila principal (${parentTotalBunchCount}).`;
+                } else if (subItemsBunchSum < parentTotalBunchCount) {
+                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total de la fila principal (${parentTotalBunchCount}).`;
                 }
             }
         });
@@ -677,8 +683,8 @@ export function NewInvoiceForm() {
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
-                        <TableCell>
-                           <Input value={`$${(totals.grandTotal || 0).toFixed(2)}`} disabled className="bg-muted font-bold text-right pr-4 h-10" />
+                        <TableCell className="text-right pr-4 font-bold text-lg">
+                           ${(totals.grandTotal || 0).toFixed(2)}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
