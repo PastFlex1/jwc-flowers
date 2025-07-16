@@ -84,7 +84,6 @@ export function NewInvoiceForm() {
   
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
-  const isHeaderSet = watchItems.length > 0;
 
   const productTypes = useMemo(() => {
     if (!productos) return [];
@@ -120,7 +119,7 @@ export function NewInvoiceForm() {
   const handleAddSubItem = (parentIndex: number) => {
     insert(parentIndex + 1, {
       boxType: 'qb',
-      boxCount: 1,
+      boxCount: 0,
       bunchCount: 0,
       product: '',
       variety: '',
@@ -196,7 +195,7 @@ export function NewInvoiceForm() {
          stemCount: 25, 
          purchasePrice: 0, 
          salePrice: 0, 
-         isSubItem: false, 
+         isSubItem: false,
        });
     } else {
        toast({
@@ -271,6 +270,8 @@ export function NewInvoiceForm() {
       }
     });
   }, [fields]);
+  
+  const isHeaderSet = watchItems.length > 0;
 
   return (
     <div className="space-y-6">
