@@ -118,20 +118,28 @@ export function NewInvoiceForm() {
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   const formattedItems = useMemo(() => {
-    let mainItemCounter = 0;
-    return fields.map((field, index) => {
-        if (!field.isSubItem) {
-            mainItemCounter++;
-            return { ...field, displayNumber: `${mainItemCounter}` };
-        }
-        
-        const parent = fields[field.parentIndex || 0];
-        const parentDisplayNumber = formattedItems.find(f => f.id === parent.id)?.displayNumber || '?';
-        const subItemCounter = fields.filter(f => f.parentIndex === field.parentIndex && fields.indexOf(f) <= index).length;
+      let mainItemCounter = 0;
+      return fields.map((field) => {
+          if (!field.isSubItem) {
+              mainItemCounter++;
+              return { ...field, displayNumber: `${mainItemCounter}` };
+          }
 
-        return { ...field, displayNumber: `${parentDisplayNumber}.${subItemCounter}` };
-    });
-}, [fields]);
+          if (field.parentIndex === undefined) {
+             return { ...field, displayNumber: `?` };
+          }
+          
+          // Find the parent's display number by looking up the formattedItems array being built
+          const parentItem = fields[field.parentIndex];
+          const parentMainItemNumber = fields.slice(0, field.parentIndex + 1).filter(f => !f.isSubItem).length;
+          
+          const subItemCounter = fields
+              .filter(f => f.isSubItem && f.parentIndex === field.parentIndex)
+              .indexOf(field) + 1;
+
+          return { ...field, displayNumber: `${parentMainItemNumber}.${subItemCounter}` };
+      });
+  }, [fields]);
 
 
   const totals = useMemo(() => {
@@ -146,13 +154,14 @@ export function NewInvoiceForm() {
       const stemCount = Number(item.stemCount) || 0;
       const salePrice = Number(item.salePrice) || 0;
       
-      const stemsInItem = boxCount * bunchesPerBox * stemCount;
-      totalFob += stemsInItem * salePrice;
+      const stemsInItem = bunchesPerBox * stemCount;
+      totalFob += boxCount * stemsInItem * salePrice;
+
       if (!item.isSubItem) {
         totalBoxes += boxCount;
       }
       totalBunches += boxCount * bunchesPerBox;
-      totalStems += stemsInItem;
+      totalStems += boxCount * stemsInItem;
     });
 
     return { totalFob, totalBoxes, totalBunches, totalStems };
@@ -184,11 +193,13 @@ export function NewInvoiceForm() {
         }
     }
     
+    const parentBoxCount = form.getValues(`items.${parentIndex}.boxCount`);
+
     insert(insertAtIndex, {
         isSubItem: true,
         parentIndex: parentIndex,
         boxType: 'qb',
-        boxCount: 1,
+        boxCount: parentBoxCount,
         bunchesPerBox: 0,
         product: '',
         variety: '',
@@ -463,18 +474,18 @@ export function NewInvoiceForm() {
                             )} /></TableCell>
                              <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" disabled={field.isSubItem} />
+                                    <Input type="number" {...field} value={field.value ?? ''} className="w-20" disabled={!!currentItem.isSubItem} />
                                 )} />
                             </TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" />
+                                    <Input type="number" {...field} value={field.value ?? ''} className="w-20" />
                                   )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
                                {!field.isSubItem && (
