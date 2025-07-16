@@ -27,7 +27,6 @@ import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
-  boxNumber: z.coerce.number().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().min(0, "Debe ser >= 0"),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
@@ -106,6 +105,7 @@ function TotalsCalculator({ control }: { control: any }) {
           grandTotal,
           rowCount
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [items]);
   
     return (
@@ -151,7 +151,7 @@ export function NewInvoiceForm() {
   });
   
   const selectedCustomerId = form.watch('customerId');
-  const watchItems = form.watch('items');
+  const watchItems = useWatch({ control: form.control, name: 'items' });
 
   const productTypes = useMemo(() => {
     if (!productos) return [];
@@ -186,7 +186,6 @@ export function NewInvoiceForm() {
   
   const handleAddSubItem = (parentIndex: number) => {
     insert(parentIndex + 1, {
-      boxNumber: 0,
       boxType: 'qb',
       boxCount: 0,
       bunchCount: 0,
@@ -238,7 +237,6 @@ export function NewInvoiceForm() {
 
   const handleAddItem = () => {
      append({ 
-       boxNumber: fields.filter(f => !f.isSubItem).length + 1,
        boxType: 'qb', 
        boxCount: 1, 
        bunchCount: 0, 
@@ -487,7 +485,12 @@ export function NewInvoiceForm() {
                          
                          let displayRowNumber;
                           if (isSubItem) {
-                            displayRowNumber = `${mainRowNumber}.${subRowNumber}`;
+                            const newMainRowNumber = fields.slice(0, index).filter(f => !f.isSubItem).length;
+                            const mainRowIndex = fields.findIndex((f, i) => i < index && !f.isSubItem && fields.slice(0, i + 1).filter(item => !item.isSubItem).length === newMainRowNumber);
+                            
+                            const subItemsCount = fields.slice(mainRowIndex + 1, index + 1).filter(f => f.isSubItem).length;
+                            displayRowNumber = `${newMainRowNumber}.${subItemsCount}`;
+
                           } else {
                             displayRowNumber = mainRowNumber;
                           }
