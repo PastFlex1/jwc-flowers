@@ -57,9 +57,23 @@ const invoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-function TotalsCalculator({ control, getCalculations }: { control: any, getCalculations: any }) {
+function TotalsCalculator({ control }: { control: any }) {
     const items = useWatch({ control, name: 'items' });
   
+    const getCalculations = (item: any) => {
+      const salePrice = Number(item?.salePrice) || 0;
+      const stemCount = Number(item?.stemCount) || 0;
+      const bunchCount = Number(item?.bunchCount) || 0;
+  
+      const stemsPerBox = bunchCount * stemCount;
+      const lineTotal = salePrice * stemsPerBox;
+      
+      return {
+        stemsPerBox,
+        lineTotal,
+      };
+    };
+
     const totals = useMemo(() => {
       let totalBoxCount = 0;
       let totalBunches = 0;
@@ -91,7 +105,7 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           grandTotal,
           rowCount
       };
-    }, [items, getCalculations]);
+    }, [items]);
   
     return (
       <TableFooter>
@@ -200,9 +214,10 @@ export function NewInvoiceForm() {
   
   const rowNumbers = useMemo(() => {
     let mainIndex = 0;
-    return fields.map((field) => {
+    return fields.map((field, index) => {
       if (!field.isSubItem) {
-        mainIndex++;
+        // The main row number is determined by counting previous main rows
+        mainIndex = fields.slice(0, index + 1).filter(f => !f.isSubItem).length;
       }
       return mainIndex;
     });
@@ -221,7 +236,8 @@ export function NewInvoiceForm() {
   }, [fields, rowNumbers]);
 
   const handleAddItem = () => {
-    const mainRowCount = fields.filter(field => !field.isSubItem).length;
+    // New logic: row number is based on the total count of existing items.
+    const newMainRowIndex = fields.length + 1;
      append({ 
        boxType: 'qb', 
        boxCount: 1, 
@@ -468,11 +484,26 @@ export function NewInvoiceForm() {
                          
                          const mainRowNumber = rowNumbers[index];
                          const subRowNumber = subRowNumbers[index];
-                         const displayRowNumber = isSubItem ? `${mainRowNumber}.${subRowNumber}` : `${mainRowNumber}`;
+                         
+                         let displayRowNumber;
+                          if (isSubItem) {
+                            // Find the main row this sub-item belongs to.
+                            let parentIndex = -1;
+                            for (let i = index - 1; i >= 0; i--) {
+                              if (!fields[i].isSubItem) {
+                                parentIndex = i;
+                                break;
+                              }
+                            }
+                            const mainParentNumber = fields.slice(0, parentIndex + 1).filter(f => !f.isSubItem).length;
+                            displayRowNumber = `${mainParentNumber}.${subRowNumber}`;
+                          } else {
+                            displayRowNumber = mainRowNumber;
+                          }
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                           <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
+                           <TableCell className="text-center font-medium">
                               {displayRowNumber}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
@@ -539,7 +570,7 @@ export function NewInvoiceForm() {
                         );
                       })}
                     </TableBody>
-                    <TotalsCalculator control={form.control} getCalculations={getCalculations} />
+                    <TotalsCalculator control={form.control} />
                   </Table>
                 </div>
                 <div className="mt-6 flex justify-end">
