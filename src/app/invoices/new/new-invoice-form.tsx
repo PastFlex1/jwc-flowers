@@ -29,7 +29,6 @@ const lineItemSchema = z.object({
   id: z.string().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().min(0, "Debe ser >= 0"),
-  boxNumber: z.string().optional(),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
   product: z.string().min(1, "Producto requerido."),
   variety: z.string().min(1, "Variedad requerida."),
@@ -244,18 +243,31 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
-
+  
   const rowNumbers = useMemo(() => {
     let mainIndex = 0;
-    let subIndex = 0;
-    return fields.map((field, index) => {
+    return fields.map((field) => {
       if (!field.isSubItem) {
         mainIndex++;
-        subIndex = 0;
-        return `${mainIndex}`;
+        let subIndex = 0;
+        return { main: mainIndex, sub: subIndex };
       } else {
-        subIndex++;
-        return `${mainIndex}.${subIndex}`;
+        // Find parent index
+        let parentIndex = fields.findIndex(f => f.id === field.id) -1;
+        while(parentIndex >= 0 && fields[parentIndex].isSubItem) {
+            parentIndex--;
+        }
+        let parentMainIndex = 0;
+        for(let i=0; i<=parentIndex; i++){
+            if(!fields[i].isSubItem) parentMainIndex++;
+        }
+
+        let subCount = 0;
+        for(let i=parentIndex + 1; i<=fields.findIndex(f => f.id === field.id); i++){
+            if(fields[i].isSubItem) subCount++;
+        }
+
+        return { main: parentMainIndex, sub: subCount };
       }
     });
   }, [fields]);
@@ -450,11 +462,13 @@ export function NewInvoiceForm() {
                          const isSubItem = currentItem.isSubItem;
                          const { lineTotal, stemsPerBox } = getCalculations(currentItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
+                         const { main, sub } = rowNumbers[index] || { main: 0, sub: 0 };
+                         const displayRowNumber = sub > 0 ? `${main}.${sub}` : `${main}`;
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
-                               {rowNumbers[index]}
+                           <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
+                                {index + 1}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
