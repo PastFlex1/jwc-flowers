@@ -31,7 +31,6 @@ const lineItemSchema = z.object({
   boxCount: z.coerce.number().min(0, "Debe ser >= 0"),
   boxNumber: z.string().optional(),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
-  bunchesPerBox: z.coerce.number().min(0, "Debe ser >= 0"),
   product: z.string().min(1, "Producto requerido."),
   variety: z.string().min(1, "Variedad requerida."),
   length: z.coerce.number().positive("Debe ser > 0"),
@@ -67,7 +66,6 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<Marcacion[]>([]);
-  const [bunchWarnings, setBunchWarnings] = useState<Record<number, string | null>>({});
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -102,48 +100,6 @@ export function NewInvoiceForm() {
           .map(p => p.variedad);
       return [...new Set(varieties)];
   }, [productos]);
-  
-  const getDisplayIndex = useCallback((index: number) => {
-    const items = form.getValues('items');
-    if (!items || !items[index]) return (index + 1).toString();
-    
-    const currentItem = items[index];
-    let parentIndex = -1;
-    let mainParentDisplayIndex = 0;
-
-    // Find the parent of the current item if it's a sub-item
-    if (currentItem.isSubItem) {
-        for (let i = index - 1; i >= 0; i--) {
-            if (!items[i].isSubItem) {
-                parentIndex = i;
-                break;
-            }
-        }
-    }
-
-    // Calculate the display index for the parent
-    let runningBoxCount = 0;
-    for (let i = 0; i < (parentIndex !== -1 ? parentIndex : index); i++) {
-        if (!items[i].isSubItem) {
-            runningBoxCount += Number(items[i].boxCount) || 0;
-        }
-    }
-    mainParentDisplayIndex = runningBoxCount + 1;
-
-    if (currentItem.isSubItem) {
-        // Find how many sub-items came before this one for this parent
-        let subItemCounter = 1; // Start from 1 for the first sub-item
-        for (let i = parentIndex + 1; i < index; i++) {
-            if (items[i].isSubItem) {
-                subItemCounter++;
-            }
-        }
-        return `${mainParentDisplayIndex}.${subItemCounter}`;
-    } else {
-        return (mainParentDisplayIndex).toString();
-    }
-  }, [form]);
-
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -162,100 +118,26 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
- const handleAddSubItems = useCallback((parentIndex: number) => {
+  const handleAddSubItem = (parentIndex: number) => {
     const items = form.getValues('items');
     const parentItem = items[parentIndex];
-    if (!parentItem || parentItem.isSubItem) return;
+    if (!parentItem) return;
 
-    // First, remove existing sub-items for this parent
-    const subItemsToRemove = [];
-    for (let i = parentIndex + 1; i < items.length; i++) {
-        if (items[i].isSubItem) {
-            subItemsToRemove.push(i);
-        } else {
-            break; // Stop when we hit the next main item
-        }
-    }
-    if (subItemsToRemove.length > 0) {
-        remove(subItemsToRemove.reverse());
-    }
-
-    // Now, add the correct number of new sub-items
-    const parentBoxCount = Number(parentItem.boxCount) || 0;
-    if (parentBoxCount > 1) {
-      const subItemsToInsert = Array.from({ length: parentBoxCount - 1 }, () => ({
-        ...parentItem,
-        id: undefined,
-        isSubItem: true,
-        boxCount: 1, // Each sub-item represents one box
-        boxNumber: '', // This will be set by getDisplayIndex
-      }));
-      // Use insert to add all new sub-items right after the parent
-      subItemsToInsert.forEach((item, i) => insert(parentIndex + 1 + i, item));
-    }
-  }, [form, remove, insert]);
-
-
-  useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
-        const items = values.items || [];
-        const newWarnings: Record<number, string | null> = {};
-
-        if (name && name.startsWith('items.')) {
-            const parts = name.split('.');
-            const index = parseInt(parts[1], 10);
-            const fieldName = parts[2];
-            
-            const parentItem = items[index];
-
-            if (parentItem && !parentItem.isSubItem) {
-                 if (['boxType', 'bunchesPerBox','product', 'variety', 'length', 'stemCount', 'purchasePrice', 'salePrice'].includes(fieldName)) {
-                    const newValue = parentItem[fieldName as keyof typeof parentItem];
-                    for (let i = index + 1; i < items.length && items[i]?.isSubItem; i++) {
-                        form.setValue(`items.${i}.${fieldName as 'boxType'}`, newValue as any, { shouldDirty: true });
-                    }
-                }
-
-                if (fieldName === 'boxCount') {
-                   handleAddSubItems(index);
-                }
-            }
-        }
-        
-        items.forEach((item, index) => {
-            if (item && !item.isSubItem) {
-                let subItemsBunchSum = Number(item.bunchesPerBox) || 0;
-                
-                for (let i = index + 1; i < items.length; i++) {
-                    const subItem = items[i];
-                    if (subItem?.isSubItem) {
-                        subItemsBunchSum += Number(subItem.bunchesPerBox) || 0;
-                    } else {
-                        break;
-                    }
-                }
-                
-                const parentTotalBunchCount = Number(item.bunchCount) || 0;
-                
-                if (subItemsBunchSum > parentTotalBunchCount) {
-                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) excede el total (${parentTotalBunchCount}).`;
-                } else if (subItemsBunchSum < parentTotalBunchCount) {
-                    newWarnings[index] = `Suma de bunches (${subItemsBunchSum}) es menor que el total (${parentTotalBunchCount}).`;
-                }
-            }
-        });
-        setBunchWarnings(newWarnings);
+    insert(parentIndex + 1, {
+      ...parentItem,
+      id: undefined,
+      isSubItem: true,
+      boxCount: 1, 
+      boxNumber: '', 
     });
-    return () => subscription.unsubscribe();
-  }, [form, handleAddSubItems]);
+  };
 
-
-  const getCalculations = useCallback((item: any, isSubItem: boolean = false) => {
+  const getCalculations = useCallback((item: any) => {
     const salePrice = Number(item?.salePrice) || 0;
     const stemCount = Number(item?.stemCount) || 0;
-    const bunchesPerBox = Number(item?.bunchesPerBox) || 0;
+    const bunchCount = Number(item?.bunchCount) || 0;
 
-    const stemsPerBox = bunchesPerBox * stemCount;
+    const stemsPerBox = bunchCount * stemCount;
     const lineTotal = salePrice * stemsPerBox;
     
     return {
@@ -267,7 +149,6 @@ export function NewInvoiceForm() {
   const totals = useMemo(() => {
     let totalBoxCount = 0;
     let totalBunches = 0;
-    let totalBunchesPerBox = 0;
     let totalStemsByBox = 0;
     let grandTotal = 0;
   
@@ -276,27 +157,22 @@ export function NewInvoiceForm() {
   
       const boxCount = Number(item.boxCount) || 0;
       const bunchCount = Number(item.bunchCount) || 0;
-      const bunchesPerBox = Number(item.bunchesPerBox) || 0;
       const stemCount = Number(item.stemCount) || 0;
       const salePrice = Number(item.salePrice) || 0;
   
-      if (!item.isSubItem) {
-        totalBoxCount += boxCount;
-        totalBunches += bunchCount;
-      }
+      totalBoxCount += boxCount;
+      totalBunches += bunchCount;
       
-      totalBunchesPerBox += bunchesPerBox;
-      const currentStems = bunchesPerBox * stemCount;
+      const currentStems = bunchCount * stemCount;
       totalStemsByBox += currentStems;
       grandTotal += currentStems * salePrice;
     });
   
     return {
-        boxCount: totalBoxCount,
-        totalBunches: totalBunches,
-        bunchesPerBox: totalBunchesPerBox,
-        totalStemsByBox: totalStemsByBox,
-        grandTotal: grandTotal,
+        totalBoxCount,
+        totalBunches,
+        totalStemsByBox,
+        grandTotal,
     };
   }, [watchItems]);
 
@@ -310,13 +186,10 @@ export function NewInvoiceForm() {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
-       const currentItems = form.getValues('items');
-       const nextBoxNumber = (currentItems.reduce((acc, item) => acc + (item.isSubItem ? 0 : (Number(item.boxCount) || 0)), 0)) + 1;
        append({ 
          boxType: 'qb', 
          boxCount: 1, 
          bunchCount: 0, 
-         bunchesPerBox: 0, 
          product: '', 
          variety: '', 
          length: 70, 
@@ -324,7 +197,7 @@ export function NewInvoiceForm() {
          purchasePrice: 0, 
          salePrice: 0, 
          isSubItem: false, 
-         boxNumber: nextBoxNumber.toString() 
+         boxNumber: '' 
        });
     } else {
        toast({
@@ -350,6 +223,7 @@ export function NewInvoiceForm() {
       ...values,
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
+      items: values.items.map(item => ({...item, bunchesPerBox: item.bunchCount}))
     };
 
     try {
@@ -540,11 +414,10 @@ export function NewInvoiceForm() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[60px]">N°</TableHead>
+                        <TableHead className="w-[80px]">N° Caja</TableHead>
                         <TableHead className="w-[130px]">Tipo Caja</TableHead>
                         <TableHead className="w-24">N° Cajas</TableHead>
                         <TableHead className="w-24">N° Bunches</TableHead>
-                        <TableHead className="w-24">Bunches/Caja</TableHead>
                         <TableHead className="min-w-[160px]">Producto</TableHead>
                         <TableHead className="min-w-[160px]">Variedad</TableHead>
                         <TableHead className="w-24">Longitud</TableHead>
@@ -560,62 +433,36 @@ export function NewInvoiceForm() {
                       {fields.map((field, index) => {
                          const currentItem = watchItems[index];
                          const isSubItem = currentItem.isSubItem;
-                         const displayIndex = getDisplayIndex(index);
-                         const { lineTotal, stemsPerBox } = getCalculations(currentItem, !!isSubItem);
+                         const { lineTotal, stemsPerBox } = getCalculations(currentItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell className="relative text-center font-medium">
+                            <TableCell className="relative">
                                 {isSubItem && (
                                     <div className="absolute left-2 top-1/2 -translate-y-1/2">
                                         <CornerDownRight className="h-4 w-4 text-muted-foreground" />
                                     </div>
                                 )}
-                                <span className={cn(isSubItem && "pl-4")}>
-                                    {displayIndex}
-                                </span>
+                                <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
+                                    <Input {...field} className={cn("w-20", isSubItem && "pl-8")} placeholder="e.g. 1.1" />
+                                )} />
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={isSubItem}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
                             )} /></TableCell>
-                            <TableCell>
-                              {isSubItem ? (
-                                <span className="flex items-center justify-center h-10 w-20">{currentItem.boxNumber}</span>
-                              ) : (
+                             <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
                                     <Input type="number" {...field} className="w-20" />
                                 )} />
-                              )}
                             </TableCell>
                             <TableCell>
-                               <div className="relative">
-                                <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} disabled={isSubItem} className="w-20" />
+                               <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="w-20" />
                                   )} />
-                                {!isSubItem && bunchWarnings[index] && (
-                                    <div className="absolute top-full left-0 mt-1 w-full flex items-center gap-1 text-xs text-destructive">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        <span>{bunchWarnings[index]}</span>
-                                    </div>
-                                )}
-                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <FormField 
-                                control={form.control} 
-                                name={`items.${index}.bunchesPerBox`} 
-                                render={({ field }) => (
-                                  <Input 
-                                    type="number" 
-                                    {...field}
-                                    className="w-20"
-                                  />
-                                )} 
-                              />
                             </TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
@@ -654,6 +501,11 @@ export function NewInvoiceForm() {
                             <TableCell className="text-center font-medium">{stemsPerBox}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
+                              {!isSubItem && (
+                                <Button type="button" variant="ghost" size="icon" title="Añadir Sub-ítem" onClick={() => handleAddSubItem(index)}>
+                                  <CornerDownRight className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                             </TableCell>
                           </TableRow>
@@ -664,15 +516,12 @@ export function NewInvoiceForm() {
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
                         <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
                         <TableCell className="text-center">
-                          {totals.boxCount || 0}
+                          {totals.totalBoxCount || 0}
                         </TableCell>
-                         <TableCell>
-                           <Input value={totals.totalBunches || 0} disabled className="bg-muted font-bold text-center h-10 w-20" />
+                         <TableCell className="text-center">
+                           {totals.totalBunches || 0}
                         </TableCell>
-                        <TableCell>
-                          <Input value={totals.bunchesPerBox || 0} disabled className="bg-muted font-bold text-center h-10 w-20" />
-                        </TableCell>
-                        <TableCell colSpan={6}></TableCell>
+                        <TableCell colSpan={7}></TableCell>
                         <TableCell>
                           <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center h-10" />
                         </TableCell>
