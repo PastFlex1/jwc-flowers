@@ -27,7 +27,7 @@ import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
-  boxNumber: z.string(),
+  boxNumber: z.string().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().min(1, "Debe ser > 0"),
   bunchesPerBox: z.coerce.number().min(1, "Debe ser > 0"),
@@ -353,7 +353,7 @@ export function NewInvoiceForm() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px]">N° Caja</TableHead>
+                        <TableHead className="w-[80px]">N°</TableHead>
                         <TableHead className="min-w-[160px]">Producto</TableHead>
                         <TableHead className="min-w-[160px]">Variedad</TableHead>
                         <TableHead className="w-[130px]">Tipo Caja</TableHead>
@@ -379,11 +379,7 @@ export function NewInvoiceForm() {
 
                          return (
                           <TableRow key={field.id}>
-                           <TableCell>
-                             <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                               <Input {...field} className="w-20" />
-                             )} />
-                           </TableCell>
+                           <TableCell className="text-center font-medium">{index + 1}</TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
