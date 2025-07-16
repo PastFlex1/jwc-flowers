@@ -58,16 +58,18 @@ const invoiceSchema = z.object({
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
 function TotalsCalculator({ control, getCalculations }: { control: any, getCalculations: any }) {
-    const formValues = useWatch({ control });
+    const items = useWatch({ control, name: 'items' });
   
     const totals = useMemo(() => {
       let totalBoxCount = 0;
       let totalBunches = 0;
       let totalStemsByBox = 0;
       let grandTotal = 0;
+      let rowCount = 0;
     
-      if(Array.isArray(formValues.items)) {
-        formValues.items.forEach((item: any) => {
+      if(Array.isArray(items)) {
+        rowCount = items.length;
+        items.forEach((item: any) => {
           if (!item) return;
       
           const boxCount = Number(item.boxCount) || 0;
@@ -75,9 +77,7 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           
           const { lineTotal, stemsPerBox } = getCalculations(item);
 
-          if (!item.isSubItem) {
-            totalBoxCount += boxCount;
-          }
+          totalBoxCount += boxCount;
           totalBunches += bunchCount;
           totalStemsByBox += stemsPerBox;
           grandTotal += lineTotal;
@@ -89,13 +89,16 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           totalBunches,
           totalStemsByBox,
           grandTotal,
+          rowCount
       };
-    }, [formValues, getCalculations]);
+    }, [items, getCalculations]);
   
     return (
       <TableFooter>
         <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-          <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
+          <TableCell colSpan={2} className="text-right">
+            TOTALES ({totals.rowCount})
+          </TableCell>
           <TableCell className="text-center">{totals.totalBoxCount || 0}</TableCell>
           <TableCell className="text-center">{totals.totalBunches || 0}</TableCell>
           <TableCell colSpan={6}></TableCell>
@@ -194,14 +197,31 @@ export function NewInvoiceForm() {
       lineTotal,
     };
   }, []);
+  
+  const rowNumbers = useMemo(() => {
+    let mainIndex = 0;
+    return fields.map((field) => {
+      if (!field.isSubItem) {
+        mainIndex++;
+      }
+      return mainIndex;
+    });
+  }, [fields]);
 
-  const totalBoxCountForNewItem = useMemo(() => {
-    return watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
-  }, [watchItems]);
-
+  const subRowNumbers = useMemo(() => {
+    const subCounts: { [key: number]: number } = {};
+    return fields.map((field, index) => {
+      if (field.isSubItem) {
+        const parentMainIndex = rowNumbers[index];
+        subCounts[parentMainIndex] = (subCounts[parentMainIndex] || 0) + 1;
+        return subCounts[parentMainIndex];
+      }
+      return 0;
+    });
+  }, [fields, rowNumbers]);
 
   const handleAddItem = () => {
-    const totalBoxCount = watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
+    const mainRowCount = fields.filter(field => !field.isSubItem).length;
      append({ 
        boxType: 'qb', 
        boxCount: 1, 
@@ -253,43 +273,6 @@ export function NewInvoiceForm() {
     }
   }
   
-  const rowNumbers = useMemo(() => {
-    let mainIndex = 0;
-    return fields.map((field) => {
-      if (!field.isSubItem) {
-        mainIndex++;
-        return `${mainIndex}`;
-      } else {
-        return '';
-      }
-    });
-  }, [fields]);
-
-  const subRowNumbers = useMemo(() => {
-    const numbers: {[key: number]: number} = {};
-    return fields.map((field, index) => {
-        if (!field.isSubItem) {
-            numbers[index] = 0;
-            return '';
-        }
-        
-        let parentIndex = -1;
-        for (let i = index - 1; i >= 0; i--) {
-            if (!fields[i].isSubItem) {
-                parentIndex = i;
-                break;
-            }
-        }
-        
-        if (parentIndex !== -1) {
-            numbers[parentIndex] = (numbers[parentIndex] || 0) + 1;
-            const mainRowNumber = rowNumbers[parentIndex];
-            return `${mainRowNumber}.${numbers[parentIndex]}`;
-        }
-        return '';
-    });
-  }, [fields, rowNumbers]);
-  
   const isHeaderSet = watchItems.length > 0;
 
   return (
@@ -318,9 +301,9 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -337,9 +320,9 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                            <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -482,7 +465,10 @@ export function NewInvoiceForm() {
                          const isSubItem = currentItem.isSubItem;
                          const { lineTotal, stemsPerBox } = getCalculations(currentItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
-                         const displayRowNumber = isSubItem ? subRowNumbers[index] : rowNumbers[index];
+                         
+                         const mainRowNumber = rowNumbers[index];
+                         const subRowNumber = subRowNumbers[index];
+                         const displayRowNumber = isSubItem ? `${mainRowNumber}.${subRowNumber}` : `${mainRowNumber}`;
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
