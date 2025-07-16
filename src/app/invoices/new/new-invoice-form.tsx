@@ -119,19 +119,17 @@ export function NewInvoiceForm() {
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   const handleAddSubItem = (parentIndex: number) => {
-    const items = form.getValues('items');
-    const parentItem = items[parentIndex];
-    if (!parentItem) return;
-
-    const parentNumber = parentItem.boxNumber || "0";
-    const subItems = items.filter(item => item.boxNumber?.startsWith(parentNumber + "."));
-    const newSubItemNumber = `${parentNumber}.${subItems.length + 1}`;
-
-    insert(parentIndex + subItems.length + 1, {
-      ...parentItem,
-      id: undefined,
+    insert(parentIndex + 1, {
+      boxType: 'qb',
+      boxCount: 1,
+      bunchCount: 0,
+      product: '',
+      variety: '',
+      length: 70,
+      stemCount: 25,
+      purchasePrice: 0,
+      salePrice: 0,
       isSubItem: true,
-      boxNumber: newSubItemNumber, 
     });
   };
 
@@ -163,7 +161,10 @@ export function NewInvoiceForm() {
       const stemCount = Number(item.stemCount) || 0;
       const salePrice = Number(item.salePrice) || 0;
   
-      totalBoxCount += boxCount;
+      if(!item.isSubItem) {
+        totalBoxCount += boxCount;
+      }
+      
       totalBunches += bunchCount;
       
       const currentStems = bunchCount * stemCount;
@@ -189,9 +190,6 @@ export function NewInvoiceForm() {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
-       const mainItems = watchItems.filter(item => !item.isSubItem);
-       const nextBoxNumber = mainItems.length + 1;
-
        append({ 
          boxType: 'qb', 
          boxCount: 1, 
@@ -203,7 +201,6 @@ export function NewInvoiceForm() {
          purchasePrice: 0, 
          salePrice: 0, 
          isSubItem: false, 
-         boxNumber: String(nextBoxNumber) 
        });
     } else {
        toast({
@@ -420,7 +417,7 @@ export function NewInvoiceForm() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px]">N° Caja</TableHead>
+                        <TableHead className="w-[80px]">N°</TableHead>
                         <TableHead className="w-[130px]">Tipo Caja</TableHead>
                         <TableHead className="w-24">N° Cajas</TableHead>
                         <TableHead className="w-24">N° Bunches</TableHead>
@@ -444,12 +441,8 @@ export function NewInvoiceForm() {
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell>
-                              <Input 
-                                value={field.boxNumber || ''} 
-                                className={cn("w-20", isSubItem && "pl-8")} 
-                                disabled 
-                              />
+                            <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
+                                {index + 1}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
@@ -558,4 +551,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
