@@ -161,10 +161,7 @@ export function NewInvoiceForm() {
       const stemCount = Number(item.stemCount) || 0;
       const salePrice = Number(item.salePrice) || 0;
   
-      if(!item.isSubItem) {
-        totalBoxCount += boxCount;
-      }
-      
+      totalBoxCount += boxCount;
       totalBunches += bunchCount;
       
       const currentStems = bunchCount * stemCount;
@@ -457,7 +454,7 @@ export function NewInvoiceForm() {
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                             <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
-                                {rowNumbers[index]}
+                               {rowNumbers[index]}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
