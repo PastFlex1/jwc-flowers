@@ -119,7 +119,7 @@ export function NewInvoiceForm() {
   const handleAddSubItem = (parentIndex: number) => {
     insert(parentIndex + 1, {
       boxType: 'qb',
-      boxCount: 0,
+      boxCount: 1,
       bunchCount: 0,
       product: '',
       variety: '',
@@ -156,15 +156,13 @@ export function NewInvoiceForm() {
   
       const boxCount = Number(item.boxCount) || 0;
       const bunchCount = Number(item.bunchCount) || 0;
-      const stemCount = Number(item.stemCount) || 0;
-      const salePrice = Number(item.salePrice) || 0;
-  
+      
+      const { lineTotal, stemsPerBox } = getCalculations(item);
+
       totalBoxCount += boxCount;
       totalBunches += bunchCount;
-      
-      const currentStems = bunchCount * stemCount;
-      totalStemsByBox += currentStems;
-      grandTotal += currentStems * salePrice;
+      totalStemsByBox += stemsPerBox;
+      grandTotal += lineTotal;
     });
   
     return {
@@ -173,37 +171,23 @@ export function NewInvoiceForm() {
         totalStemsByBox,
         grandTotal,
     };
-  }, [watchItems]);
+  }, [watchItems, getCalculations]);
 
 
-  const handleAddItem = async () => {
-     const headerFields: (keyof InvoiceFormValues)[] = [
-      'invoiceNumber',
-      'farmDepartureDate', 'flightDate', 'sellerId', 'customerId', 
-      'consignatarioId', 'farmId', 'carrierId', 'countryId', 
-      'masterAWB', 'houseAWB'
-    ];
-    const result = await form.trigger(headerFields);
-    if (result) {
-       append({ 
-         boxType: 'qb', 
-         boxCount: 1, 
-         bunchCount: 0, 
-         product: '', 
-         variety: '', 
-         length: 70, 
-         stemCount: 25, 
-         purchasePrice: 0, 
-         salePrice: 0, 
-         isSubItem: false,
-       });
-    } else {
-       toast({
-        title: 'Error de Validación',
-        description: 'Por favor, complete todos los campos del encabezado antes de añadir ítems.',
-        variant: 'destructive',
-      });
-    }
+  const handleAddItem = () => {
+     const totalBoxCount = watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
+     append({ 
+       boxType: 'qb', 
+       boxCount: 1, 
+       bunchCount: 0, 
+       product: '', 
+       variety: '', 
+       length: 70, 
+       stemCount: 25, 
+       purchasePrice: 0, 
+       salePrice: 0, 
+       isSubItem: false,
+     });
   }
 
   async function onSubmit(values: InvoiceFormValues) {
@@ -245,31 +229,40 @@ export function NewInvoiceForm() {
   
   const rowNumbers = useMemo(() => {
     let mainIndex = 0;
-    return fields.map((field, index) => {
+    return fields.map((field) => {
       if (!field.isSubItem) {
         mainIndex++;
         return `${mainIndex}`;
       } else {
-        // Find parent index
-        let parentIndex = index - 1;
-        while(parentIndex >= 0 && fields[parentIndex].isSubItem) {
-          parentIndex--;
-        }
-        
-        let parentMainNumber = 0;
-        for(let i=0; i<=parentIndex; i++){
-          if(!fields[i].isSubItem) parentMainNumber++;
-        }
-        
-        let subCount = 0;
-        for(let i=parentIndex + 1; i <= index; i++){
-          if(fields[i].isSubItem) subCount++;
-        }
-
-        return `${parentMainNumber}.${subCount}`;
+        return '';
       }
     });
   }, [fields]);
+
+  const subRowNumbers = useMemo(() => {
+    const numbers: {[key: number]: number} = {};
+    return fields.map((field, index) => {
+        if (!field.isSubItem) {
+            numbers[index] = 0;
+            return '';
+        }
+        
+        let parentIndex = -1;
+        for (let i = index - 1; i >= 0; i--) {
+            if (!fields[i].isSubItem) {
+                parentIndex = i;
+                break;
+            }
+        }
+        
+        if (parentIndex !== -1) {
+            numbers[parentIndex] = (numbers[parentIndex] || 0) + 1;
+            const mainRowNumber = rowNumbers[parentIndex];
+            return `${mainRowNumber}.${numbers[parentIndex]}`;
+        }
+        return '';
+    });
+  }, [fields, rowNumbers]);
   
   const isHeaderSet = watchItems.length > 0;
 
@@ -463,12 +456,12 @@ export function NewInvoiceForm() {
                          const isSubItem = currentItem.isSubItem;
                          const { lineTotal, stemsPerBox } = getCalculations(currentItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
-                         const displayRowNumber = rowNumbers[index];
+                         const displayRowNumber = isSubItem ? subRowNumbers[index] : rowNumbers[index];
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                            <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
-                              <span className={isSubItem ? 'pl-4' : ''}>{displayRowNumber}</span>
+                              {displayRowNumber}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
