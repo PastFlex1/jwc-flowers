@@ -27,6 +27,7 @@ import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
+  boxNumber: z.coerce.number().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().min(0, "Debe ser >= 0"),
   bunchCount: z.coerce.number().min(0, "Debe ser >= 0"),
@@ -115,7 +116,7 @@ function TotalsCalculator({ control }: { control: any }) {
           </TableCell>
           <TableCell className="text-center">{totals.totalBoxCount || 0}</TableCell>
           <TableCell className="text-center">{totals.totalBunches || 0}</TableCell>
-          <TableCell colSpan={6}></TableCell>
+          <TableCell colSpan={5}></TableCell>
           <TableCell className="text-center">{totals.totalStemsByBox || 0}</TableCell>
           <TableCell className="text-lg text-right font-bold pr-4">${(totals.grandTotal || 0).toFixed(2)}</TableCell>
           <TableCell></TableCell>
@@ -185,8 +186,9 @@ export function NewInvoiceForm() {
   
   const handleAddSubItem = (parentIndex: number) => {
     insert(parentIndex + 1, {
+      boxNumber: 0,
       boxType: 'qb',
-      boxCount: 1,
+      boxCount: 0,
       bunchCount: 0,
       product: '',
       variety: '',
@@ -216,7 +218,6 @@ export function NewInvoiceForm() {
     let mainIndex = 0;
     return fields.map((field, index) => {
       if (!field.isSubItem) {
-        // The main row number is determined by counting previous main rows
         mainIndex = fields.slice(0, index + 1).filter(f => !f.isSubItem).length;
       }
       return mainIndex;
@@ -236,9 +237,8 @@ export function NewInvoiceForm() {
   }, [fields, rowNumbers]);
 
   const handleAddItem = () => {
-    // New logic: row number is based on the total count of existing items.
-    const newMainRowIndex = fields.length + 1;
      append({ 
+       boxNumber: fields.filter(f => !f.isSubItem).length + 1,
        boxType: 'qb', 
        boxCount: 1, 
        bunchCount: 0, 
@@ -461,11 +461,11 @@ export function NewInvoiceForm() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-[80px]">N°</TableHead>
+                        <TableHead className="min-w-[160px]">Producto</TableHead>
+                        <TableHead className="min-w-[160px]">Variedad</TableHead>
                         <TableHead className="w-[130px]">Tipo Caja</TableHead>
                         <TableHead className="w-24">N° Cajas</TableHead>
                         <TableHead className="w-24">N° Bunches</TableHead>
-                        <TableHead className="min-w-[160px]">Producto</TableHead>
-                        <TableHead className="min-w-[160px]">Variedad</TableHead>
                         <TableHead className="w-24">Longitud</TableHead>
                         <TableHead className="w-24">Tallos/Bunch</TableHead>
                         <TableHead className="w-24">P. Compra</TableHead>
@@ -487,16 +487,7 @@ export function NewInvoiceForm() {
                          
                          let displayRowNumber;
                           if (isSubItem) {
-                            // Find the main row this sub-item belongs to.
-                            let parentIndex = -1;
-                            for (let i = index - 1; i >= 0; i--) {
-                              if (!fields[i].isSubItem) {
-                                parentIndex = i;
-                                break;
-                              }
-                            }
-                            const mainParentNumber = fields.slice(0, parentIndex + 1).filter(f => !f.isSubItem).length;
-                            displayRowNumber = `${mainParentNumber}.${subRowNumber}`;
+                            displayRowNumber = `${mainRowNumber}.${subRowNumber}`;
                           } else {
                             displayRowNumber = mainRowNumber;
                           }
@@ -505,22 +496,6 @@ export function NewInvoiceForm() {
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                            <TableCell className="text-center font-medium">
                               {displayRowNumber}
-                            </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
-                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
-                                </Select>
-                            )} /></TableCell>
-                             <TableCell>
-                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" />
-                                )} />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" />
-                                  )} />
                             </TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
@@ -551,6 +526,22 @@ export function NewInvoiceForm() {
                                     </SelectContent>
                                   </Select>
                               )} />
+                            </TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
+                                </Select>
+                            )} /></TableCell>
+                             <TableCell>
+                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="w-20" />
+                                )} />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${index}.bunchCount`} render={({ field }) => (
+                                    <Input type="number" {...field} className="w-20" />
+                                  )} />
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
