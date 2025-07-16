@@ -58,10 +58,7 @@ const invoiceSchema = z.object({
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
 function TotalsCalculator({ control, getCalculations }: { control: any, getCalculations: any }) {
-    const watchItems = useWatch({
-      control,
-      name: 'items',
-    });
+    const formValues = useWatch({ control });
   
     const totals = useMemo(() => {
       let totalBoxCount = 0;
@@ -69,8 +66,8 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
       let totalStemsByBox = 0;
       let grandTotal = 0;
     
-      if(Array.isArray(watchItems)) {
-        watchItems.forEach((item) => {
+      if(Array.isArray(formValues.items)) {
+        formValues.items.forEach((item: any) => {
           if (!item) return;
       
           const boxCount = Number(item.boxCount) || 0;
@@ -78,7 +75,9 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           
           const { lineTotal, stemsPerBox } = getCalculations(item);
 
-          totalBoxCount += boxCount;
+          if (!item.isSubItem) {
+            totalBoxCount += boxCount;
+          }
           totalBunches += bunchCount;
           totalStemsByBox += stemsPerBox;
           grandTotal += lineTotal;
@@ -91,7 +90,7 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           totalStemsByBox,
           grandTotal,
       };
-    }, [watchItems, getCalculations]);
+    }, [formValues, getCalculations]);
   
     return (
       <TableFooter>
@@ -101,7 +100,7 @@ function TotalsCalculator({ control, getCalculations }: { control: any, getCalcu
           <TableCell className="text-center">{totals.totalBunches || 0}</TableCell>
           <TableCell colSpan={6}></TableCell>
           <TableCell className="text-center">{totals.totalStemsByBox || 0}</TableCell>
-          <TableCell className="font-bold text-lg text-right pr-4">${(totals.grandTotal || 0).toFixed(2)}</TableCell>
+          <TableCell className="text-lg text-right font-bold pr-4">${(totals.grandTotal || 0).toFixed(2)}</TableCell>
           <TableCell></TableCell>
         </TableRow>
       </TableFooter>
@@ -202,6 +201,7 @@ export function NewInvoiceForm() {
 
 
   const handleAddItem = () => {
+    const totalBoxCount = watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
      append({ 
        boxType: 'qb', 
        boxCount: 1, 
@@ -309,7 +309,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Número de Factura</FormLabel>
-                  <FormControl><Input placeholder="FACT-001" {...field} disabled={isHeaderSet} className="pl-4" /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="FACT-001" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
@@ -318,7 +318,7 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-4 text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("text-left font-normal", !field.value && "text-muted-foreground")}>
                             {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -337,7 +337,7 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("pl-4 text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("text-left font-normal", !field.value && "text-muted-foreground")}>
                             {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -354,7 +354,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={"Seleccione un vendedor"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un vendedor"} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -363,7 +363,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>Cliente</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -372,7 +372,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>Consignatario</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
                     <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -381,7 +381,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>Finca</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={"Seleccione una finca"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una finca"} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -390,7 +390,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>Carguera</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={"Seleccione una carguera"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una carguera"} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -399,7 +399,7 @@ export function NewInvoiceForm() {
                 <FormItem>
                   <FormLabel>País</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger className="pl-4"><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
@@ -413,7 +413,7 @@ export function NewInvoiceForm() {
                       disabled={isHeaderSet || !selectedCustomerId || filteredMarcaciones.length === 0}
                     >
                       <FormControl>
-                        <SelectTrigger className="pl-4">
+                        <SelectTrigger>
                           <SelectValue 
                             placeholder={
                               !selectedCustomerId 
@@ -439,13 +439,13 @@ export function NewInvoiceForm() {
                <FormField control={form.control} name="masterAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guía Madre</FormLabel>
-                  <FormControl><Input placeholder="Guía Madre" {...field} disabled={isHeaderSet} className="pl-4" /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="Guía Madre" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="houseAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guía Hija</FormLabel>
-                  <FormControl><Input placeholder="Guía Hija" {...field} disabled={isHeaderSet} className="pl-4" /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="Guía Hija" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
             </CardContent>
