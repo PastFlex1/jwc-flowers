@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, Loader2, SplitSquareHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -27,7 +27,8 @@ import { useAppData } from '@/context/app-data-context';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
-  boxNumber: z.string().optional(),
+  isSubItem: z.boolean().optional(),
+  parentIndex: z.number().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
   boxCount: z.coerce.number().min(1, "Debe ser > 0"),
   bunchesPerBox: z.coerce.number().min(1, "Debe ser > 0"),
@@ -77,7 +78,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -116,6 +117,22 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
+  const formattedItems = useMemo(() => {
+    let mainItemCounter = 0;
+    return fields.map((field, index) => {
+        if (!field.isSubItem) {
+            mainItemCounter++;
+            return { ...field, displayNumber: `${mainItemCounter}` };
+        }
+        
+        const parent = fields[field.parentIndex || 0];
+        const parentDisplayNumber = formattedItems.find(f => f.id === parent.id)?.displayNumber || '?';
+        const subItemCounter = fields.filter(f => f.parentIndex === field.parentIndex && fields.indexOf(f) <= index).length;
+
+        return { ...field, displayNumber: `${parentDisplayNumber}.${subItemCounter}` };
+    });
+}, [fields]);
+
 
   const totals = useMemo(() => {
     let totalFob = 0;
@@ -131,7 +148,9 @@ export function NewInvoiceForm() {
       
       const stemsInItem = boxCount * bunchesPerBox * stemCount;
       totalFob += stemsInItem * salePrice;
-      totalBoxes += boxCount;
+      if (!item.isSubItem) {
+        totalBoxes += boxCount;
+      }
       totalBunches += boxCount * bunchesPerBox;
       totalStems += stemsInItem;
     });
@@ -141,7 +160,8 @@ export function NewInvoiceForm() {
 
   const handleAddItem = () => {
     append({
-      boxNumber: `${fields.length + 1}`,
+      isSubItem: false,
+      parentIndex: undefined,
       boxType: 'qb',
       boxCount: 1,
       bunchesPerBox: 0,
@@ -153,6 +173,31 @@ export function NewInvoiceForm() {
       salePrice: 0,
     });
   }
+  
+  const handleAddSubItem = (parentIndex: number) => {
+    let insertAtIndex = parentIndex + 1;
+    // Find last sub-item of the parent and insert after it
+    for (let i = fields.length - 1; i > parentIndex; i--) {
+        if (fields[i].parentIndex === parentIndex) {
+            insertAtIndex = i + 1;
+            break;
+        }
+    }
+    
+    insert(insertAtIndex, {
+        isSubItem: true,
+        parentIndex: parentIndex,
+        boxType: 'qb',
+        boxCount: 1,
+        bunchesPerBox: 0,
+        product: '',
+        variety: '',
+        length: 70,
+        stemCount: 25,
+        purchasePrice: 0,
+        salePrice: 0,
+    });
+  };
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
@@ -368,7 +413,7 @@ export function NewInvoiceForm() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {fields.map((field, index) => {
+                      {formattedItems.map((field, index) => {
                          const currentItem = watchItems[index];
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
                          const boxCount = Number(currentItem?.boxCount) || 0;
@@ -378,8 +423,8 @@ export function NewInvoiceForm() {
                          const lineTotal = boxCount * bunchesPerBox * stemCount * salePrice;
 
                          return (
-                          <TableRow key={field.id}>
-                           <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                          <TableRow key={field.id} className={cn(field.isSubItem && "bg-muted/50")}>
+                           <TableCell className={cn("font-medium", field.isSubItem && "pl-8")}>{field.displayNumber}</TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
@@ -418,7 +463,7 @@ export function NewInvoiceForm() {
                             )} /></TableCell>
                              <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" />
+                                    <Input type="number" {...field} className="w-20" disabled={field.isSubItem} />
                                 )} />
                             </TableCell>
                             <TableCell>
@@ -432,6 +477,11 @@ export function NewInvoiceForm() {
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
+                               {!field.isSubItem && (
+                                <Button type="button" variant="ghost" size="icon" onClick={() => handleAddSubItem(index)}>
+                                    <SplitSquareHorizontal className="h-4 w-4" />
+                                </Button>
+                               )}
                               <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                             </TableCell>
                           </TableRow>
