@@ -123,12 +123,15 @@ export function NewInvoiceForm() {
     const parentItem = items[parentIndex];
     if (!parentItem) return;
 
-    insert(parentIndex + 1, {
+    const parentNumber = parentItem.boxNumber || "0";
+    const subItems = items.filter(item => item.boxNumber?.startsWith(parentNumber + "."));
+    const newSubItemNumber = `${parentNumber}.${subItems.length + 1}`;
+
+    insert(parentIndex + subItems.length + 1, {
       ...parentItem,
       id: undefined,
       isSubItem: true,
-      boxCount: 1, 
-      boxNumber: '', 
+      boxNumber: newSubItemNumber, 
     });
   };
 
@@ -186,6 +189,9 @@ export function NewInvoiceForm() {
     ];
     const result = await form.trigger(headerFields);
     if (result) {
+       const mainItems = watchItems.filter(item => !item.isSubItem);
+       const nextBoxNumber = mainItems.length + 1;
+
        append({ 
          boxType: 'qb', 
          boxCount: 1, 
@@ -197,7 +203,7 @@ export function NewInvoiceForm() {
          purchasePrice: 0, 
          salePrice: 0, 
          isSubItem: false, 
-         boxNumber: '' 
+         boxNumber: String(nextBoxNumber) 
        });
     } else {
        toast({
@@ -438,15 +444,12 @@ export function NewInvoiceForm() {
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
-                            <TableCell className="relative">
-                                {isSubItem && (
-                                    <div className="absolute left-2 top-1/2 -translate-y-1/2">
-                                        <CornerDownRight className="h-4 w-4 text-muted-foreground" />
-                                    </div>
-                                )}
-                                <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => (
-                                    <Input {...field} className={cn("w-20", isSubItem && "pl-8")} placeholder="e.g. 1.1" />
-                                )} />
+                            <TableCell>
+                              <Input 
+                                value={field.boxNumber || ''} 
+                                className={cn("w-20", isSubItem && "pl-8")} 
+                                disabled 
+                              />
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
@@ -521,9 +524,9 @@ export function NewInvoiceForm() {
                          <TableCell className="text-center">
                            {totals.totalBunches || 0}
                         </TableCell>
-                        <TableCell colSpan={7}></TableCell>
-                        <TableCell>
-                          <Input value={totals.totalStemsByBox || 0} disabled className="bg-muted font-bold text-center h-10" />
+                        <TableCell colSpan={6}></TableCell>
+                         <TableCell className="text-center">
+                          {totals.totalStemsByBox || 0}
                         </TableCell>
                         <TableCell className="text-right pr-4 font-bold text-lg">
                            ${(totals.grandTotal || 0).toFixed(2)}
@@ -555,3 +558,4 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
