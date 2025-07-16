@@ -248,6 +248,21 @@ export function NewInvoiceForm() {
     }
   }
 
+  const rowNumbers = useMemo(() => {
+    let mainIndex = 0;
+    let subIndex = 0;
+    return fields.map((field, index) => {
+      if (!field.isSubItem) {
+        mainIndex++;
+        subIndex = 0;
+        return `${mainIndex}`;
+      } else {
+        subIndex++;
+        return `${mainIndex}.${subIndex}`;
+      }
+    });
+  }, [fields]);
+
   return (
     <div className="space-y-6">
        <div>
@@ -442,7 +457,7 @@ export function NewInvoiceForm() {
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                             <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
-                                {index + 1}
+                                {rowNumbers[index]}
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
