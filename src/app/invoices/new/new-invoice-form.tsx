@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
@@ -56,6 +56,57 @@ const invoiceSchema = z.object({
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
+
+function TotalsCalculator({ control, getCalculations }: { control: any, getCalculations: any }) {
+    const watchItems = useWatch({
+      control,
+      name: 'items',
+    });
+  
+    const totals = useMemo(() => {
+      let totalBoxCount = 0;
+      let totalBunches = 0;
+      let totalStemsByBox = 0;
+      let grandTotal = 0;
+    
+      if(Array.isArray(watchItems)) {
+        watchItems.forEach((item) => {
+          if (!item) return;
+      
+          const boxCount = Number(item.boxCount) || 0;
+          const bunchCount = Number(item.bunchCount) || 0;
+          
+          const { lineTotal, stemsPerBox } = getCalculations(item);
+
+          totalBoxCount += boxCount;
+          totalBunches += bunchCount;
+          totalStemsByBox += stemsPerBox;
+          grandTotal += lineTotal;
+        });
+      }
+    
+      return {
+          totalBoxCount,
+          totalBunches,
+          totalStemsByBox,
+          grandTotal,
+      };
+    }, [watchItems, getCalculations]);
+  
+    return (
+      <TableFooter>
+        <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
+          <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
+          <TableCell className="text-center">{totals.totalBoxCount || 0}</TableCell>
+          <TableCell className="text-center">{totals.totalBunches || 0}</TableCell>
+          <TableCell colSpan={6}></TableCell>
+          <TableCell className="text-center">{totals.totalStemsByBox || 0}</TableCell>
+          <TableCell className="font-bold text-lg text-right pr-4">${(totals.grandTotal || 0).toFixed(2)}</TableCell>
+          <TableCell></TableCell>
+        </TableRow>
+      </TableFooter>
+    );
+}
 
 export function NewInvoiceForm() {
   const router = useRouter();
@@ -145,37 +196,12 @@ export function NewInvoiceForm() {
     };
   }, []);
 
-  const totals = useMemo(() => {
-    let totalBoxCount = 0;
-    let totalBunches = 0;
-    let totalStemsByBox = 0;
-    let grandTotal = 0;
-  
-    watchItems.forEach((item) => {
-      if (!item) return;
-  
-      const boxCount = Number(item.boxCount) || 0;
-      const bunchCount = Number(item.bunchCount) || 0;
-      
-      const { lineTotal, stemsPerBox } = getCalculations(item);
-
-      totalBoxCount += boxCount;
-      totalBunches += bunchCount;
-      totalStemsByBox += stemsPerBox;
-      grandTotal += lineTotal;
-    });
-  
-    return {
-        totalBoxCount,
-        totalBunches,
-        totalStemsByBox,
-        grandTotal,
-    };
-  }, [watchItems, getCalculations]);
+  const totalBoxCountForNewItem = useMemo(() => {
+    return watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
+  }, [watchItems]);
 
 
   const handleAddItem = () => {
-     const totalBoxCount = watchItems.reduce((sum, item) => sum + (Number(item.boxCount) || 0), 0);
      append({ 
        boxType: 'qb', 
        boxCount: 1, 
@@ -527,25 +553,7 @@ export function NewInvoiceForm() {
                         );
                       })}
                     </TableBody>
-                    <TableFooter>
-                      <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell colSpan={2} className="text-right">TOTALES</TableCell>
-                        <TableCell className="text-center">
-                          {totals.totalBoxCount || 0}
-                        </TableCell>
-                         <TableCell className="text-center">
-                           {totals.totalBunches || 0}
-                        </TableCell>
-                        <TableCell colSpan={6}></TableCell>
-                         <TableCell className="text-center">
-                          {totals.totalStemsByBox || 0}
-                        </TableCell>
-                        <TableCell className="text-right pr-4 font-bold text-lg">
-                           ${(totals.grandTotal || 0).toFixed(2)}
-                        </TableCell>
-                        <TableCell></TableCell>
-                      </TableRow>
-                    </TableFooter>
+                    <TotalsCalculator control={form.control} getCalculations={getCalculations} />
                   </Table>
                 </div>
                 <div className="mt-6 flex justify-end">
@@ -570,3 +578,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
