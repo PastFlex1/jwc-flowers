@@ -8,7 +8,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Loader2, AlertTriangle, CornerDownRight } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, Loader2, CornerDownRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -246,28 +246,28 @@ export function NewInvoiceForm() {
   
   const rowNumbers = useMemo(() => {
     let mainIndex = 0;
-    return fields.map((field) => {
+    return fields.map((field, index) => {
       if (!field.isSubItem) {
         mainIndex++;
-        let subIndex = 0;
-        return { main: mainIndex, sub: subIndex };
+        return `${mainIndex}`;
       } else {
         // Find parent index
-        let parentIndex = fields.findIndex(f => f.id === field.id) -1;
+        let parentIndex = index - 1;
         while(parentIndex >= 0 && fields[parentIndex].isSubItem) {
-            parentIndex--;
+          parentIndex--;
         }
-        let parentMainIndex = 0;
+        
+        let parentMainNumber = 0;
         for(let i=0; i<=parentIndex; i++){
-            if(!fields[i].isSubItem) parentMainIndex++;
+          if(!fields[i].isSubItem) parentMainNumber++;
         }
-
+        
         let subCount = 0;
-        for(let i=parentIndex + 1; i<=fields.findIndex(f => f.id === field.id); i++){
-            if(fields[i].isSubItem) subCount++;
+        for(let i=parentIndex + 1; i <= index; i++){
+          if(fields[i].isSubItem) subCount++;
         }
 
-        return { main: parentMainIndex, sub: subCount };
+        return `${parentMainNumber}.${subCount}`;
       }
     });
   }, [fields]);
@@ -462,13 +462,12 @@ export function NewInvoiceForm() {
                          const isSubItem = currentItem.isSubItem;
                          const { lineTotal, stemsPerBox } = getCalculations(currentItem);
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
-                         const { main, sub } = rowNumbers[index] || { main: 0, sub: 0 };
-                         const displayRowNumber = sub > 0 ? `${main}.${sub}` : `${main}`;
+                         const displayRowNumber = rowNumbers[index];
 
                          return (
                           <TableRow key={field.id} className={cn(isSubItem && "bg-accent/50")}>
                            <TableCell className={cn("text-center font-medium", isSubItem && "pl-8")}>
-                                {index + 1}
+                              <span className={isSubItem ? 'pl-4' : ''}>{displayRowNumber}</span>
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value}>
