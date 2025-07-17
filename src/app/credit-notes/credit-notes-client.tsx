@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -39,10 +40,10 @@ export function CreditNotesClient() {
   const [noteToDelete, setNoteToDelete] = useState<CreditNote | null>(null);
   const { toast } = useToast();
 
-  useState(() => {
+  useEffect(() => {
     setLocalCreditNotes(creditNotes);
     setCurrentPage(1);
-  });
+  }, [creditNotes]);
   
   const totalPages = Math.ceil(localCreditNotes.length / ITEMS_PER_PAGE);
 
