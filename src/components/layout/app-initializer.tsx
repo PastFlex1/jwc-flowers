@@ -5,7 +5,7 @@ import { AppShell } from './app-shell';
 import { useAppData } from '@/context/app-data-context';
 import { Flower2 } from 'lucide-react';
 
-function AppDataLoadingScreen() {
+function AppLoadingScreen() {
     return (
         <div className="flex h-screen w-screen items-center justify-center bg-background">
              <div className="flex flex-col items-center gap-4">
@@ -19,18 +19,16 @@ function AppDataLoadingScreen() {
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const { isLoading } = useAppData();
   
-  if (isLoading) {
-    return <AppDataLoadingScreen />;
-  }
-  
+  // The global isLoading check has been removed.
+  // Each page component will handle its own loading state if needed,
+  // preventing the loading screen from appearing on every navigation.
   if (isAuthenticated) {
      return (
         <AppShell>{children}</AppShell>
       );
   }
 
-  // This part should theoretically never be reached with the mock provider.
-  return null;
+  // Show a loading screen only if not authenticated (e.g., initial load)
+  return <AppLoadingScreen />;
 }
