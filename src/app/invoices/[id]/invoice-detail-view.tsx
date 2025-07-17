@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
@@ -18,15 +18,15 @@ type InvoiceDetailViewProps = {
 
 export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais }: InvoiceDetailViewProps) {
   
-  const totals = React.useMemo(() => {
+  const totals = useMemo(() => {
     if (!invoice?.items) return { totalBoxes: 0, totalBunchByBox: 0, totalStemsByBox: 0, totalFob: 0 };
     const allItems = invoice.items;
     
     const totalBoxes = allItems.reduce((acc, item) => acc + (item.isSubItem ? 0 : (item.boxCount || 0)), 0);
-    const totalBunchByBox = allItems.reduce((acc, item) => acc + (item.bunchCount || 0), 0);
-    const totalStemsByBox = allItems.reduce((acc, item) => acc + ((item.stemCount || 0) * (item.bunchCount || 0)), 0);
+    const totalBunchByBox = allItems.reduce((acc, item) => acc + (item.bunchesPerBox || 0), 0);
+    const totalStemsByBox = allItems.reduce((acc, item) => acc + ((item.stemCount || 0) * (item.bunchesPerBox || 0)), 0);
     const totalFob = allItems.reduce((acc, item) => {
-       const stems = (item.stemCount || 0) * (item.bunchCount || 0);
+       const stems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
        return acc + (stems * (item.salePrice || 0));
     }, 0);
 
@@ -35,7 +35,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
 
   const renderItemRow = (item: Invoice['items'][0], index: number) => {
-    const stemsByBox = (item.stemCount || 0) * (item.bunchCount || 0);
+    const stemsByBox = (item.stemCount || 0) * (item.bunchesPerBox || 0);
     const totalPrice = stemsByBox * (item.salePrice || 0);
     return (
        <React.Fragment key={item.id || index}>
@@ -47,7 +47,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <div className="border-b border-l border-border p-1 text-left">{item.variety}</div>
           <div className="border-b border-l border-border p-1 text-center">{item.length}</div>
           <div className="border-b border-l border-border p-1 text-center">{item.stemCount}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.bunchCount}</div>
+          <div className="border-b border-l border-border p-1 text-center">{item.bunchesPerBox}</div>
           <div className="border-b border-l border-border p-1 text-center">{stemsByBox}</div>
           <div className="border-b border-l border-border p-1 text-right">{item.salePrice.toFixed(3)}</div>
           <div className="border-b border-r border-l border-border p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
