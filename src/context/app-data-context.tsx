@@ -16,7 +16,6 @@ import { getProductos } from '@/services/productos';
 import { getCreditNotes } from '@/services/credit-notes';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
-import { Flower2 } from 'lucide-react';
 
 type AppDataContextType = {
   paises: Pais[];
@@ -37,17 +36,6 @@ type AppDataContextType = {
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
-function AppDataLoadingScreen() {
-    return (
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
-             <div className="flex flex-col items-center gap-4">
-                <Flower2 className="h-12 w-12 text-primary animate-pulse" />
-                <p className="text-muted-foreground">Sincronizando datos...</p>
-            </div>
-        </div>
-    );
-}
-
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [paises, setPaises] = useState<Pais[]>([]);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -64,10 +52,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchData = useCallback(async (isInitialLoad = false) => {
-    if (isInitialLoad) {
-      setIsLoading(true);
-    }
+  const fetchData = useCallback(async () => {
     try {
       const [
         paisesData,
@@ -122,14 +107,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         duration: 10000,
       });
     } finally {
-      if (isInitialLoad) {
         setIsLoading(false);
-      }
     }
   }, [toast]);
 
   useEffect(() => {
-    fetchData(true);
+    fetchData();
   }, [fetchData]);
 
   const value = useMemo(() => ({
@@ -146,7 +129,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     productos,
     creditNotes,
     isLoading,
-    refreshData: () => fetchData(false),
+    refreshData: fetchData,
   }), [
     paises, 
     vendedores, 
@@ -166,7 +149,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppDataContext.Provider value={value}>
-      {isLoading ? <AppDataLoadingScreen /> : children}
+      {children}
     </AppDataContext.Provider>
   );
 }

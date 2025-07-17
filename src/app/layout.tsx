@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/auth-context';
 import { AppInitializer } from '@/components/layout/app-initializer';
 import { I18nProvider } from '@/context/i18n-context';
+import { AppDataProvider } from '@/context/app-data-context';
 
 export const metadata: Metadata = {
   title: 'JCW FLOWERS',
@@ -25,9 +26,11 @@ export default function RootLayout({
       <body className="font-body antialiased">
         <AuthProvider>
           <I18nProvider>
-            <AppInitializer>
-              {children}
-            </AppInitializer>
+            <AppDataProvider>
+              <AppInitializer>
+                {children}
+              </AppInitializer>
+            </AppDataProvider>
             <Toaster />
           </I18nProvider>
         </AuthProvider>
