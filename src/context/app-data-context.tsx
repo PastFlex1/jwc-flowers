@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
 import { getCustomers } from '@/services/customers';
@@ -13,6 +13,7 @@ import { getMarcaciones } from '@/services/marcaciones';
 import { getProvincias } from '@/services/provincias';
 import { getInvoices } from '@/services/invoices';
 import { getProductos } from '@/services/productos';
+import { getCreditNotes } from '@/services/credit-notes';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Flower2 } from 'lucide-react';
@@ -29,6 +30,7 @@ type AppDataContextType = {
   provincias: Provincia[];
   invoices: Invoice[];
   productos: Producto[];
+  creditNotes: CreditNote[];
   isLoading: boolean;
   refreshData: () => Promise<void>;
 };
@@ -58,6 +60,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [provincias, setProvincias] = useState<Provincia[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -78,6 +81,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         provinciasData,
         invoicesData,
         productosData,
+        creditNotesData,
       ] = await Promise.all([
         getPaises(),
         getVendedores(),
@@ -90,6 +94,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getProvincias(),
         getInvoices(),
         getProductos(),
+        getCreditNotes(),
       ]);
 
       setPaises(paisesData);
@@ -102,6 +107,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setProvincias(provinciasData);
       setInvoices(invoicesData);
       setProductos(productosData);
+      setCreditNotes(creditNotesData);
       
       if (dbCargueras.length > 0) {
         setCargueras(dbCargueras);
@@ -138,6 +144,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     provincias,
     invoices,
     productos,
+    creditNotes,
     isLoading,
     refreshData: () => fetchData(false),
   }), [
@@ -152,6 +159,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     provincias, 
     invoices,
     productos,
+    creditNotes,
     isLoading, 
     fetchData
   ]);

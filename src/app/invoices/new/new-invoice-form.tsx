@@ -38,6 +38,7 @@ const lineItemSchema = z.object({
   stemCount: z.coerce.number().positive("Debe ser > 0"),
   purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
   salePrice: z.coerce.number().min(0, "Debe ser >= 0"),
+  boxNumber: z.number().optional(),
 });
 
 const invoiceSchema = z.object({
@@ -129,8 +130,6 @@ export function NewInvoiceForm() {
              return { ...field, displayNumber: `?` };
           }
           
-          // Find the parent's display number by looking up the formattedItems array being built
-          const parentItem = fields[field.parentIndex];
           const parentMainItemNumber = fields.slice(0, field.parentIndex + 1).filter(f => !f.isSubItem).length;
           
           const subItemCounter = fields
@@ -180,6 +179,7 @@ export function NewInvoiceForm() {
       stemCount: 25,
       purchasePrice: 0,
       salePrice: 0,
+      boxNumber: fields.length + 1,
     });
   }
   
@@ -216,7 +216,7 @@ export function NewInvoiceForm() {
       ...values,
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
-      items: values.items.map(item => ({...item, bunchCount: item.bunchesPerBox}))
+      items: values.items.map(item => ({...item}))
     };
 
     try {
@@ -501,7 +501,7 @@ export function NewInvoiceForm() {
                     </TableBody>
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell colSpan={2}>TOTALES</TableCell>
+                        <TableCell colSpan={2}>TOTALES ({fields.length})</TableCell>
                         <TableCell></TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-center">{totals.totalBoxes}</TableCell>

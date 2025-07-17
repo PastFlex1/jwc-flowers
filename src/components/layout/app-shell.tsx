@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <MenubarSeparator />
                     <MenubarLabel>{t('header.documents')}</MenubarLabel>
                      <MenubarSeparator />
-                    <MenubarItem>{t('header.creditNotes')}</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</MenubarItem>
                     <MenubarItem>{t('header.debitNotes')}</MenubarItem>
                   </MenubarContent>
                 </MenubarMenu>

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Invoice, Customer } from '@/lib/types';
+import type { Invoice, Customer, CreditNote } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +42,7 @@ function useDebounce<T>(value: T, delay: number): T {
 const ITEMS_PER_PAGE = 10;
 
 export function InvoicesClient() {
-  const { invoices, customers, refreshData } = useAppData();
+  const { invoices, customers, creditNotes, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +57,16 @@ export function InvoicesClient() {
       return acc;
     }, {} as Record<string, Customer>);
   }, [customers]);
+
+  const creditNotesByInvoiceId = useMemo(() => {
+    return creditNotes.reduce((acc, note) => {
+      if (!acc[note.invoiceId]) {
+        acc[note.invoiceId] = [];
+      }
+      acc[note.invoiceId].push(note);
+      return acc;
+    }, {} as Record<string, CreditNote[]>);
+  }, [creditNotes]);
 
   useEffect(() => {
     const filtered = invoices.filter(invoice => {
@@ -92,14 +102,18 @@ export function InvoicesClient() {
   };
 
   const getInvoiceTotal = (invoice: Invoice) => {
-    if (!invoice.items) return 0;
     const subtotal = invoice.items.reduce((total, item) => {
-      const totalStems = (item.stemCount || 0) * (item.bunchCount || 0);
+      const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
       const itemTotal = (item.salePrice || 0) * totalStems;
       return total + itemTotal;
     }, 0);
-    const tax = subtotal * 0.12;
-    return subtotal + tax;
+    const tax = subtotal * 0.12; // Assuming 12% tax, adjust if needed
+    const totalWithTax = subtotal + tax;
+    
+    const creditsForInvoice = creditNotesByInvoiceId[invoice.id] || [];
+    const totalCreditAmount = creditsForInvoice.reduce((sum, note) => sum + note.amount, 0);
+
+    return totalWithTax - totalCreditAmount;
   };
 
   const handleDeleteClick = (invoice: Invoice) => {

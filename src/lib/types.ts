@@ -1,3 +1,4 @@
+
 export interface Customer {
   id: string;
   name: string;
@@ -23,10 +24,11 @@ export interface InventoryItem {
 
 export interface LineItem {
   id?: string;
+  isSubItem?: boolean;
+  parentIndex?: number;
   boxType: 'qb' | 'eb' | 'hb';
   boxCount: number;
-  boxNumber?: string;
-  bunchCount: number;
+  boxNumber?: number;
   bunchesPerBox: number;
   product: string;
   variety: string;
@@ -34,8 +36,8 @@ export interface LineItem {
   stemCount: number;
   purchasePrice: number;
   salePrice: number;
-  isSubItem?: boolean;
 }
+
 
 export interface Invoice {
   id: string;
@@ -113,4 +115,13 @@ export interface Producto {
   nombre: string;
   tipo: string;
   variedad: string;
+}
+
+export interface CreditNote {
+  id: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  amount: number;
+  reason: string;
+  date: string; // ISO string
 }
