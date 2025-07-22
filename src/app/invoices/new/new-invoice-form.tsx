@@ -86,7 +86,7 @@ const getInitialFormValues = (): Partial<InvoiceFormValues> => {
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, refreshData } = useAppData();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
@@ -278,6 +278,7 @@ export function NewInvoiceForm() {
 
     try {
       await addInvoice(invoiceData);
+      await refreshData();
       toast({
         title: 'Factura Creada!',
         description: 'La nueva factura ha sido guardada exitosamente.',
