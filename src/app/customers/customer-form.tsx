@@ -14,7 +14,17 @@ import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  cedula: z.string().min(10, { message: "La cédula/RUC debe tener al menos 10 caracteres." }),
+  cedula: z.string().refine(val => {
+    if (val.length === 10) {
+      return /^\d{10}$/.test(val);
+    }
+    if (val.length === 13) {
+      return /^\d{10}001$/.test(val);
+    }
+    return false;
+  }, {
+    message: "La cédula debe tener 10 dígitos o el RUC debe tener 13 dígitos y terminar en 001."
+  }),
   pais: z.string().min(1, { message: "El país es requerido." }),
   daeId: z.string().optional(),
   estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
