@@ -156,6 +156,14 @@ export function NewInvoiceForm() {
 
   useEffect(() => {
     if (selectedCustomerId) {
+      const customer = customers.find(c => c.id === selectedCustomerId);
+      if (customer) {
+        const country = paises.find(p => p.nombre === customer.pais);
+        if (country) {
+          form.setValue('countryId', country.id, { shouldValidate: true });
+        }
+      }
+
       const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
       
@@ -174,7 +182,7 @@ export function NewInvoiceForm() {
       form.setValue('consignatarioId', '');
       form.setValue('reference', '');
     }
-  }, [selectedCustomerId, consignatarios, marcaciones, form]);
+  }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
   
   const formattedItems = useMemo(() => {
       let mainItemCounter = 0;
@@ -429,7 +437,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.country')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet || !!selectedCustomerId}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.countryPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
