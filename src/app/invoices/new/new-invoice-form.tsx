@@ -49,7 +49,7 @@ const invoiceSchema = z.object({
   flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
   sellerId: z.string().min(1, 'Seleccione un vendedor.'),
   customerId: z.string().min(1, 'Seleccione un cliente.'),
-  consignatarioId: z.string().min(1, 'Seleccione un consignatario.'),
+  consignatarioId: z.string().optional(),
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
@@ -133,7 +133,7 @@ export function NewInvoiceForm() {
         });
         return () => subscription.unsubscribe();
     }
-  }, [isMounted, form]);
+  }, [isMounted, form, isHeaderSet]);
 
 
   const productTypes = useMemo(() => {
@@ -290,6 +290,7 @@ export function NewInvoiceForm() {
 
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
       ...values,
+      consignatarioId: values.consignatarioId || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       items: finalItems,
