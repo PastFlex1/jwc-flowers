@@ -39,11 +39,11 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     reference: data.reference,
     masterAWB: data.masterAWB,
     houseAWB: data.houseAWB,
-    items: data.items.map((item: any) => ({
+    items: Array.isArray(data.items) ? data.items.map((item: any) => ({
       ...item,
       product: item.product || item.description || '', 
       variety: item.variety || '',
-    })),
+    })) : [],
     status: data.status || 'Pending',
     consignatarioId: data.consignatarioId,
   };
