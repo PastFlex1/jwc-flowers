@@ -61,29 +61,27 @@ const invoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-
-// Helper function to get default values from session storage
 const getInitialFormValues = (): Partial<InvoiceFormValues> => {
-  if (typeof window === 'undefined') return {};
-  const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-  if (savedData) {
-    try {
-      const parsedData = JSON.parse(savedData);
-      // Dates need to be converted back to Date objects
-      if (parsedData.farmDepartureDate) {
-        parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
-      }
-      if (parsedData.flightDate) {
-        parsedData.flightDate = parseISO(parsedData.flightDate);
-      }
-      return parsedData;
-    } catch (e) {
-      console.error("Failed to parse form data from session storage", e);
-      return {};
+    if (typeof window === 'undefined') return { items: [] };
+    const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (savedData) {
+        try {
+            const parsedData = JSON.parse(savedData);
+            if (parsedData.farmDepartureDate) {
+                parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
+            }
+            if (parsedData.flightDate) {
+                parsedData.flightDate = parseISO(parsedData.flightDate);
+            }
+            return parsedData;
+        } catch (e) {
+            console.error("Failed to parse form data from session storage", e);
+            return { items: [] };
+        }
     }
-  }
-  return {};
+    return { items: [] };
 };
+
 
 export function NewInvoiceForm() {
   const router = useRouter();
@@ -93,13 +91,13 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<Marcacion[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onChange',
     defaultValues: {
-      items: [], // Ensure items is always an array
-      ...getInitialFormValues(),
+      items: [], // Start with empty items, will be populated from session storage on client
     },
   });
 
@@ -109,18 +107,30 @@ export function NewInvoiceForm() {
   });
   
   const selectedCustomerId = form.watch('customerId');
-  const watchAllFields = form.watch();
   const watchItems = form.watch('items');
+  
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Load from session storage only on the client after mounting
+  useEffect(() => {
+    if (isMounted) {
+      const initialValues = getInitialFormValues();
+      form.reset(initialValues);
+    }
+  }, [isMounted, form]);
 
   // Save form data to session storage on change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (isMounted) {
         const subscription = form.watch((value) => {
             sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
         });
         return () => subscription.unsubscribe();
     }
-  }, [form]);
+  }, [isMounted, form]);
 
 
   const productTypes = useMemo(() => {
@@ -142,24 +152,23 @@ export function NewInvoiceForm() {
       const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
       
-      const initialValues = getInitialFormValues();
-      if (!initialValues.consignatarioId || initialValues.customerId !== selectedCustomerId) {
-          form.setValue('consignatarioId', '');
-      }
-      
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
-      
-      if (!initialValues.reference || initialValues.customerId !== selectedCustomerId) {
-        form.setValue('reference', '');
+
+      if (form.getValues('customerId') === selectedCustomerId) {
+          const initialValues = getInitialFormValues();
+          if (initialValues.customerId !== selectedCustomerId) {
+             form.setValue('consignatarioId', '');
+             form.setValue('reference', '');
+          }
       }
+      
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
       form.setValue('consignatarioId', '');
       form.setValue('reference', '');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   const formattedItems = useMemo(() => {
@@ -288,6 +297,12 @@ export function NewInvoiceForm() {
   }
 
   const isHeaderSet = watchItems && watchItems.length > 0;
+  
+  if (!isMounted) {
+    // Render a loading state or null on the server and initial client render
+    // to prevent hydration mismatch.
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -350,7 +365,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="sellerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un vendedor"} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -359,7 +374,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cliente</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -377,7 +392,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="farmId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Finca</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una finca"} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -386,7 +401,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="carrierId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Carguera</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una carguera"} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -395,7 +410,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>País</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -436,13 +451,13 @@ export function NewInvoiceForm() {
                <FormField control={form.control} name="masterAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guía Madre</FormLabel>
-                  <FormControl><Input placeholder="Guía Madre" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="Guía Madre" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="houseAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Guía Hija</FormLabel>
-                  <FormControl><Input placeholder="Guía Hija" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="Guía Hija" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
             </CardContent>
@@ -492,7 +507,7 @@ export function NewInvoiceForm() {
                                       field.onChange(value);
                                       form.setValue(`items.${index}.variety`, '');
                                     }} 
-                                    value={field.value}
+                                    value={field.value ?? ''}
                                   >
                                     <FormControl><SelectTrigger><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                     <SelectContent>
@@ -505,7 +520,7 @@ export function NewInvoiceForm() {
                               <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
                                   <Select 
                                     onValueChange={field.onChange}
-                                    value={field.value}
+                                    value={field.value ?? ''}
                                     disabled={!currentItem?.product || varietiesForProduct.length === 0}
                                   >
                                     <FormControl><SelectTrigger><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
@@ -516,7 +531,7 @@ export function NewInvoiceForm() {
                               )} />
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value ?? 'qb'}>
                                   <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
