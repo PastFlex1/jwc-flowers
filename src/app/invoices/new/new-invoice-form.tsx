@@ -619,15 +619,13 @@ export function NewInvoiceForm() {
               </CardContent>
             </Card>
           
-          {isHeaderSet && (
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>{t('common.cancel')}</Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? t('invoices.new.saving') : t('invoices.new.save')}
-              </Button>
-            </div>
-          )}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>{t('common.cancel')}</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? t('invoices.new.saving') : t('invoices.new.save')}
+            </Button>
+          </div>
         </form>
       </Form>
     </div>
