@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, toDate } from 'date-fns';
+import { format, toDate, parseISO } from 'date-fns';
 import { CalendarIcon, Trash2, PlusCircle, Loader2, SplitSquareHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import { useToast } from '@/hooks/use-toast';
 import { addInvoice } from '@/services/invoices';
 import type { Invoice, Consignatario, Marcacion } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
+
+const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
@@ -59,6 +61,30 @@ const invoiceSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
+
+// Helper function to get default values from session storage
+const getInitialFormValues = (): Partial<InvoiceFormValues> => {
+  if (typeof window === 'undefined') return {};
+  const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (savedData) {
+    try {
+      const parsedData = JSON.parse(savedData);
+      // Dates need to be converted back to Date objects
+      if (parsedData.farmDepartureDate) {
+        parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
+      }
+      if (parsedData.flightDate) {
+        parsedData.flightDate = parseISO(parsedData.flightDate);
+      }
+      return parsedData;
+    } catch (e) {
+      console.error("Failed to parse form data from session storage", e);
+      return {};
+    }
+  }
+  return {};
+};
+
 export function NewInvoiceForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -71,12 +97,7 @@ export function NewInvoiceForm() {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onChange',
-    defaultValues: {
-      items: [],
-      reference: '',
-      invoiceNumber: '',
-      consignatarioId: '',
-    },
+    defaultValues: getInitialFormValues(),
   });
 
   const { fields, append, remove, insert } = useFieldArray({
@@ -85,7 +106,19 @@ export function NewInvoiceForm() {
   });
   
   const selectedCustomerId = form.watch('customerId');
+  const watchAllFields = form.watch();
   const watchItems = form.watch('items');
+
+  // Save form data to session storage on change
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        const subscription = form.watch((value) => {
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+        });
+        return () => subscription.unsubscribe();
+    }
+  }, [form]);
+
 
   const productTypes = useMemo(() => {
     if (!productos) return [];
@@ -105,17 +138,24 @@ export function NewInvoiceForm() {
     if (selectedCustomerId) {
       const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
-      form.setValue('consignatarioId', '');
+      
+      if (!getInitialFormValues().consignatarioId) {
+          form.setValue('consignatarioId', '');
+      }
       
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
-      form.setValue('reference', '');
+      
+      if (!getInitialFormValues().reference) {
+        form.setValue('reference', '');
+      }
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
       form.setValue('consignatarioId', '');
       form.setValue('reference', '');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCustomerId, consignatarios, marcaciones, form]);
   
   const formattedItems = useMemo(() => {
@@ -225,6 +265,7 @@ export function NewInvoiceForm() {
         title: 'Factura Creada!',
         description: 'La nueva factura ha sido guardada exitosamente.',
       });
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
       router.push('/invoices');
     } catch (error) {
       console.error("Error creating invoice:", error);
