@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Carguera } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from '@/context/i18n-context';
 
 const formSchema = z.object({
   nombreCarguera: z.string().min(2, { message: "The name must be at least 2 characters." }),
@@ -26,6 +27,7 @@ type CargueraFormProps = {
 };
 
 export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: CargueraFormProps) {
+  const { t } = useTranslation();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -55,9 +57,9 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
           name="nombreCarguera"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Carrier Name</FormLabel>
+              <FormLabel>{t('cargueras.form.name')}</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., DHL" {...field} />
+                <Input placeholder={t('cargueras.form.namePlaceholder')} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -68,16 +70,16 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
           name="pais"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Country</FormLabel>
+              <FormLabel>{t('cargueras.form.country')}</FormLabel>
                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a country" />
+                      <SelectValue placeholder={t('cargueras.form.countryPlaceholder')} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="International">International</SelectItem>
-                    <SelectItem value="National">National</SelectItem>
+                    <SelectItem value="International">{t('cargueras.form.international')}</SelectItem>
+                    <SelectItem value="National">{t('cargueras.form.national')}</SelectItem>
                   </SelectContent>
                 </Select>
               <FormMessage />
@@ -86,11 +88,11 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancel
+                {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Carrier')}
+                {isSubmitting ? t('common.saving') : (initialData ? t('common.saveChanges') : t('cargueras.add'))}
             </Button>
         </div>
       </form>

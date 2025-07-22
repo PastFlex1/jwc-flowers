@@ -70,14 +70,14 @@ export function CreditNotesClient() {
     
     try {
       await addCreditNote(formData);
-      toast({ title: 'Success', description: 'Credit note added successfully.' });
+      toast({ title: t('common.success'), description: t('creditNotes.toast.added') });
       await refreshData();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error Saving',
-        description: `Could not save the credit note: ${errorMessage}.`,
+        title: t('common.errorSaving'),
+        description: t('creditNotes.toast.error', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -98,15 +98,15 @@ export function CreditNotesClient() {
     
     try {
       await deleteCreditNote(noteToDelete.id);
-      toast({ title: 'Success', description: 'Credit note deleted successfully.' });
+      toast({ title: t('common.success'), description: t('creditNotes.toast.deleted') });
       await refreshData();
     } catch (error) {
       setLocalCreditNotes(originalNotes);
       console.error("Error deleting note:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error Deleting',
-        description: `Could not delete the credit note: ${errorMessage}.`,
+        title: t('common.errorDeleting'),
+        description: t('creditNotes.toast.deleteError', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -120,18 +120,18 @@ export function CreditNotesClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Credit Notes</h2>
-            <p className="text-muted-foreground">Manage credit notes for your invoices.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('creditNotes.title')}</h2>
+            <p className="text-muted-foreground">{t('creditNotes.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> New Credit Note
+            <Plus className="mr-2 h-4 w-4" /> {t('creditNotes.add')}
           </Button>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Add New Credit Note</DialogTitle>
+              <DialogTitle>{t('creditNotes.addTitle')}</DialogTitle>
             </DialogHeader>
             <CreditNoteForm 
               onSubmit={handleFormSubmit}
@@ -144,18 +144,18 @@ export function CreditNotesClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Credit Note List</CardTitle>
-            <CardDescription>A list of all your credit notes.</CardDescription>
+            <CardTitle>{t('creditNotes.list.title')}</CardTitle>
+            <CardDescription>{t('creditNotes.list.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('creditNotes.list.date')}</TableHead>
+                  <TableHead>{t('creditNotes.list.invoice')}</TableHead>
+                  <TableHead>{t('creditNotes.list.amount')}</TableHead>
+                  <TableHead>{t('creditNotes.list.reason')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,7 +178,7 @@ export function CreditNotesClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {t('common.page', { currentPage: currentPage, totalPages: totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -187,7 +187,7 @@ export function CreditNotesClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('common.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -195,7 +195,7 @@ export function CreditNotesClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Next
+                  {t('common.next')}
                 </Button>
               </div>
             </CardFooter>
@@ -206,14 +206,14 @@ export function CreditNotesClient() {
       <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the credit note.
+              {t('creditNotes.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

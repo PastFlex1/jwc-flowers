@@ -82,10 +82,10 @@ export function CarguerasClient() {
     try {
         if (cargueraData.id) {
             await updateCarguera(cargueraData.id, cargueraData as Carguera);
-            toast({ title: 'Success', description: 'Carrier updated successfully.' });
+            toast({ title: t('common.success'), description: t('cargueras.toast.updated') });
         } else {
             await addCarguera(cargueraData as Omit<Carguera, 'id'>);
-            toast({ title: 'Success', description: 'Carrier added successfully.' });
+            toast({ title: t('common.success'), description: t('cargueras.toast.added') });
         }
         await refreshData();
     } catch (error) {
@@ -93,8 +93,8 @@ export function CarguerasClient() {
         console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
-            title: 'Error Saving',
-            description: `Could not save the carrier: ${errorMessage}.`,
+            title: t('common.errorSaving'),
+            description: t('cargueras.toast.error', { error: errorMessage }),
             variant: 'destructive',
             duration: 10000,
         });
@@ -115,15 +115,15 @@ export function CarguerasClient() {
     
     try {
       await deleteCarguera(cargueraToDelete.id);
-      toast({ title: 'Success', description: 'Carrier deleted successfully.' });
+      toast({ title: t('common.success'), description: t('cargueras.toast.deleted') });
       await refreshData();
     } catch (error) {
       setLocalCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error Deleting',
-        description: `Could not delete the carrier: ${errorMessage}.`,
+        title: t('common.errorDeleting'),
+        description: t('cargueras.toast.deleteError', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -148,7 +148,7 @@ export function CarguerasClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingCarguera ? 'Edit Carrier' : 'Add New Carrier'}</DialogTitle>
+              <DialogTitle>{editingCarguera ? t('cargueras.editTitle') : t('cargueras.addTitle')}</DialogTitle>
             </DialogHeader>
             <CargueraForm 
               onSubmit={handleFormSubmit}
@@ -161,16 +161,16 @@ export function CarguerasClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Carrier List</CardTitle>
-            <CardDescription>A list of all your carriers.</CardDescription>
+            <CardTitle>{t('cargueras.list.title')}</CardTitle>
+            <CardDescription>{t('cargueras.list.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Carrier Name</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('cargueras.list.name')}</TableHead>
+                  <TableHead>{t('cargueras.list.country')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,7 +194,7 @@ export function CarguerasClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {t('common.page', { currentPage: currentPage, totalPages: totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -203,7 +203,7 @@ export function CarguerasClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('common.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -211,7 +211,7 @@ export function CarguerasClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Next
+                  {t('common.next')}
                 </Button>
               </div>
             </CardFooter>
@@ -222,14 +222,14 @@ export function CarguerasClient() {
       <AlertDialog open={!!cargueraToDelete} onOpenChange={(open) => !open && setCargueraToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the carrier.
+              {t('cargueras.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCargueraToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setCargueraToDelete(null)}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

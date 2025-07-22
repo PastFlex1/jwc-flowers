@@ -69,14 +69,14 @@ export function DebitNotesClient() {
     
     try {
       await addDebitNote(formData);
-      toast({ title: 'Success', description: 'Debit note added successfully.' });
+      toast({ title: t('common.success'), description: t('debitNotes.toast.added') });
       await refreshData();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error Saving',
-        description: `Could not save the debit note: ${errorMessage}.`,
+        title: t('common.errorSaving'),
+        description: t('debitNotes.toast.error', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -97,15 +97,15 @@ export function DebitNotesClient() {
     
     try {
       await deleteDebitNote(noteToDelete.id);
-      toast({ title: 'Success', description: 'Debit note deleted successfully.' });
+      toast({ title: t('common.success'), description: t('debitNotes.toast.deleted') });
       await refreshData();
     } catch (error) {
       setLocalDebitNotes(originalNotes);
       console.error("Error deleting note:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error Deleting',
-        description: `Could not delete the debit note: ${errorMessage}.`,
+        title: t('common.errorDeleting'),
+        description: t('debitNotes.toast.deleteError', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -119,18 +119,18 @@ export function DebitNotesClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Debit Notes</h2>
-            <p className="text-muted-foreground">Manage debit notes for your invoices.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('debitNotes.title')}</h2>
+            <p className="text-muted-foreground">{t('debitNotes.description')}</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> New Debit Note
+            <Plus className="mr-2 h-4 w-4" /> {t('debitNotes.add')}
           </Button>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Add New Debit Note</DialogTitle>
+              <DialogTitle>{t('debitNotes.addTitle')}</DialogTitle>
             </DialogHeader>
             <DebitNoteForm 
               onSubmit={handleFormSubmit}
@@ -143,18 +143,18 @@ export function DebitNotesClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Debit Note List</CardTitle>
-            <CardDescription>A list of all your debit notes.</CardDescription>
+            <CardTitle>{t('debitNotes.list.title')}</CardTitle>
+            <CardDescription>{t('debitNotes.list.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('debitNotes.list.date')}</TableHead>
+                  <TableHead>{t('debitNotes.list.invoice')}</TableHead>
+                  <TableHead>{t('debitNotes.list.amount')}</TableHead>
+                  <TableHead>{t('debitNotes.list.reason')}</TableHead>
+                  <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,7 +177,7 @@ export function DebitNotesClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {t('common.page', { currentPage: currentPage, totalPages: totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -186,7 +186,7 @@ export function DebitNotesClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('common.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -194,7 +194,7 @@ export function DebitNotesClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Next
+                  {t('common.next')}
                 </Button>
               </div>
             </CardFooter>
@@ -205,14 +205,14 @@ export function DebitNotesClient() {
       <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the debit note.
+              {t('debitNotes.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -128,15 +128,15 @@ export function InvoicesClient() {
 
     try {
       await deleteInvoice(invoiceToDelete.id);
-      toast({ title: 'Éxito', description: 'Factura eliminada correctamente.' });
+      toast({ title: t('common.success'), description: t('invoices.toast.deleted') });
       await refreshData();
     } catch (error) {
       setLocalInvoices(originalInvoices);
       console.error("Error deleting invoice:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : t('common.unknownError');
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar la factura: ${errorMessage}.`,
+        title: t('common.errorDeleting'),
+        description: t('invoices.toast.deleteError', { error: errorMessage }),
         variant: 'destructive',
         duration: 10000,
       });
@@ -233,7 +233,7 @@ export function InvoicesClient() {
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                {t('common.page', { currentPage: currentPage, totalPages: totalPages })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -242,7 +242,7 @@ export function InvoicesClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  {t('common.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -250,7 +250,7 @@ export function InvoicesClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  {t('common.next')}
                 </Button>
               </div>
             </CardFooter>
@@ -261,14 +261,14 @@ export function InvoicesClient() {
       <AlertDialog open={!!invoiceToDelete} onOpenChange={(open) => !open && setInvoiceToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la factura.
+              {t('invoices.confirmDeleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setInvoiceToDelete(null)}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">{t('common.delete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
