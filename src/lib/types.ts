@@ -2,6 +2,7 @@
 export interface Customer {
   id: string;
   name: string;
+  cedula: string;
   pais: string;
   estadoCiudad: string;
   address: string;

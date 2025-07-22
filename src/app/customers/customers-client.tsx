@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,12 +15,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
 import type { Customer } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 
@@ -31,6 +45,8 @@ export function CustomersClient() {
   const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
   const { t } = useTranslation();
 
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -39,9 +55,17 @@ export function CustomersClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setLocalCustomers(customers);
+    const filtered = customers.filter(customer => {
+        const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
+        const searchFields = [
+            customer.name,
+            customer.cedula,
+        ];
+        return searchFields.some(field => field?.toLowerCase().includes(lowerCaseSearch));
+    });
+    setLocalCustomers(filtered);
     setCurrentPage(1);
-  }, [customers]);
+  }, [customers, debouncedSearchTerm]);
 
   const totalPages = Math.ceil(localCustomers.length / ITEMS_PER_PAGE);
 
@@ -161,12 +185,23 @@ export function CustomersClient() {
             />
           </DialogContent>
         </Dialog>
+        
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o cédula..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {paginatedCustomers.map((customer) => (
             <Card key={customer.id} className="flex flex-col">
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{customer.name}</h3>
+                <p className="text-sm text-muted-foreground">{customer.cedula}</p>
               </CardContent>
               <div className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>

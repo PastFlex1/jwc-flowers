@@ -14,6 +14,7 @@ import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  cedula: z.string().min(10, { message: "La cédula/RUC debe tener al menos 10 caracteres." }),
   pais: z.string().min(1, { message: "El país es requerido." }),
   daeId: z.string().optional(),
   estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
@@ -50,6 +51,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       daeId: initialData.daeId || undefined,
     } : {
       name: '',
+      cedula: '',
       pais: '',
       daeId: undefined,
       estadoCiudad: '',
@@ -71,6 +73,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       daeId: initialData.daeId || undefined,
     } : {
       name: '',
+      cedula: '',
       pais: '',
       daeId: undefined,
       estadoCiudad: '',
@@ -105,6 +108,19 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
                 <FormLabel>Nombre del Cliente</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Alex" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="cedula"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cédula / RUC</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., 1712345678" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

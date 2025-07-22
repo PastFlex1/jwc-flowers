@@ -19,6 +19,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
   return {
     id: snapshot.id,
     name: data.name,
+    cedula: data.cedula,
     pais: data.pais,
     estadoCiudad: data.estadoCiudad,
     address: data.address,
