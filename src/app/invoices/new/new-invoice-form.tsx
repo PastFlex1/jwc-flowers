@@ -59,7 +59,7 @@ const invoiceSchema = z.object({
   reference: z.string().optional(),
   masterAWB: z.string().min(1, 'Master AWB is required.'),
   houseAWB: z.string().min(1, 'House AWB is required.'),
-  items: z.array(lineItemSchema).min(1, "There must be at least one item."),
+  items: z.array(lineItemSchema),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
@@ -169,11 +169,15 @@ export function NewInvoiceForm() {
       
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
+      
+      if (relatedMarcaciones.length === 1) {
+        form.setValue('reference', relatedMarcaciones[0].numeroMarcacion, { shouldValidate: true });
+      }
 
       const initialValues = getInitialFormValues();
       if (initialValues.customerId !== selectedCustomerId) {
           form.setValue('consignatarioId', '');
-          form.setValue('reference', '');
+          form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
       }
       
     } else {
