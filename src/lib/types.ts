@@ -38,6 +38,8 @@ export interface LineItem {
   stemCount: number;
   purchasePrice: number;
   salePrice: number;
+  netWeight?: number;
+  grossWeight?: number;
 }
 
 
@@ -48,7 +50,7 @@ export interface Invoice {
   flightDate: string;
   sellerId: string;
   customerId: string;
-  consignatarioId?: string;
+  consignatarioId: string;
   farmId: string;
   carrierId: string;
   countryId: string;

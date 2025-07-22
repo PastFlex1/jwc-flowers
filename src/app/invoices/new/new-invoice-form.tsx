@@ -41,6 +41,8 @@ const lineItemSchema = z.object({
   purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
   salePrice: z.coerce.number().min(0, "Debe ser >= 0"),
   boxNumber: z.number().optional(),
+  netWeight: z.coerce.number().optional(),
+  grossWeight: z.coerce.number().optional(),
 });
 
 const invoiceSchema = z.object({
@@ -49,7 +51,7 @@ const invoiceSchema = z.object({
   flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
   sellerId: z.string().min(1, 'Seleccione un vendedor.'),
   customerId: z.string().min(1, 'Seleccione un cliente.'),
-  consignatarioId: z.string().optional(),
+  consignatarioId: z.string().min(1, 'Seleccione un consignatario.'),
   farmId: z.string().min(1, 'Seleccione una finca.'),
   carrierId: z.string().min(1, 'Seleccione una carguera.'),
   countryId: z.string().min(1, 'Seleccione un país.'),
@@ -127,7 +129,7 @@ export function NewInvoiceForm() {
   useEffect(() => {
     if (isMounted) {
         const subscription = form.watch((value) => {
-            if (!value.items || value.items.length === 0) {
+            if (!isHeaderSet) {
               sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
             }
         });
@@ -240,6 +242,8 @@ export function NewInvoiceForm() {
       stemCount: 25,
       purchasePrice: 0,
       salePrice: 0,
+      netWeight: 0,
+      grossWeight: 0,
       boxNumber: fields.length + 1,
     });
   }
@@ -268,32 +272,23 @@ export function NewInvoiceForm() {
         stemCount: 25,
         purchasePrice: 0,
         salePrice: 0,
+        netWeight: 0,
+        grossWeight: 0,
     });
   };
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
     
-    // Create a deep copy to avoid modifying the form state directly
-    const processedItems = JSON.parse(JSON.stringify(values.items));
-
-    // Post-process items to clean up parentIndex and other fields
-    const finalItems = processedItems.map((item: any) => {
-      // Create a new object for the final item to ensure no side-effects
-      const finalItem = { ...item };
-      
-      // Remove the parentIndex property as it's only for front-end logic
-      delete finalItem.parentIndex;
-      
-      return finalItem;
-    });
-
+    const processedValues = {
+        ...values,
+        consignatarioId: values.consignatarioId || '',
+    };
+    
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
-      ...values,
-      consignatarioId: values.consignatarioId || '',
-      farmDepartureDate: values.farmDepartureDate.toISOString(),
-      flightDate: values.flightDate.toISOString(),
-      items: finalItems,
+      ...processedValues,
+      farmDepartureDate: processedValues.farmDepartureDate.toISOString(),
+      flightDate: processedValues.flightDate.toISOString(),
     };
 
     try {
@@ -505,6 +500,8 @@ export function NewInvoiceForm() {
                         <TableHead className="w-24">Tallos/Bunch</TableHead>
                         <TableHead className="w-24">P. Compra</TableHead>
                         <TableHead className="w-24">P. Venta</TableHead>
+                        <TableHead className="w-24">P. Neto</TableHead>
+                        <TableHead className="w-24">P. Bruto</TableHead>
                         <TableHead className="w-[140px] text-right">Total</TableHead>
                         <TableHead className="w-[80px]">Acciones</TableHead>
                       </TableRow>
@@ -572,6 +569,8 @@ export function NewInvoiceForm() {
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.netWeight`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.grossWeight`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
                                {!field.isSubItem && (
@@ -594,7 +593,7 @@ export function NewInvoiceForm() {
                         <TableCell className="text-center">{totals.totalBunches}</TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-center">{totals.totalStems}</TableCell>
-                        <TableCell colSpan={2}></TableCell>
+                        <TableCell colSpan={4}></TableCell>
                         <TableCell className="text-lg text-right font-bold pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
                         <TableCell></TableCell>
                       </TableRow>
