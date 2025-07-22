@@ -119,9 +119,7 @@ export function NewInvoiceForm() {
   useEffect(() => {
     if (isMounted) {
       const initialValues = getInitialFormValues();
-      if (!initialValues.items || initialValues.items.length === 0) {
-        form.reset(initialValues);
-      }
+      form.reset(initialValues);
     }
   }, [isMounted, form]);
 
@@ -129,7 +127,7 @@ export function NewInvoiceForm() {
   useEffect(() => {
     if (isMounted) {
         const subscription = form.watch((value) => {
-            if (value.items && value.items.length === 0) {
+            if (!value.items || value.items.length === 0) {
               sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
             }
         });
@@ -160,12 +158,10 @@ export function NewInvoiceForm() {
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
 
-      if (form.getValues('customerId') === selectedCustomerId) {
-          const initialValues = getInitialFormValues();
-          if (initialValues.customerId !== selectedCustomerId) {
-             form.setValue('consignatarioId', '');
-             form.setValue('reference', '');
-          }
+      const initialValues = getInitialFormValues();
+      if (initialValues.customerId !== selectedCustomerId) {
+          form.setValue('consignatarioId', '');
+          form.setValue('reference', '');
       }
       
     } else {
@@ -277,11 +273,26 @@ export function NewInvoiceForm() {
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
+    
+    // Create a deep copy to avoid modifying the form state directly
+    const processedItems = JSON.parse(JSON.stringify(values.items));
+
+    // Post-process items to clean up parentIndex and other fields
+    const finalItems = processedItems.map((item: any) => {
+      // Create a new object for the final item to ensure no side-effects
+      const finalItem = { ...item };
+      
+      // Remove the parentIndex property as it's only for front-end logic
+      delete finalItem.parentIndex;
+      
+      return finalItem;
+    });
+
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
       ...values,
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
-      items: values.items.map(item => ({...item}))
+      items: finalItems,
     };
 
     try {
@@ -295,10 +306,12 @@ export function NewInvoiceForm() {
       router.push('/invoices');
     } catch (error) {
       console.error("Error creating invoice:", error);
+      const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
       toast({
-        title: 'Error',
-        description: 'No se pudo crear la factura. Verifique sus reglas de seguridad de Firestore.',
+        title: 'Error al Crear Factura',
+        description: `No se pudo crear la factura: ${errorMessage}. Verifique sus reglas de seguridad de Firestore.`,
         variant: 'destructive',
+        duration: 10000,
       });
     } finally {
       setIsSubmitting(false);
@@ -391,7 +404,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="consignatarioId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Consignatario</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
                     <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
                     <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -429,7 +442,7 @@ export function NewInvoiceForm() {
                   <FormLabel>Referencia (Mark)</FormLabel>
                    <Select 
                       onValueChange={field.onChange} 
-                      value={field.value || ''} 
+                      value={field.value ?? ''} 
                       disabled={isHeaderSet || !selectedCustomerId || filteredMarcaciones.length === 0}
                     >
                       <FormControl>
