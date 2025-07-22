@@ -18,7 +18,7 @@ import { getDebitNotes } from '@/services/debit-notes';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
-type AppDataContextType = {
+type AppData = {
   paises: Pais[];
   vendedores: Vendedor[];
   customers: Customer[];
@@ -32,30 +32,38 @@ type AppDataContextType = {
   productos: Producto[];
   creditNotes: CreditNote[];
   debitNotes: DebitNote[];
+};
+
+type AppDataContextType = AppData & {
   isLoading: boolean;
   refreshData: () => Promise<void>;
+  hydrateData: (initialData: Partial<AppData>) => void;
 };
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [paises, setPaises] = useState<Pais[]>([]);
-  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [fincas, setFincas] = useState<Finca[]>([]);
-  const [cargueras, setCargueras] = useState<Carguera[]>(defaultCargueras);
-  const [consignatarios, setConsignatarios] = useState<Consignatario[]>([]);
-  const [daes, setDaes] = useState<Dae[]>([]);
-  const [marcaciones, setMarcaciones] = useState<Marcacion[]>([]);
-  const [provincias, setProvincias] = useState<Provincia[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
-  const [debitNotes, setDebitNotes] = useState<DebitNote[]>([]);
+  const [data, setData] = useState<AppData>({
+    paises: [],
+    vendedores: [],
+    customers: [],
+    fincas: [],
+    cargueras: defaultCargueras,
+    consignatarios: [],
+    daes: [],
+    marcaciones: [],
+    provincias: [],
+    invoices: [],
+    productos: [],
+    creditNotes: [],
+    debitNotes: [],
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   const fetchData = useCallback(async () => {
+    setIsLoading(true);
     try {
       const [
         paisesData,
@@ -87,22 +95,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getDebitNotes(),
       ]);
 
-      setPaises(paisesData);
-      setVendedores(vendedoresData);
-      setCustomers(customersData);
-      setFincas(fincasData);
-      setConsignatarios(consignatariosData);
-      setDaes(daesData);
-      setMarcaciones(marcacionesData);
-      setProvincias(provinciasData);
-      setInvoices(invoicesData);
-      setProductos(productosData);
-      setCreditNotes(creditNotesData);
-      setDebitNotes(debitNotesData);
-      
-      if (dbCargueras.length > 0) {
-        setCargueras(dbCargueras);
-      }
+      setData({
+        paises: paisesData,
+        vendedores: vendedoresData,
+        customers: customersData,
+        fincas: fincasData,
+        cargueras: dbCargueras.length > 0 ? dbCargueras : defaultCargueras,
+        consignatarios: consignatariosData,
+        daes: daesData,
+        marcaciones: marcacionesData,
+        provincias: provinciasData,
+        invoices: invoicesData,
+        productos: productosData,
+        creditNotes: creditNotesData,
+        debitNotes: debitNotesData,
+      });
 
     } catch (error) {
       console.error("Failed to fetch global app data:", error);
@@ -116,44 +123,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }
   }, [toast]);
+  
+  const hydrateData = useCallback((initialData: Partial<AppData>) => {
+    setData(prevData => ({ ...prevData, ...initialData }));
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    // Initial fetch if no data is hydrated from a server component
+    if (isLoading) {
+      fetchData();
+    }
+  }, [fetchData, isLoading]);
 
   const value = useMemo(() => ({
-    paises,
-    vendedores,
-    customers,
-    fincas,
-    cargueras,
-    consignatarios,
-    daes,
-    marcaciones,
-    provincias,
-    invoices,
-    productos,
-    creditNotes,
-    debitNotes,
+    ...data,
     isLoading,
     refreshData: fetchData,
-  }), [
-    paises, 
-    vendedores, 
-    customers, 
-    fincas, 
-    cargueras, 
-    consignatarios, 
-    daes, 
-    marcaciones, 
-    provincias, 
-    invoices,
-    productos,
-    creditNotes,
-    debitNotes,
-    isLoading, 
-    fetchData
-  ]);
+    hydrateData,
+  }), [data, isLoading, fetchData, hydrateData]);
 
   return (
     <AppDataContext.Provider value={value}>

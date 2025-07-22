@@ -19,16 +19,17 @@ function AppLoadingScreen() {
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  
-  // The global isLoading check has been removed.
-  // Each page component will handle its own loading state if needed,
-  // preventing the loading screen from appearing on every navigation.
+  const { isLoading } = useAppData();
+
   if (isAuthenticated) {
+     if (isLoading) {
+        return <AppLoadingScreen />;
+     }
      return (
         <AppShell>{children}</AppShell>
       );
   }
 
-  // Show a loading screen only if not authenticated (e.g., initial load)
+  // Fallback for non-authenticated state if ever needed
   return <AppLoadingScreen />;
 }
