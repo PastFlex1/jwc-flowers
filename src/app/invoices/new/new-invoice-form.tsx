@@ -97,7 +97,10 @@ export function NewInvoiceForm() {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onChange',
-    defaultValues: getInitialFormValues(),
+    defaultValues: {
+      items: [], // Ensure items is always an array
+      ...getInitialFormValues(),
+    },
   });
 
   const { fields, append, remove, insert } = useFieldArray({
@@ -139,14 +142,15 @@ export function NewInvoiceForm() {
       const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
       
-      if (!getInitialFormValues().consignatarioId) {
+      const initialValues = getInitialFormValues();
+      if (!initialValues.consignatarioId || initialValues.customerId !== selectedCustomerId) {
           form.setValue('consignatarioId', '');
       }
       
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
       
-      if (!getInitialFormValues().reference) {
+      if (!initialValues.reference || initialValues.customerId !== selectedCustomerId) {
         form.setValue('reference', '');
       }
     } else {
@@ -187,6 +191,10 @@ export function NewInvoiceForm() {
     let totalBunches = 0;
     let totalStems = 0;
     
+    if (!watchItems) {
+      return { totalFob, totalBoxes, totalBunches, totalStems };
+    }
+
     watchItems.forEach(item => {
       const boxCount = Number(item.boxCount) || 0;
       const bunchesPerBox = Number(item.bunchesPerBox) || 0;
@@ -279,7 +287,7 @@ export function NewInvoiceForm() {
     }
   }
 
-  const isHeaderSet = watchItems.length > 0;
+  const isHeaderSet = watchItems && watchItems.length > 0;
 
   return (
     <div className="space-y-6">
