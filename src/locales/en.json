@@ -1,3 +1,4 @@
+
 {
   "sidebar": {
     "title": "JCW FLOWERS",
@@ -35,7 +36,72 @@
     "sendMailNoticeTitle": "Feature in development",
     "sendMailNoticeDescription": "Sending invoice {invoiceNumber} by email is not yet implemented.",
     "unknownCustomer": "Unknown Customer",
-    "searchPlaceholder": "Search by #, customer, or status..."
+    "searchPlaceholder": "Search by #, customer, or status...",
+    "confirmDeleteDescription": "This action cannot be undone. This will permanently delete the invoice.",
+    "toast": {
+      "deleted": "Invoice deleted successfully.",
+      "deleteError": "Could not delete the invoice: {error}."
+    },
+    "new": {
+      "title": "New Sale",
+      "description": "Create a new sales invoice.",
+      "detailsTitle": "Invoice Details",
+      "invoiceNumber": "Invoice Number",
+      "invoiceNumberPlaceholder": "e.g. FACT-001",
+      "farmDepartureDate": "Farm Departure Date",
+      "flightDate": "Flight Date",
+      "selectDate": "Select date",
+      "seller": "Seller",
+      "sellerPlaceholder": "Select a seller",
+      "customer": "Customer",
+      "customerPlaceholder": "Select a customer",
+      "consignee": "Consignee",
+      "consigneePlaceholder": "Select a consignee",
+      "selectCustomerFirst": "Select a customer first",
+      "farm": "Farm",
+      "farmPlaceholder": "Select a farm",
+      "carrier": "Carrier",
+      "carrierPlaceholder": "Select a carrier",
+      "country": "Country",
+      "countryPlaceholder": "Select a country",
+      "reference": "Reference (Mark)",
+      "markingPlaceholder": "Select a marking",
+      "noMarkings": "Customer has no markings",
+      "masterAWB": "Master AWB",
+      "masterAWBPlaceholder": "Enter Master AWB",
+      "houseAWB": "House AWB",
+      "houseAWBPlaceholder": "Enter House AWB",
+      "itemsTitle": "Invoice Items",
+      "addItem": "Add Item",
+      "save": "Save Invoice",
+      "saving": "Saving Invoice...",
+      "toast": {
+        "successTitle": "Invoice Created!",
+        "successDescription": "The new invoice has been saved successfully.",
+        "errorTitle": "Error Creating Invoice",
+        "errorDescription": "Could not create the invoice: {error}. Please check your Firestore security rules."
+      },
+      "items": {
+        "no": "No.",
+        "product": "Product",
+        "productPlaceholder": "Product",
+        "variety": "Variety",
+        "varietyPlaceholder": "Variety",
+        "boxType": "Box Type",
+        "typePlaceholder": "Type",
+        "boxCount": "No. Boxes",
+        "bunchesPerBox": "Bunches/Box",
+        "length": "Length",
+        "stemsPerBunch": "Stems/Bunch",
+        "purchasePrice": "Purch. Price",
+        "salePrice": "Sale Price",
+        "netWeight": "Net Wt.",
+        "grossWeight": "Gross Wt.",
+        "total": "Total",
+        "actions": "Actions",
+        "totals": "TOTALS"
+      }
+    }
   },
   "customers": {
     "title": "Customers",
@@ -89,7 +155,73 @@
   "cargueras": {
     "title": "Carriers",
     "description": "Manage carriers.",
-    "add": "Add Carrier"
+    "add": "Add Carrier",
+    "editTitle": "Edit Carrier",
+    "addTitle": "Add New Carrier",
+    "form": {
+      "name": "Carrier Name",
+      "namePlaceholder": "e.g., DHL",
+      "country": "Country",
+      "countryPlaceholder": "Select a country",
+      "international": "International",
+      "national": "National"
+    },
+    "list": {
+      "title": "Carrier List",
+      "description": "A list of all your carriers.",
+      "name": "Carrier Name",
+      "country": "Country"
+    },
+    "toast": {
+      "updated": "Carrier updated successfully.",
+      "added": "Carrier added successfully.",
+      "deleted": "Carrier deleted successfully.",
+      "error": "Could not save the carrier: {error}.",
+      "deleteError": "Could not delete the carrier: {error}."
+    },
+    "confirmDeleteDescription": "This action cannot be undone. This will permanently delete the carrier."
+  },
+  "creditNotes": {
+    "title": "Credit Notes",
+    "description": "Manage credit notes for your invoices.",
+    "add": "New Credit Note",
+    "addTitle": "Add New Credit Note",
+    "list": {
+        "title": "Credit Note List",
+        "description": "A list of all your credit notes.",
+        "date": "Date",
+        "invoice": "Invoice #",
+        "amount": "Amount",
+        "reason": "Reason"
+    },
+    "toast": {
+        "added": "Credit note added successfully.",
+        "deleted": "Credit note deleted successfully.",
+        "error": "Could not save the credit note: {error}.",
+        "deleteError": "Could not delete the credit note: {error}."
+    },
+    "confirmDeleteDescription": "This action cannot be undone. This will permanently delete the credit note."
+  },
+  "debitNotes": {
+    "title": "Debit Notes",
+    "description": "Manage debit notes for your invoices.",
+    "add": "New Debit Note",
+    "addTitle": "Add New Debit Note",
+    "list": {
+        "title": "Debit Note List",
+        "description": "A list of all your debit notes.",
+        "date": "Date",
+        "invoice": "Invoice #",
+        "amount": "Amount",
+        "reason": "Reason"
+    },
+    "toast": {
+        "added": "Debit note added successfully.",
+        "deleted": "Debit note deleted successfully.",
+        "error": "Could not save the debit note: {error}.",
+        "deleteError": "Could not delete the debit note: {error}."
+    },
+    "confirmDeleteDescription": "This action cannot be undone. This will permanently delete the debit note."
   },
   "inventory": {
     "title": "Inventory",
@@ -109,5 +241,20 @@
     "defaultBody": "Dear {customerName},\n\nPlease find your invoice attached.\n\nThank you for your business.\n\nBest regards,\nThe JCW Flowers Team",
     "successTitle": "Email Sent (Simulation)",
     "successDescription": "Invoice {invoiceNumber} has been sent to {email}."
+  },
+  "common": {
+    "actions": "Actions",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "page": "Page {currentPage} of {totalPages}",
+    "previous": "Previous",
+    "next": "Next",
+    "confirmDeleteTitle": "Are you absolutely sure?",
+    "success": "Success",
+    "errorSaving": "Error Saving",
+    "errorDeleting": "Error Deleting",
+    "unknownError": "Unknown error"
   }
 }

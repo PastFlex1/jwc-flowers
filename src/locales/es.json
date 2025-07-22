@@ -1,3 +1,4 @@
+
 {
   "sidebar": {
     "title": "JCW FLOWERS",
@@ -40,6 +41,66 @@
     "toast": {
       "deleted": "Factura eliminada correctamente.",
       "deleteError": "No se pudo eliminar la factura: {error}."
+    },
+    "new": {
+      "title": "Nueva Venta",
+      "description": "Crear una nueva factura de venta.",
+      "detailsTitle": "Detalles de la Factura",
+      "invoiceNumber": "Número de Factura",
+      "invoiceNumberPlaceholder": "ej. FACT-001",
+      "farmDepartureDate": "Fecha Salida Finca",
+      "flightDate": "Fecha de Vuelo",
+      "selectDate": "Seleccionar fecha",
+      "seller": "Vendedor",
+      "sellerPlaceholder": "Seleccione un vendedor",
+      "customer": "Cliente",
+      "customerPlaceholder": "Seleccione un cliente",
+      "consignee": "Consignatario",
+      "consigneePlaceholder": "Seleccione un consignatario",
+      "selectCustomerFirst": "Seleccione un cliente primero",
+      "farm": "Finca",
+      "farmPlaceholder": "Seleccione una finca",
+      "carrier": "Carguera",
+      "carrierPlaceholder": "Seleccione una carguera",
+      "country": "País",
+      "countryPlaceholder": "Seleccione un país",
+      "reference": "Referencia (Marca)",
+      "markingPlaceholder": "Seleccione una marcación",
+      "noMarkings": "El cliente no tiene marcaciones",
+      "masterAWB": "Guía Madre",
+      "masterAWBPlaceholder": "Ingrese Guía Madre",
+      "houseAWB": "Guía Hija",
+      "houseAWBPlaceholder": "Ingrese Guía Hija",
+      "itemsTitle": "Ítems de la Factura",
+      "addItem": "Añadir Ítem",
+      "save": "Guardar Factura",
+      "saving": "Guardando Factura...",
+      "toast": {
+        "successTitle": "¡Factura Creada!",
+        "successDescription": "La nueva factura se ha guardado correctamente.",
+        "errorTitle": "Error al Crear Factura",
+        "errorDescription": "No se pudo crear la factura: {error}. Por favor, revise sus reglas de seguridad de Firestore."
+      },
+      "items": {
+        "no": "N°",
+        "product": "Producto",
+        "productPlaceholder": "Producto",
+        "variety": "Variedad",
+        "varietyPlaceholder": "Variedad",
+        "boxType": "Tipo Caja",
+        "typePlaceholder": "Tipo",
+        "boxCount": "N° Cajas",
+        "bunchesPerBox": "Ramos/Caja",
+        "length": "Largo",
+        "stemsPerBunch": "Tallos/Ramo",
+        "purchasePrice": "Precio Compra",
+        "salePrice": "Precio Venta",
+        "netWeight": "Peso Neto",
+        "grossWeight": "Peso Bruto",
+        "total": "Total",
+        "actions": "Acciones",
+        "totals": "TOTALES"
+      }
     }
   },
   "customers": {
