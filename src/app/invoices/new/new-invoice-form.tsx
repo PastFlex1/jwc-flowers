@@ -108,6 +108,7 @@ export function NewInvoiceForm() {
   
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
+  const isHeaderSet = watchItems && watchItems.length > 0;
   
   // Set mounted state
   useEffect(() => {
@@ -118,15 +119,19 @@ export function NewInvoiceForm() {
   useEffect(() => {
     if (isMounted) {
       const initialValues = getInitialFormValues();
-      form.reset(initialValues);
+      if (!initialValues.items || initialValues.items.length === 0) {
+        form.reset(initialValues);
+      }
     }
   }, [isMounted, form]);
 
-  // Save form data to session storage on change
+  // Save form data to session storage on change, but only if no items are added yet.
   useEffect(() => {
     if (isMounted) {
         const subscription = form.watch((value) => {
-            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+            if (value.items && value.items.length === 0) {
+              sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+            }
         });
         return () => subscription.unsubscribe();
     }
@@ -224,6 +229,9 @@ export function NewInvoiceForm() {
   }, [watchItems]);
 
   const handleAddItem = () => {
+    if (fields.length === 0) {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    }
     append({
       isSubItem: false,
       parentIndex: undefined,
@@ -297,7 +305,6 @@ export function NewInvoiceForm() {
     }
   }
 
-  const isHeaderSet = watchItems && watchItems.length > 0;
   
   if (!isMounted) {
     // Render a loading state or null on the server and initial client render
