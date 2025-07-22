@@ -58,12 +58,12 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       ...initialData,
       plazo: Number(initialData.plazo),
       cupo: Number(initialData.cupo),
-      daeId: initialData.daeId || undefined,
+      daeId: initialData.daeId || "__none__",
     } : {
       name: '',
       cedula: '',
       pais: '',
-      daeId: undefined,
+      daeId: "__none__",
       estadoCiudad: '',
       address: '',
       email: '',
@@ -75,17 +75,32 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
     },
   });
 
+  const selectedPais = form.watch('pais');
+
+  useEffect(() => {
+    if (selectedPais) {
+      const correspondingDae = daes.find(d => d.pais === selectedPais);
+      if (correspondingDae) {
+        form.setValue('daeId', correspondingDae.id, { shouldValidate: true });
+      } else {
+        form.setValue('daeId', "__none__", { shouldValidate: true });
+      }
+    } else {
+        form.setValue('daeId', "__none__", { shouldValidate: true });
+    }
+  }, [selectedPais, daes, form]);
+
   useEffect(() => {
     form.reset(initialData ? {
       ...initialData,
       plazo: Number(initialData.plazo),
       cupo: Number(initialData.cupo),
-      daeId: initialData.daeId || undefined,
+      daeId: initialData.daeId || "__none__",
     } : {
       name: '',
       cedula: '',
       pais: '',
-      daeId: undefined,
+      daeId: "__none__",
       estadoCiudad: '',
       address: '',
       email: '',
@@ -290,16 +305,16 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             render={({ field }) => (
               <FormItem>
                 <FormLabel>DAE</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!selectedPais}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un DAE por país" />
+                      <SelectValue placeholder={selectedPais ? "Seleccione un DAE" : "Seleccione un país primero"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="__none__">Ninguno</SelectItem>
                     {daes.map(d => (
-                      <SelectItem key={d.id} value={d.id}>
+                      <SelectItem key={d.id} value={d.id} disabled={selectedPais && d.pais !== selectedPais}>
                         {d.pais} ({d.numeroDae})
                       </SelectItem>
                     ))}
