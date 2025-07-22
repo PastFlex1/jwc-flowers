@@ -31,34 +31,34 @@ const lineItemSchema = z.object({
   id: z.string().optional(),
   isSubItem: z.boolean().optional(),
   parentIndex: z.number().optional(),
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Seleccione un tipo." }),
-  boxCount: z.coerce.number().min(1, "Debe ser > 0"),
-  bunchesPerBox: z.coerce.number().min(1, "Debe ser > 0"),
-  product: z.string().min(1, "Producto requerido."),
-  variety: z.string().min(1, "Variedad requerida."),
-  length: z.coerce.number().positive("Debe ser > 0"),
-  stemCount: z.coerce.number().positive("Debe ser > 0"),
-  purchasePrice: z.coerce.number().min(0, "Debe ser >= 0"),
-  salePrice: z.coerce.number().min(0, "Debe ser >= 0"),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Select a type." }),
+  boxCount: z.coerce.number().min(1, "Must be > 0"),
+  bunchesPerBox: z.coerce.number().min(1, "Must be > 0"),
+  product: z.string().min(1, "Product is required."),
+  variety: z.string().min(1, "Variety is required."),
+  length: z.coerce.number().positive("Must be > 0"),
+  stemCount: z.coerce.number().positive("Must be > 0"),
+  purchasePrice: z.coerce.number().min(0, "Must be >= 0"),
+  salePrice: z.coerce.number().min(0, "Must be >= 0"),
   boxNumber: z.number().optional(),
   netWeight: z.coerce.number().optional(),
   grossWeight: z.coerce.number().optional(),
 });
 
 const invoiceSchema = z.object({
-  invoiceNumber: z.string().min(1, "Número de factura requerido."),
-  farmDepartureDate: z.date({ required_error: "Fecha de salida requerida." }),
-  flightDate: z.date({ required_error: "Fecha de vuelo requerida." }),
-  sellerId: z.string().min(1, 'Seleccione un vendedor.'),
-  customerId: z.string().min(1, 'Seleccione un cliente.'),
-  consignatarioId: z.string().min(1, 'Seleccione un consignatario.'),
-  farmId: z.string().min(1, 'Seleccione una finca.'),
-  carrierId: z.string().min(1, 'Seleccione una carguera.'),
-  countryId: z.string().min(1, 'Seleccione un país.'),
-  reference: z.string().min(1, "Referencia es requerida."),
-  masterAWB: z.string().min(1, 'Guía Madre requerida.'),
-  houseAWB: z.string().min(1, 'Guía Hija requerida.'),
-  items: z.array(lineItemSchema).min(1, "Debe haber al menos un ítem."),
+  invoiceNumber: z.string().min(1, "Invoice number is required."),
+  farmDepartureDate: z.date({ required_error: "Departure date is required." }),
+  flightDate: z.date({ required_error: "Flight date is required." }),
+  sellerId: z.string().min(1, 'Select a seller.'),
+  customerId: z.string().min(1, 'Select a customer.'),
+  consignatarioId: z.string().optional(),
+  farmId: z.string().min(1, 'Select a farm.'),
+  carrierId: z.string().min(1, 'Select a carrier.'),
+  countryId: z.string().min(1, 'Select a country.'),
+  reference: z.string().min(1, "Reference is required."),
+  masterAWB: z.string().min(1, 'Master AWB is required.'),
+  houseAWB: z.string().min(1, 'House AWB is required.'),
+  items: z.array(lineItemSchema).min(1, "There must be at least one item."),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
@@ -295,17 +295,17 @@ export function NewInvoiceForm() {
       await addInvoice(invoiceData);
       await refreshData();
       toast({
-        title: 'Factura Creada!',
-        description: 'La nueva factura ha sido guardada exitosamente.',
+        title: 'Invoice Created!',
+        description: 'The new invoice has been saved successfully.',
       });
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
       router.push('/invoices');
     } catch (error) {
       console.error("Error creating invoice:", error);
-      const errorMessage = error instanceof Error ? error.message : "Un error desconocido ocurrió.";
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
       toast({
-        title: 'Error al Crear Factura',
-        description: `No se pudo crear la factura: ${errorMessage}. Verifique sus reglas de seguridad de Firestore.`,
+        title: 'Error Creating Invoice',
+        description: `Could not create the invoice: ${errorMessage}. Please check your Firestore security rules.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -324,32 +324,32 @@ export function NewInvoiceForm() {
   return (
     <div className="space-y-6">
        <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Nueva Venta</h2>
-          <p className="text-muted-foreground">Crear una nueva factura de venta.</p>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">New Sale</h2>
+          <p className="text-muted-foreground">Create a new sales invoice.</p>
         </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           
           <Card>
             <CardHeader>
-              <CardTitle>Datos de la Factura</CardTitle>
+              <CardTitle>Invoice Details</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Número de Factura</FormLabel>
+                  <FormLabel>Invoice Number</FormLabel>
                   <FormControl><Input placeholder="FACT-001" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Fecha Salida Finca</FormLabel>
+                    <FormLabel>Farm Departure Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
+                            {field.value ? format(toDate(field.value), "PPP") : <span>Select date</span>}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -362,13 +362,13 @@ export function NewInvoiceForm() {
               )}/>
                <FormField control={form.control} name="flightDate" render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Fecha Vuelo</FormLabel>
+                    <FormLabel>Flight Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
+                            {field.value ? format(toDate(field.value), "PPP") : <span>Select date</span>}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -381,61 +381,61 @@ export function NewInvoiceForm() {
               )}/>
               <FormField control={form.control} name="sellerId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendedor</FormLabel>
+                  <FormLabel>Seller</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un vendedor"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Select a seller"} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cliente</FormLabel>
+                  <FormLabel>Customer</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Select a customer"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="consignatarioId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Consignatario</FormLabel>
+                  <FormLabel>Consignee</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione un consignatario"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? "Select a customer first" : "Select a consignee"} /></SelectTrigger></FormControl>
                     <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="farmId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Finca</FormLabel>
+                  <FormLabel>Farm</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una finca"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Select a farm"} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="carrierId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Carguera</FormLabel>
+                  <FormLabel>Carrier</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una carguera"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Select a carrier"} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>País</FormLabel>
+                  <FormLabel>Country</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder={"Select a country"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
                 </FormItem>
               )}/>
                <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Referencia (Mark)</FormLabel>
+                  <FormLabel>Reference (Mark)</FormLabel>
                    <Select 
                       onValueChange={field.onChange} 
                       value={field.value ?? ''} 
@@ -446,10 +446,10 @@ export function NewInvoiceForm() {
                           <SelectValue 
                             placeholder={
                               !selectedCustomerId 
-                                ? "Seleccione un cliente primero" 
+                                ? "Select a customer first" 
                                 : filteredMarcaciones.length === 0 
-                                  ? "El cliente no tiene marcaciones" 
-                                  : "Seleccione una marcación"
+                                  ? "Customer has no markings" 
+                                  : "Select a marking"
                             } 
                           />
                         </SelectTrigger>
@@ -467,14 +467,14 @@ export function NewInvoiceForm() {
               )}/>
                <FormField control={form.control} name="masterAWB" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Guía Madre</FormLabel>
-                  <FormControl><Input placeholder="Guía Madre" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormLabel>Master AWB</FormLabel>
+                  <FormControl><Input placeholder="Master AWB" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="houseAWB" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Guía Hija</FormLabel>
-                  <FormControl><Input placeholder="Guía Hija" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormLabel>House AWB</FormLabel>
+                  <FormControl><Input placeholder="House AWB" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
             </CardContent>
@@ -483,27 +483,27 @@ export function NewInvoiceForm() {
           
             <Card>
               <CardHeader>
-                <CardTitle>Items de la Factura</CardTitle>
+                <CardTitle>Invoice Items</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px]">N°</TableHead>
-                        <TableHead className="min-w-[160px]">Producto</TableHead>
-                        <TableHead className="min-w-[160px]">Variedad</TableHead>
-                        <TableHead className="w-[130px]">Tipo Caja</TableHead>
-                        <TableHead className="w-24">N° Cajas</TableHead>
-                        <TableHead className="w-24">Bunches/Caja</TableHead>
-                        <TableHead className="w-24">Longitud</TableHead>
-                        <TableHead className="w-24">Tallos/Bunch</TableHead>
-                        <TableHead className="w-24">P. Compra</TableHead>
-                        <TableHead className="w-24">P. Venta</TableHead>
-                        <TableHead className="w-24">P. Neto</TableHead>
-                        <TableHead className="w-24">P. Bruto</TableHead>
+                        <TableHead className="w-[80px]">No.</TableHead>
+                        <TableHead className="min-w-[160px]">Product</TableHead>
+                        <TableHead className="min-w-[160px]">Variety</TableHead>
+                        <TableHead className="w-[130px]">Box Type</TableHead>
+                        <TableHead className="w-24">No. Boxes</TableHead>
+                        <TableHead className="w-24">Bunches/Box</TableHead>
+                        <TableHead className="w-24">Length</TableHead>
+                        <TableHead className="w-24">Stems/Bunch</TableHead>
+                        <TableHead className="w-24">Purch. Price</TableHead>
+                        <TableHead className="w-24">Sale Price</TableHead>
+                        <TableHead className="w-24">Net Wt.</TableHead>
+                        <TableHead className="w-24">Gross Wt.</TableHead>
                         <TableHead className="w-[140px] text-right">Total</TableHead>
-                        <TableHead className="w-[80px]">Acciones</TableHead>
+                        <TableHead className="w-[80px]">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -528,7 +528,7 @@ export function NewInvoiceForm() {
                                     }} 
                                     value={field.value ?? ''}
                                   >
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Product" /></SelectTrigger></FormControl>
                                     <SelectContent>
                                       {productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                     </SelectContent>
@@ -542,7 +542,7 @@ export function NewInvoiceForm() {
                                     value={field.value ?? ''}
                                     disabled={!currentItem?.product || varietiesForProduct.length === 0}
                                   >
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Variety" /></SelectTrigger></FormControl>
                                     <SelectContent>
                                       {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                     </SelectContent>
@@ -551,7 +551,7 @@ export function NewInvoiceForm() {
                             </TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value ?? 'qb'}>
-                                  <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
                             )} /></TableCell>
@@ -586,7 +586,7 @@ export function NewInvoiceForm() {
                     </TableBody>
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell colSpan={2}>TOTALES ({fields.length})</TableCell>
+                        <TableCell colSpan={2}>TOTALS ({fields.length})</TableCell>
                         <TableCell></TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-center">{totals.totalBoxes}</TableCell>
@@ -602,7 +602,7 @@ export function NewInvoiceForm() {
                 </div>
                 <div className="mt-6 flex justify-end">
                     <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
-                      <PlusCircle className="mr-2 h-4 w-4" /> Añadir Item
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Item
                     </Button>
                 </div>
               </CardContent>
@@ -610,10 +610,10 @@ export function NewInvoiceForm() {
           
           {isHeaderSet && (
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>Cancelar</Button>
+              <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando Factura...' : 'Guardar Factura'}
+                {isSubmitting ? 'Saving Invoice...' : 'Save Invoice'}
               </Button>
             </div>
           )}

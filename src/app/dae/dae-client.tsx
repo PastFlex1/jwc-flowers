@@ -81,19 +81,19 @@ export function DaeClient() {
     try {
       if (daeData.id) {
         await updateDae(daeData.id, daeData as Dae);
-        toast({ title: 'Éxito', description: 'DAE actualizado correctamente.' });
+        toast({ title: 'Success', description: 'DAE updated successfully.' });
       } else {
         await addDae(daeData as Omit<Dae, 'id'>);
-        toast({ title: 'Éxito', description: 'DAE añadido correctamente.' });
+        toast({ title: 'Success', description: 'DAE added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalDaes(originalData); // Revert
       console.error("Error submitting DAE:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el DAE: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the DAE: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -114,15 +114,15 @@ export function DaeClient() {
 
     try {
       await deleteDae(daeToDelete.id);
-      toast({ title: 'Éxito', description: 'DAE eliminado correctamente.' });
+      toast({ title: 'Success', description: 'DAE deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalDaes(originalData);
       console.error("Error deleting DAE:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar el DAE: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the DAE: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -147,7 +147,7 @@ export function DaeClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingDae ? 'Editar DAE' : 'Añadir Nuevo DAE'}</DialogTitle>
+              <DialogTitle>{editingDae ? 'Edit DAE' : 'Add New DAE'}</DialogTitle>
             </DialogHeader>
             <DaeForm 
               onSubmit={handleFormSubmit}
@@ -161,16 +161,16 @@ export function DaeClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de DAEs</CardTitle>
-            <CardDescription>Un listado de todos tus DAEs.</CardDescription>
+            <CardTitle>DAE List</CardTitle>
+            <CardDescription>A list of all your DAEs.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>País</TableHead>
-                  <TableHead>Número de DAE</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>DAE Number</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,7 +194,7 @@ export function DaeClient() {
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -203,7 +203,7 @@ export function DaeClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -211,7 +211,7 @@ export function DaeClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -222,14 +222,14 @@ export function DaeClient() {
       <AlertDialog open={!!daeToDelete} onOpenChange={(open) => !open && setDaeToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el DAE.
+              This action cannot be undone. This will permanently delete the DAE.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDaeToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setDaeToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

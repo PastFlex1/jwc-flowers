@@ -83,19 +83,19 @@ export function ProductosClient() {
     try {
       if (productoData.id) {
         await updateProducto(productoData.id, productoData as Producto);
-        toast({ title: 'Éxito', description: 'Producto actualizado correctamente.' });
+        toast({ title: 'Success', description: 'Product updated successfully.' });
       } else {
         await addProducto(productoData);
-        toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
+        toast({ title: 'Success', description: 'Product added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalProductos(originalProductos); // Revert on failure
-      console.error("Error submitting producto:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error submitting product:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el producto: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the product: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -116,15 +116,15 @@ export function ProductosClient() {
     
     try {
       await deleteProducto(productoToDelete.id);
-      toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
+      toast({ title: 'Success', description: 'Product deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalProductos(originalProductos); // Revert
-      console.error("Error deleting producto:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error deleting product:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar el producto: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the product: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -149,7 +149,7 @@ export function ProductosClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingProducto ? 'Editar Producto' : 'Añadir Nuevo Producto'}</DialogTitle>
+              <DialogTitle>{editingProducto ? 'Edit Product' : 'Add New Product'}</DialogTitle>
             </DialogHeader>
             <ProductoForm 
               onSubmit={handleFormSubmit}
@@ -162,18 +162,18 @@ export function ProductosClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Productos</CardTitle>
-            <CardDescription>Un listado de todos tus productos guardados.</CardDescription>
+            <CardTitle>Product List</CardTitle>
+            <CardDescription>A list of all your saved products.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Variedad</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Variety</TableHead>
                   <TableHead>Stock</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -199,7 +199,7 @@ export function ProductosClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -208,7 +208,7 @@ export function ProductosClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -216,7 +216,7 @@ export function ProductosClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -227,14 +227,14 @@ export function ProductosClient() {
       <AlertDialog open={!!productoToDelete} onOpenChange={(open) => !open && setProductoToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto de tus registros.
+              This action cannot be undone. This will permanently delete the product from your records.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProductoToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setProductoToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

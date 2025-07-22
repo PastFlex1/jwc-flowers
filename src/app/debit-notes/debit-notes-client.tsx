@@ -69,14 +69,14 @@ export function DebitNotesClient() {
     
     try {
       await addDebitNote(formData);
-      toast({ title: 'Éxito', description: 'Nota de débito añadida correctamente.' });
+      toast({ title: 'Success', description: 'Debit note added successfully.' });
       await refreshData();
     } catch (error) {
       console.error("Error submitting form:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la nota de débito: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the debit note: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -97,15 +97,15 @@ export function DebitNotesClient() {
     
     try {
       await deleteDebitNote(noteToDelete.id);
-      toast({ title: 'Éxito', description: 'Nota de débito eliminada correctamente.' });
+      toast({ title: 'Success', description: 'Debit note deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalDebitNotes(originalNotes);
       console.error("Error deleting note:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar la nota de débito: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the debit note: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -119,18 +119,18 @@ export function DebitNotesClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">Notas de Débito</h2>
-            <p className="text-muted-foreground">Gestiona las notas de débito para tus facturas.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">Debit Notes</h2>
+            <p className="text-muted-foreground">Manage debit notes for your invoices.</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Nueva Nota de Débito
+            <Plus className="mr-2 h-4 w-4" /> New Debit Note
           </Button>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Añadir Nueva Nota de Débito</DialogTitle>
+              <DialogTitle>Add New Debit Note</DialogTitle>
             </DialogHeader>
             <DebitNoteForm 
               onSubmit={handleFormSubmit}
@@ -143,18 +143,18 @@ export function DebitNotesClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Notas de Débito</CardTitle>
-            <CardDescription>Un listado de todas tus notas de débito.</CardDescription>
+            <CardTitle>Debit Note List</CardTitle>
+            <CardDescription>A list of all your debit notes.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Nº Factura</TableHead>
-                  <TableHead>Monto</TableHead>
-                  <TableHead>Razón</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Reason</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,7 +177,7 @@ export function DebitNotesClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -186,7 +186,7 @@ export function DebitNotesClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -194,7 +194,7 @@ export function DebitNotesClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -205,14 +205,14 @@ export function DebitNotesClient() {
       <AlertDialog open={!!noteToDelete} onOpenChange={(open) => !open && setNoteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la nota de débito.
+              This action cannot be undone. This will permanently delete the debit note.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

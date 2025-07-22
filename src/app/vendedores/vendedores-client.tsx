@@ -80,19 +80,19 @@ export function VendedoresClient() {
     try {
       if (vendedorData.id) {
         await updateVendedor(vendedorData.id, vendedorData as Vendedor);
-        toast({ title: 'Éxito', description: 'Vendedor actualizado correctamente.' });
+        toast({ title: 'Success', description: 'Seller updated successfully.' });
       } else {
         await addVendedor(vendedorData as Omit<Vendedor, 'id'>);
-        toast({ title: 'Éxito', description: 'Vendedor añadido correctamente.' });
+        toast({ title: 'Success', description: 'Seller added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalVendedores(originalData);
-      console.error("Error submitting vendedor:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error submitting seller:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el vendedor: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the seller: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -113,15 +113,15 @@ export function VendedoresClient() {
 
     try {
       await deleteVendedor(vendedorToDelete.id);
-      toast({ title: 'Éxito', description: 'Vendedor eliminado correctamente.' });
+      toast({ title: 'Success', description: 'Seller deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalVendedores(originalData);
-      console.error("Error deleting vendedor:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error deleting seller:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar el vendedor: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the seller: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -146,7 +146,7 @@ export function VendedoresClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingVendedor ? 'Editar Vendedor' : 'Añadir Nuevo Vendedor'}</DialogTitle>
+              <DialogTitle>{editingVendedor ? 'Edit Seller' : 'Add New Seller'}</DialogTitle>
             </DialogHeader>
             <VendedorForm 
               onSubmit={handleFormSubmit}
@@ -179,7 +179,7 @@ export function VendedoresClient() {
          {totalPages > 1 && (
           <div className="flex items-center justify-between pt-6">
             <div className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages}
+              Page {currentPage} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -188,7 +188,7 @@ export function VendedoresClient() {
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
               >
-                Anterior
+                Previous
               </Button>
               <Button
                 variant="outline"
@@ -196,7 +196,7 @@ export function VendedoresClient() {
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
               >
-                Siguiente
+                Next
               </Button>
             </div>
           </div>
@@ -206,14 +206,14 @@ export function VendedoresClient() {
       <AlertDialog open={!!vendedorToDelete} onOpenChange={(open) => !open && setVendedorToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente al vendedor.
+              This action cannot be undone. This will permanently delete the seller.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setVendedorToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setVendedorToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

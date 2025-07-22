@@ -30,8 +30,8 @@ export function InventoryClient() {
     } catch (error) {
       console.error("Error fetching inventory:", error);
       toast({
-        title: 'Error de Carga',
-        description: 'No se pudo cargar el inventario. Verifique sus reglas de seguridad de Firestore.',
+        title: 'Loading Error',
+        description: 'Could not load inventory. Please check your Firestore security rules.',
         variant: 'destructive',
       });
     }
@@ -57,13 +57,13 @@ export function InventoryClient() {
     setIsDialogOpen(false);
     try {
       await addInventoryItem(newItemData);
-      toast({ title: 'Éxito', description: 'Ítem añadido correctamente.' });
+      toast({ title: 'Success', description: 'Item added successfully.' });
       fetchItems(); // Refetch to get the latest list
     } catch (error) {
       console.error("Error adding item:", error);
       toast({
-        title: 'Error al Añadir',
-        description: 'No se pudo añadir el ítem. Verifique sus reglas de seguridad de Firestore.',
+        title: 'Error Adding Item',
+        description: 'Could not add the item. Please check your Firestore security rules.',
         variant: 'destructive',
       });
     }
@@ -123,7 +123,7 @@ export function InventoryClient() {
         {totalPages > 1 && (
           <CardFooter className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages}
+              Page {currentPage} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -132,7 +132,7 @@ export function InventoryClient() {
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
               >
-                Anterior
+                Previous
               </Button>
               <Button
                 variant="outline"
@@ -140,7 +140,7 @@ export function InventoryClient() {
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
               >
-                Siguiente
+                Next
               </Button>
             </div>
           </CardFooter>

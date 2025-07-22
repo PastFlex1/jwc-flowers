@@ -83,19 +83,19 @@ export function FincasClient() {
     try {
       if (fincaData.id) {
         await updateFinca(fincaData.id, fincaData as Finca);
-        toast({ title: 'Éxito', description: 'Finca actualizada correctamente.' });
+        toast({ title: 'Success', description: 'Farm updated successfully.' });
       } else {
         await addFinca(fincaData);
-        toast({ title: 'Éxito', description: 'Finca añadida correctamente.' });
+        toast({ title: 'Success', description: 'Farm added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalFincas(originalFincas); // Revert on failure
-      console.error("Error submitting finca:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error submitting farm:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la finca: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the farm: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -116,15 +116,15 @@ export function FincasClient() {
     
     try {
       await deleteFinca(fincaToDelete.id);
-      toast({ title: 'Éxito', description: 'Finca eliminada correctamente.' });
+      toast({ title: 'Success', description: 'Farm deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalFincas(originalFincas); // Revert
-      console.error("Error deleting finca:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error deleting farm:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar la finca: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the farm: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -149,7 +149,7 @@ export function FincasClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingFinca ? 'Editar Finca' : 'Añadir Nueva Finca'}</DialogTitle>
+              <DialogTitle>{editingFinca ? 'Edit Farm' : 'Add New Farm'}</DialogTitle>
             </DialogHeader>
             <FincaForm 
               onSubmit={handleFormSubmit}
@@ -162,19 +162,19 @@ export function FincasClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Fincas</CardTitle>
-            <CardDescription>Un listado de todas tus fincas guardadas en la base de datos.</CardDescription>
+            <CardTitle>Farm List</CardTitle>
+            <CardDescription>A list of all your saved farms.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>Teléfono</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Address</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Tax ID / RUC</TableHead>
-                  <TableHead>Tipo de Producto</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Product Type</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,7 +201,7 @@ export function FincasClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -210,7 +210,7 @@ export function FincasClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -218,7 +218,7 @@ export function FincasClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -229,14 +229,14 @@ export function FincasClient() {
       <AlertDialog open={!!fincaToDelete} onOpenChange={(open) => !open && setFincaToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la finca de tus registros.
+              This action cannot be undone. This will permanently delete the farm from your records.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setFincaToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setFincaToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

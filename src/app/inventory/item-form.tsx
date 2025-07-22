@@ -97,10 +97,10 @@ export function ItemForm({ onSubmit, onClose }: ItemFormProps) {
         </div>
         <div className="flex justify-end gap-2 pt-4">
            <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit">
-                Añadir Item
+                Add Item
             </Button>
         </div>
       </form>

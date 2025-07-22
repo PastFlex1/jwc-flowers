@@ -13,7 +13,7 @@ import type { Customer, Pais, Carguera, Vendedor, Dae } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   cedula: z.string().refine(val => {
     if (val.length === 10) {
       return /^\d{10}$/.test(val);
@@ -23,18 +23,18 @@ const formSchema = z.object({
     }
     return false;
   }, {
-    message: "La cédula debe tener 10 dígitos o el RUC debe tener 13 dígitos y terminar en 001."
+    message: "ID must be 10 digits or RUC must be 13 digits and end in 001."
   }),
-  pais: z.string().min(1, { message: "El país es requerido." }),
+  pais: z.string().min(1, { message: "Country is required." }),
   daeId: z.string().optional(),
-  estadoCiudad: z.string().min(2, { message: "El estado/ciudad es requerido." }),
-  address: z.string().min(10, { message: "La dirección es muy corta." }),
-  email: z.string().email({ message: "Correo electrónico no válido." }),
-  phone: z.string().min(7, { message: "El teléfono no es válido." }),
-  agencia: z.string().min(1, { message: "La agencia es requerida." }),
-  vendedor: z.string().min(1, { message: "El vendedor es requerido." }),
-  plazo: z.coerce.number().refine(val => [8, 15, 30, 45].includes(val), { message: "Plazo no válido." }),
-  cupo: z.coerce.number().positive({ message: "El cupo debe ser un número positivo." }),
+  estadoCiudad: z.string().min(2, { message: "State/City is required." }),
+  address: z.string().min(10, { message: "Address is too short." }),
+  email: z.string().email({ message: "Invalid email." }),
+  phone: z.string().min(7, { message: "Invalid phone number." }),
+  agencia: z.string().min(1, { message: "Agency is required." }),
+  vendedor: z.string().min(1, { message: "Seller is required." }),
+  plazo: z.coerce.number().refine(val => [8, 15, 30, 45].includes(val), { message: "Invalid term." }),
+  cupo: z.coerce.number().positive({ message: "Credit limit must be a positive number." }),
 });
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
@@ -130,7 +130,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nombre del Cliente</FormLabel>
+                <FormLabel>Customer Name</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Alex" {...field} />
                 </FormControl>
@@ -143,7 +143,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="cedula"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cédula / RUC</FormLabel>
+                <FormLabel>ID / RUC</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., 1712345678" {...field} />
                 </FormControl>
@@ -156,11 +156,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="pais"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>País</FormLabel>
+                <FormLabel>Country</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un país" />
+                      <SelectValue placeholder="Select a country" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -180,7 +180,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="estadoCiudad"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Estado/Ciudad</FormLabel>
+                <FormLabel>State/City</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., Pichincha" {...field} />
                 </FormControl>
@@ -193,7 +193,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Correo Electrónico</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., alex@example.com" {...field} />
                 </FormControl>
@@ -206,7 +206,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Teléfono</FormLabel>
+                <FormLabel>Phone</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g., 0991234567" {...field} />
                 </FormControl>
@@ -219,11 +219,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="agencia"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Agencia</FormLabel>
+                <FormLabel>Agency</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una agencia" />
+                      <SelectValue placeholder="Select an agency" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -243,11 +243,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="vendedor"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Vendedor</FormLabel>
+                <FormLabel>Seller</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un vendedor" />
+                      <SelectValue placeholder="Select a seller" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -267,17 +267,17 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="plazo"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Plazo (días)</FormLabel>
+                <FormLabel>Term (days)</FormLabel>
                 <Select onValueChange={(value) => field.onChange(Number(value))} defaultValue={String(field.value)}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un plazo" />
+                        <SelectValue placeholder="Select a term" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {[8, 15, 30, 45].map(d => (
                         <SelectItem key={d} value={String(d)}>
-                          {d} días
+                          {d} days
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -291,7 +291,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="cupo"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cupo</FormLabel>
+                <FormLabel>Credit Limit</FormLabel>
                 <FormControl>
                   <Input type="number" placeholder="5000" {...field} />
                 </FormControl>
@@ -308,11 +308,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
                 <Select onValueChange={field.onChange} value={field.value} disabled={!selectedPais}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedPais ? "Seleccione un DAE" : "Seleccione un país primero"} />
+                      <SelectValue placeholder={selectedPais ? "Select a DAE" : "Select a country first"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="__none__">Ninguno</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {daes.map(d => (
                       <SelectItem key={d.id} value={d.id} disabled={selectedPais && d.pais !== selectedPais}>
                         {d.pais} ({d.numeroDae})
@@ -330,7 +330,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             name="address"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Dirección</FormLabel>
+                <FormLabel>Address</FormLabel>
                 <FormControl>
                   <Textarea placeholder="123 Main St, Anytown, USA 12345" {...field} />
                 </FormControl>
@@ -340,11 +340,11 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
           />
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancelar
+              Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Cliente')}
+              {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Customer')}
           </Button>
         </div>
       </form>

@@ -8,13 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { paises as defaultPaises } from '@/lib/mock-data';
 import type { Carguera } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombreCarguera: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
+  nombreCarguera: z.string().min(2, { message: "The name must be at least 2 characters." }),
+  pais: z.string().min(1, { message: "Please select a country." }),
 });
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
@@ -56,7 +55,7 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
           name="nombreCarguera"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre de la Carguera</FormLabel>
+              <FormLabel>Carrier Name</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., DHL" {...field} />
               </FormControl>
@@ -69,16 +68,16 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
           name="pais"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>País</FormLabel>
+              <FormLabel>Country</FormLabel>
                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un país" />
+                      <SelectValue placeholder="Select a country" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="Internacional">Internacional</SelectItem>
-                    <SelectItem value="Nacional">Nacional</SelectItem>
+                    <SelectItem value="International">International</SelectItem>
+                    <SelectItem value="National">National</SelectItem>
                   </SelectContent>
                 </Select>
               <FormMessage />
@@ -87,11 +86,11 @@ export function CargueraForm({ onSubmit, onClose, initialData, isSubmitting }: C
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Carguera')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Carrier')}
             </Button>
         </div>
       </form>

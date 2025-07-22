@@ -25,7 +25,7 @@ if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
 } else {
-    throw new Error("La configuración de Firebase está incompleta. Por favor, verifique que todas las variables NEXT_PUBLIC_FIREBASE_* estén correctamente establecidas en su archivo .env.");
+    throw new Error("Firebase configuration is incomplete. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly in your .env file.");
 }
 
 

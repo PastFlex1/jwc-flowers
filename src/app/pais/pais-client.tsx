@@ -82,19 +82,19 @@ export function PaisClient() {
     try {
       if (paisData.id) {
         await updatePais(paisData.id, paisData as Pais);
-        toast({ title: 'Éxito', description: 'País actualizado correctamente.' });
+        toast({ title: 'Success', description: 'Country updated successfully.' });
       } else {
         await addPais(paisData as Omit<Pais, 'id'>);
-        toast({ title: 'Éxito', description: 'País añadido correctamente.' });
+        toast({ title: 'Success', description: 'Country added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalPaises(originalData);
-      console.error("Error submitting pais:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error submitting country:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el país: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the country: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -115,15 +115,15 @@ export function PaisClient() {
 
     try {
       await deletePais(paisToDelete.id);
-      toast({ title: 'Éxito', description: 'País eliminado correctamente.' });
+      toast({ title: 'Success', description: 'Country deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalPaises(originalData);
-      console.error("Error deleting pais:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error deleting country:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar el país: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the country: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -148,7 +148,7 @@ export function PaisClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingPais ? 'Editar País' : 'Añadir Nuevo País'}</DialogTitle>
+              <DialogTitle>{editingPais ? 'Edit Country' : 'Add New Country'}</DialogTitle>
             </DialogHeader>
             <PaisForm 
               onSubmit={handleFormSubmit}
@@ -161,15 +161,15 @@ export function PaisClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Países</CardTitle>
-            <CardDescription>Un listado de todos tus países.</CardDescription>
+            <CardTitle>Country List</CardTitle>
+            <CardDescription>A list of all your countries.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,7 +192,7 @@ export function PaisClient() {
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -201,7 +201,7 @@ export function PaisClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -209,7 +209,7 @@ export function PaisClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -220,14 +220,14 @@ export function PaisClient() {
       <AlertDialog open={!!paisToDelete} onOpenChange={(open) => !open && setPaisToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el país.
+              This action cannot be undone. This will permanently delete the country.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPaisToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setPaisToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

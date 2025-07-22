@@ -13,11 +13,11 @@ import type { Consignatario, Pais, Customer, Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombreConsignatario: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
-  direccion: z.string().min(5, { message: "La dirección debe tener al menos 5 caracteres." }),
-  provincia: z.string().min(1, { message: "Por favor seleccione una provincia." }),
-  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
+  nombreConsignatario: z.string().min(2, { message: "The name must be at least 2 characters." }),
+  customerId: z.string().min(1, { message: "Please select a customer." }),
+  direccion: z.string().min(5, { message: "The address must be at least 5 characters." }),
+  provincia: z.string().min(1, { message: "Please select a province." }),
+  pais: z.string().min(1, { message: "Please select a country." }),
 });
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
@@ -68,9 +68,9 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
           name="nombreConsignatario"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre del Consignatario</FormLabel>
+              <FormLabel>Consignee Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Flores de Holanda" {...field} />
+                <Input placeholder="e.g., Holland Flowers" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -81,11 +81,11 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
           name="customerId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cliente</FormLabel>
+              <FormLabel>Customer</FormLabel>
                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un cliente" />
+                      <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -105,9 +105,9 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
           name="direccion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Dirección</FormLabel>
+              <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="e.g., Av. de las Rosas 123" {...field} />
+                <Textarea placeholder="e.g., 123 Rose Ave." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -119,11 +119,11 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
             name="provincia"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Provincia</FormLabel>
+                <FormLabel>Province</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione una provincia" />
+                        <SelectValue placeholder="Select a province" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -143,11 +143,11 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
             name="pais"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>País</FormLabel>
+                <FormLabel>Country</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un país" />
+                        <SelectValue placeholder="Select a country" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -165,11 +165,11 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
         </div>
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Consignatario')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Consignee')}
             </Button>
         </div>
       </form>

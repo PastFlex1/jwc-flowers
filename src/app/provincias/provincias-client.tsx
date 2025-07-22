@@ -82,19 +82,19 @@ export function ProvinciasClient() {
     try {
         if (provinciaData.id) {
             await updateProvincia(provinciaData.id, provinciaData as Provincia);
-            toast({ title: 'Éxito', description: 'Provincia actualizada correctamente.' });
+            toast({ title: 'Success', description: 'Province updated successfully.' });
         } else {
             await addProvincia(provinciaData as Omit<Provincia, 'id'>);
-            toast({ title: 'Éxito', description: 'Provincia añadida correctamente.' });
+            toast({ title: 'Success', description: 'Province added successfully.' });
         }
         await refreshData();
     } catch (error) {
         setLocalProvincias(originalData);
-        console.error("Error submitting provincia:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        console.error("Error submitting province:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
-            title: 'Error al Guardar',
-            description: `No se pudo guardar la provincia: ${errorMessage}.`,
+            title: 'Error Saving',
+            description: `Could not save the province: ${errorMessage}.`,
             variant: 'destructive',
             duration: 10000,
         });
@@ -115,15 +115,15 @@ export function ProvinciasClient() {
 
     try {
       await deleteProvincia(provinciaToDelete.id);
-      toast({ title: 'Éxito', description: 'Provincia eliminada correctamente.' });
+      toast({ title: 'Success', description: 'Province deleted successfully.' });
       await refreshData();
     } catch (error) {
         setLocalProvincias(originalData);
         console.error("Error deleting provincia:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
-            title: 'Error al Eliminar',
-            description: `No se pudo eliminar la provincia: ${errorMessage}.`,
+            title: 'Error Deleting',
+            description: `Could not delete the province: ${errorMessage}.`,
             variant: 'destructive',
             duration: 10000,
         });
@@ -148,7 +148,7 @@ export function ProvinciasClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingProvincia ? 'Editar Provincia' : 'Añadir Nueva Provincia'}</DialogTitle>
+              <DialogTitle>{editingProvincia ? 'Edit Province' : 'Add New Province'}</DialogTitle>
             </DialogHeader>
             <ProvinciaForm 
               onSubmit={handleFormSubmit}
@@ -161,15 +161,15 @@ export function ProvinciasClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Provincias</CardTitle>
-            <CardDescription>Un listado de todas tus provincias.</CardDescription>
+            <CardTitle>Province List</CardTitle>
+            <CardDescription>A list of all your provinces.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -192,7 +192,7 @@ export function ProvinciasClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -201,7 +201,7 @@ export function ProvinciasClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -209,7 +209,7 @@ export function ProvinciasClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -220,14 +220,14 @@ export function ProvinciasClient() {
       <AlertDialog open={!!provinciaToDelete} onOpenChange={(open) => !open && setProvinciaToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la provincia.
+              This action cannot be undone. This will permanently delete the province.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProvinciaToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setProvinciaToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

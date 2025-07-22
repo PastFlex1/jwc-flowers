@@ -10,7 +10,7 @@ function AppLoadingScreen() {
         <div className="flex h-screen w-screen items-center justify-center bg-background">
              <div className="flex flex-col items-center gap-4">
                 <Flower2 className="h-12 w-12 text-primary animate-pulse" />
-                <p className="text-muted-foreground">Sincronizando datos...</p>
+                <p className="text-muted-foreground">Syncing data...</p>
             </div>
         </div>
     );

@@ -18,7 +18,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="flex flex-col items-center space-y-4">
         <Flower2 className="h-12 w-12 text-primary animate-pulse" />
-        <p className="text-muted-foreground">Redirigiendo...</p>
+        <p className="text-muted-foreground">Redirecting...</p>
       </div>
     </div>
   );

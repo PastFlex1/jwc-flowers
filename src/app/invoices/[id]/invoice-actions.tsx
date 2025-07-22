@@ -13,7 +13,7 @@ export function InvoiceActions({}: InvoiceActionsProps) {
   return (
     <>
       <Button variant="outline" onClick={() => router.back()}>
-        Volver
+        Back
       </Button>
     </>
   );

@@ -12,8 +12,8 @@ import type { Dae, Pais } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  pais: z.string().min(1, { message: "Por favor seleccione un país." }),
-  numeroDae: z.string().min(3, { message: "El número DAE es muy corto." }),
+  pais: z.string().min(1, { message: "Please select a country." }),
+  numeroDae: z.string().min(3, { message: "DAE number is too short." }),
 });
 
 type DaeFormData = Omit<Dae, 'id'> & { id?: string };
@@ -56,11 +56,11 @@ export function DaeForm({ onSubmit, onClose, initialData, isSubmitting, paises }
           name="pais"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre del País</FormLabel>
+              <FormLabel>Country Name</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione un país" />
+                      <SelectValue placeholder="Select a country" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -80,7 +80,7 @@ export function DaeForm({ onSubmit, onClose, initialData, isSubmitting, paises }
           name="numeroDae"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Número de DAE</FormLabel>
+              <FormLabel>DAE Number</FormLabel>
               <FormControl>
                 <Input placeholder="DAE-EC-001" {...field} />
               </FormControl>
@@ -90,11 +90,11 @@ export function DaeForm({ onSubmit, onClose, initialData, isSubmitting, paises }
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir DAE')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add DAE')}
             </Button>
         </div>
       </form>

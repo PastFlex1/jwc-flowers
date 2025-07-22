@@ -12,10 +12,10 @@ import type { Producto } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  tipo: z.string().min(2, { message: "El tipo debe tener al menos 2 caracteres." }),
-  variedad: z.string().min(2, { message: "La variedad debe tener al menos 2 caracteres." }),
-  nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
-  stock: z.coerce.number().min(0, { message: "El stock no puede ser negativo." }),
+  tipo: z.string().min(2, { message: "Type must be at least 2 characters." }),
+  variedad: z.string().min(2, { message: "Variety must be at least 2 characters." }),
+  nombre: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  stock: z.coerce.number().min(0, { message: "Stock cannot be negative." }),
 });
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
@@ -61,9 +61,9 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="tipo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo</FormLabel>
+              <FormLabel>Type</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Fresca" {...field} />
+                <Input placeholder="e.g., Fresh" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,7 +74,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="variedad"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Variedad</FormLabel>
+              <FormLabel>Variety</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Explorer" {...field} />
               </FormControl>
@@ -87,9 +87,9 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre</FormLabel>
+              <FormLabel>Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Rosa" {...field} />
+                <Input placeholder="e.g., Rose" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -110,11 +110,11 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Producto')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Product')}
             </Button>
         </div>
       </form>

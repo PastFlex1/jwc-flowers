@@ -89,19 +89,19 @@ export function ConsignatariosClient() {
     try {
       if (formData.id) {
         await updateConsignatario(formData.id, formData as Consignatario);
-        toast({ title: 'Éxito', description: 'Consignatario actualizado correctamente.' });
+        toast({ title: 'Success', description: 'Consignee updated successfully.' });
       } else {
         await addConsignatario(formData as Omit<Consignatario, 'id'>);
-        toast({ title: 'Éxito', description: 'Consignatario añadido correctamente.' });
+        toast({ title: 'Success', description: 'Consignee added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalConsignatarios(originalData); // Revert
       console.error("Error submitting form:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el consignatario: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the consignee: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -122,15 +122,15 @@ export function ConsignatariosClient() {
 
     try {
       await deleteConsignatario(consignatarioToDelete.id);
-      toast({ title: 'Éxito', description: 'Consignatario eliminado correctamente.' });
+      toast({ title: 'Success', description: 'Consignee deleted successfully.' });
       await refreshData();
     } catch (error) {
         setLocalConsignatarios(originalData);
         console.error("Error deleting consignatario:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
-          title: 'Error al Eliminar',
-          description: `No se pudo eliminar el consignatario: ${errorMessage}.`,
+          title: 'Error Deleting',
+          description: `Could not delete the consignee: ${errorMessage}.`,
           variant: 'destructive',
           duration: 10000,
         });
@@ -155,7 +155,7 @@ export function ConsignatariosClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingConsignatario ? 'Editar Consignatario' : 'Añadir Nuevo Consignatario'}</DialogTitle>
+              <DialogTitle>{editingConsignatario ? 'Edit Consignee' : 'Add New Consignee'}</DialogTitle>
             </DialogHeader>
             <ConsignatarioForm 
               onSubmit={handleFormSubmit}
@@ -171,20 +171,20 @@ export function ConsignatariosClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Consignatarios</CardTitle>
-            <CardDescription>Un listado de todos tus consignatarios.</CardDescription>
+            <CardTitle>Consignee List</CardTitle>
+            <CardDescription>A list of all your consignees.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>País</TableHead>
-                    <TableHead>Provincia</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Province</TableHead>
+                    <TableHead>Address</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -212,7 +212,7 @@ export function ConsignatariosClient() {
            {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -221,7 +221,7 @@ export function ConsignatariosClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -229,7 +229,7 @@ export function ConsignatariosClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -240,14 +240,14 @@ export function ConsignatariosClient() {
       <AlertDialog open={!!consignatarioToDelete} onOpenChange={(open) => !open && setConsignatarioToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el consignatario.
+              This action cannot be undone. This will permanently delete the consignee.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConsignatarioToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setConsignatarioToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

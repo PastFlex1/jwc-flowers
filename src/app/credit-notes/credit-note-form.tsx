@@ -16,10 +16,10 @@ import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
 
 const formSchema = z.object({
-  invoiceId: z.string().min(1, { message: "Por favor seleccione una factura." }),
-  amount: z.coerce.number().positive({ message: "El monto debe ser un número positivo." }),
-  reason: z.string().min(5, { message: "La razón debe tener al menos 5 caracteres." }),
-  date: z.date({ required_error: "La fecha es requerida." }),
+  invoiceId: z.string().min(1, { message: "Please select an invoice." }),
+  amount: z.coerce.number().positive({ message: "Amount must be a positive number." }),
+  reason: z.string().min(5, { message: "Reason must be at least 5 characters." }),
+  date: z.date({ required_error: "Date is required." }),
 });
 
 type CreditNoteFormData = Omit<CreditNote, 'id' | 'invoiceNumber' | 'date'> & { date: Date };
@@ -65,11 +65,11 @@ export function CreditNoteForm({ onSubmit, onClose, isSubmitting, invoices }: Cr
           name="invoiceId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Factura a Acreditar</FormLabel>
+              <FormLabel>Invoice to Credit</FormLabel>
                <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una factura" />
+                      <SelectValue placeholder="Select an invoice" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -89,7 +89,7 @@ export function CreditNoteForm({ onSubmit, onClose, isSubmitting, invoices }: Cr
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Monto a Acreditar</FormLabel>
+              <FormLabel>Amount to Credit</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" placeholder="50.00" {...field} />
               </FormControl>
@@ -102,9 +102,9 @@ export function CreditNoteForm({ onSubmit, onClose, isSubmitting, invoices }: Cr
           name="reason"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Razón</FormLabel>
+              <FormLabel>Reason</FormLabel>
               <FormControl>
-                <Textarea placeholder="e.g., Calidad de la flor" {...field} />
+                <Textarea placeholder="e.g., Flower quality" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -112,13 +112,13 @@ export function CreditNoteForm({ onSubmit, onClose, isSubmitting, invoices }: Cr
         />
          <FormField control={form.control} name="date" render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Fecha de la Nota de Crédito</FormLabel>
+              <FormLabel>Credit Note Date</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {field.value ? format(toDate(field.value), "PPP") : <span>Seleccione fecha</span>}
+                      {field.value ? format(toDate(field.value), "PPP") : <span>Select date</span>}
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
@@ -131,11 +131,11 @@ export function CreditNoteForm({ onSubmit, onClose, isSubmitting, invoices }: Cr
         )}/>
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : 'Añadir Nota de Crédito'}
+                {isSubmitting ? 'Saving...' : 'Add Credit Note'}
             </Button>
         </div>
       </form>

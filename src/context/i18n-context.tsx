@@ -21,7 +21,7 @@ type I18nContextType = {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('es');
+  const [locale, setLocaleState] = useState<Locale>('en');
 
   useEffect(() => {
     const storedLocale = localStorage.getItem('locale') as Locale;
@@ -53,7 +53,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
 
     if (!found) {
-        let fallbackResult: any = translations.es;
+        let fallbackResult: any = translations.en;
         for (const fk of keys) {
             fallbackResult = fallbackResult?.[fk];
              if (fallbackResult === undefined) {

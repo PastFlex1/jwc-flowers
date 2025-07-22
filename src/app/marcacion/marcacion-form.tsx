@@ -12,8 +12,8 @@ import type { Marcacion, Customer } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  numeroMarcacion: z.string().min(1, { message: "El número de marcación es requerido." }),
-  cliente: z.string().min(1, { message: "Por favor seleccione un cliente." }),
+  numeroMarcacion: z.string().min(1, { message: "Marking number is required." }),
+  cliente: z.string().min(1, { message: "Please select a customer." }),
 });
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
@@ -56,9 +56,9 @@ export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting, cu
           name="numeroMarcacion"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Número de Marcación</FormLabel>
+              <FormLabel>Marking Number</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., MARC-001" {...field} />
+                <Input placeholder="e.g., MARK-001" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -69,11 +69,11 @@ export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting, cu
           name="cliente"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cliente</FormLabel>
+              <FormLabel>Customer</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Seleccione un cliente" />
+                    <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -90,11 +90,11 @@ export function MarcacionForm({ onSubmit, onClose, initialData, isSubmitting, cu
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Marcación')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Marking')}
             </Button>
         </div>
       </form>

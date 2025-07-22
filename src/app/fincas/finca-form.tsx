@@ -12,11 +12,11 @@ import type { Finca } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(3, { message: "El nombre debe tener al menos 3 caracteres." }),
-  address: z.string().min(5, { message: "La dirección es muy corta." }),
-  phone: z.string().min(7, { message: "El teléfono no es válido." }),
-  taxId: z.string().min(10, { message: "El Tax ID / RUC no es válido." }),
-  productType: z.string().min(3, { message: "El tipo de producto es muy corto." }),
+  name: z.string().min(3, { message: "Name must be at least 3 characters." }),
+  address: z.string().min(5, { message: "Address is too short." }),
+  phone: z.string().min(7, { message: "Phone number is not valid." }),
+  taxId: z.string().min(10, { message: "Tax ID / RUC is not valid." }),
+  productType: z.string().min(3, { message: "Product type is too short." }),
 });
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
@@ -64,9 +64,9 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre de la finca</FormLabel>
+              <FormLabel>Farm Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Finca Rosaleda" {...field} />
+                <Input placeholder="e.g., Rosaleda Farm" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -77,9 +77,9 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
           name="address"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Dirección</FormLabel>
+              <FormLabel>Address</FormLabel>
               <FormControl>
-                <Textarea placeholder="Valle de las Flores, Cayambe" {...field} />
+                <Textarea placeholder="Valley of Flowers, Cayambe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -90,7 +90,7 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Teléfono</FormLabel>
+              <FormLabel>Phone</FormLabel>
               <FormControl>
                 <Input placeholder="0991234567" {...field} />
               </FormControl>
@@ -116,9 +116,9 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
           name="productType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo de producto</FormLabel>
+              <FormLabel>Product Type</FormLabel>
               <FormControl>
-                <Input placeholder="Rosas" {...field} />
+                <Input placeholder="Roses" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -126,11 +126,11 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Finca')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Farm')}
             </Button>
         </div>
       </form>

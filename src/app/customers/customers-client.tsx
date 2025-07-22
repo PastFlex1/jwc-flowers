@@ -105,19 +105,19 @@ export function CustomersClient() {
     try {
       if (customerData.id) {
         await updateCustomer(customerData.id, customerData as Customer);
-        toast({ title: 'Éxito', description: 'Cliente actualizado correctamente.' });
+        toast({ title: 'Success', description: 'Customer updated successfully.' });
       } else {
         await addCustomer(customerData as Omit<Customer, 'id'>);
-        toast({ title: 'Éxito', description: 'Cliente añadido correctamente.' });
+        toast({ title: 'Success', description: 'Customer added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalCustomers(originalCustomers); // Revert on failure
       console.error("Error submitting customer:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-          title: 'Error al Guardar',
-          description: `No se pudo guardar el cliente: ${errorMessage}.`,
+          title: 'Error Saving',
+          description: `Could not save the customer: ${errorMessage}.`,
           variant: 'destructive',
           duration: 10000,
       });
@@ -138,15 +138,15 @@ export function CustomersClient() {
 
     try {
       await deleteCustomer(customerToDelete.id);
-      toast({ title: 'Éxito', description: 'Cliente eliminado correctamente.' });
+      toast({ title: 'Success', description: 'Customer deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalCustomers(originalCustomers); // Revert on failure
       console.error("Error deleting customer:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar el cliente: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the customer: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -171,7 +171,7 @@ export function CustomersClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{editingCustomer ? 'Editar Cliente' : 'Añadir Nuevo Cliente'}</DialogTitle>
+              <DialogTitle>{editingCustomer ? 'Edit Customer' : 'Add New Customer'}</DialogTitle>
             </DialogHeader>
             <CustomerForm 
               onSubmit={handleFormSubmit}
@@ -189,7 +189,7 @@ export function CustomersClient() {
         <div className="mb-4 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre o cédula..."
+            placeholder="Search by name or ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -219,7 +219,7 @@ export function CustomersClient() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between pt-6">
             <div className="text-sm text-muted-foreground">
-              Página {currentPage} de {totalPages}
+              Page {currentPage} of {totalPages}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -228,7 +228,7 @@ export function CustomersClient() {
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
               >
-                Anterior
+                Previous
               </Button>
               <Button
                 variant="outline"
@@ -236,7 +236,7 @@ export function CustomersClient() {
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
               >
-                Siguiente
+                Next
               </Button>
             </div>
           </div>
@@ -246,14 +246,14 @@ export function CustomersClient() {
       <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente al cliente.
+              This action cannot be undone. This will permanently delete the customer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCustomerToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setCustomerToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

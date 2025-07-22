@@ -11,7 +11,7 @@ import type { Pais } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre del país debe tener al menos 2 caracteres." }),
+  nombre: z.string().min(2, { message: "Country name must be at least 2 characters." }),
 });
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
@@ -51,7 +51,7 @@ export function PaisForm({ onSubmit, onClose, initialData, isSubmitting }: PaisF
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre del País</FormLabel>
+              <FormLabel>Country Name</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Ecuador" {...field} />
               </FormControl>
@@ -61,11 +61,11 @@ export function PaisForm({ onSubmit, onClose, initialData, isSubmitting }: PaisF
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir País')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Country')}
             </Button>
         </div>
       </form>

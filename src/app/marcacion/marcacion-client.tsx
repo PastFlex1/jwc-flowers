@@ -88,19 +88,19 @@ export function MarcacionClient() {
     try {
       if (marcacionData.id) {
         await updateMarcacion(marcacionData.id, marcacionData as Marcacion);
-        toast({ title: 'Éxito', description: 'Marcación actualizada correctamente.' });
+        toast({ title: 'Success', description: 'Marking updated successfully.' });
       } else {
         await addMarcacion(marcacionData as Omit<Marcacion, 'id'>);
-        toast({ title: 'Éxito', description: 'Marcación añadida correctamente.' });
+        toast({ title: 'Success', description: 'Marking added successfully.' });
       }
       await refreshData();
     } catch (error) {
       setLocalMarcaciones(originalData); // Revert
-      console.error("Error submitting marcacion:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error submitting marking:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la marcación: ${errorMessage}.`,
+        title: 'Error Saving',
+        description: `Could not save the marking: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -121,15 +121,15 @@ export function MarcacionClient() {
 
     try {
       await deleteMarcacion(marcacionToDelete.id);
-      toast({ title: 'Éxito', description: 'Marcación eliminada correctamente.' });
+      toast({ title: 'Success', description: 'Marking deleted successfully.' });
       await refreshData();
     } catch (error) {
       setLocalMarcaciones(originalData);
-      console.error("Error deleting marcación:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      console.error("Error deleting marking:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
-        title: 'Error al Eliminar',
-        description: `No se pudo eliminar la marcación: ${errorMessage}.`,
+        title: 'Error Deleting',
+        description: `Could not delete the marking: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -154,7 +154,7 @@ export function MarcacionClient() {
         <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingMarcacion ? 'Editar Marcación' : 'Añadir Nueva Marcación'}</DialogTitle>
+              <DialogTitle>{editingMarcacion ? 'Edit Marking' : 'Add New Marking'}</DialogTitle>
             </DialogHeader>
             <MarcacionForm 
               onSubmit={handleFormSubmit}
@@ -168,16 +168,16 @@ export function MarcacionClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Marcaciones</CardTitle>
-            <CardDescription>Un listado de todas tus marcaciones.</CardDescription>
+            <CardTitle>Marking List</CardTitle>
+            <CardDescription>A list of all your markings.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Número de Marcación</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                  <TableHead>Marking Number</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -201,7 +201,7 @@ export function MarcacionClient() {
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages}
+                Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -210,7 +210,7 @@ export function MarcacionClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  Previous
                 </Button>
                 <Button
                   variant="outline"
@@ -218,7 +218,7 @@ export function MarcacionClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  Siguiente
+                  Next
                 </Button>
               </div>
             </CardFooter>
@@ -229,14 +229,14 @@ export function MarcacionClient() {
       <AlertDialog open={!!marcacionToDelete} onOpenChange={(open) => !open && setMarcacionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás realmente seguro?</AlertDialogTitle>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la marcación.
+              This action cannot be undone. This will permanently delete the marking.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMarcacionToDelete(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Eliminar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setMarcacionToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

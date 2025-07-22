@@ -11,7 +11,7 @@ import type { Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre de la provincia debe tener al menos 2 caracteres." }),
+  nombre: z.string().min(2, { message: "Province name must be at least 2 characters." }),
 });
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
@@ -51,7 +51,7 @@ export function ProvinciaForm({ onSubmit, onClose, initialData, isSubmitting }: 
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre de la Provincia</FormLabel>
+              <FormLabel>Province Name</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Pichincha" {...field} />
               </FormControl>
@@ -61,11 +61,11 @@ export function ProvinciaForm({ onSubmit, onClose, initialData, isSubmitting }: 
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
+                Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Provincia')}
+                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Province')}
             </Button>
         </div>
       </form>
