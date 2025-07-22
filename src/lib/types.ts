@@ -1,4 +1,5 @@
 
+
 export interface Customer {
   id: string;
   name: string;
@@ -119,6 +120,15 @@ export interface Producto {
 }
 
 export interface CreditNote {
+  id: string;
+  invoiceId: string;
+  invoiceNumber: string;
+  amount: number;
+  reason: string;
+  date: string; // ISO string
+}
+
+export interface DebitNote {
   id: string;
   invoiceId: string;
   invoiceNumber: string;

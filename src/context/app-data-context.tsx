@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
 import { getCustomers } from '@/services/customers';
@@ -14,6 +14,7 @@ import { getProvincias } from '@/services/provincias';
 import { getInvoices } from '@/services/invoices';
 import { getProductos } from '@/services/productos';
 import { getCreditNotes } from '@/services/credit-notes';
+import { getDebitNotes } from '@/services/debit-notes';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,6 +31,7 @@ type AppDataContextType = {
   invoices: Invoice[];
   productos: Producto[];
   creditNotes: CreditNote[];
+  debitNotes: DebitNote[];
   isLoading: boolean;
   refreshData: () => Promise<void>;
 };
@@ -49,6 +51,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [creditNotes, setCreditNotes] = useState<CreditNote[]>([]);
+  const [debitNotes, setDebitNotes] = useState<DebitNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -67,6 +70,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         invoicesData,
         productosData,
         creditNotesData,
+        debitNotesData,
       ] = await Promise.all([
         getPaises(),
         getVendedores(),
@@ -80,6 +84,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getInvoices(),
         getProductos(),
         getCreditNotes(),
+        getDebitNotes(),
       ]);
 
       setPaises(paisesData);
@@ -93,6 +98,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       setInvoices(invoicesData);
       setProductos(productosData);
       setCreditNotes(creditNotesData);
+      setDebitNotes(debitNotesData);
       
       if (dbCargueras.length > 0) {
         setCargueras(dbCargueras);
@@ -128,6 +134,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     invoices,
     productos,
     creditNotes,
+    debitNotes,
     isLoading,
     refreshData: fetchData,
   }), [
@@ -143,6 +150,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     invoices,
     productos,
     creditNotes,
+    debitNotes,
     isLoading, 
     fetchData
   ]);
