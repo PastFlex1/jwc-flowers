@@ -321,7 +321,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Número de Factura</FormLabel>
-                  <FormControl><Input placeholder="FACT-001" {...field} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder="FACT-001" {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
@@ -365,7 +365,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="sellerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Vendedor</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un vendedor"} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -374,7 +374,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cliente</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un cliente"} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -392,7 +392,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="farmId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Finca</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una finca"} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -401,7 +401,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="carrierId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Carguera</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione una carguera"} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -410,7 +410,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>País</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
                     <FormControl><SelectTrigger><SelectValue placeholder={"Seleccione un país"} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
