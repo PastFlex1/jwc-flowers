@@ -56,7 +56,7 @@ const invoiceSchema = z.object({
   farmId: z.string().min(1, 'Select a farm.'),
   carrierId: z.string().min(1, 'Select a carrier.'),
   countryId: z.string().min(1, 'Select a country.'),
-  reference: z.string().min(1, "Reference is required."),
+  reference: z.string().optional(),
   masterAWB: z.string().min(1, 'Master AWB is required.'),
   houseAWB: z.string().min(1, 'House AWB is required.'),
   items: z.array(lineItemSchema).min(1, "There must be at least one item."),
@@ -293,6 +293,7 @@ export function NewInvoiceForm() {
     const processedValues = {
         ...values,
         consignatarioId: values.consignatarioId || '',
+        reference: values.reference || '',
     };
     
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
