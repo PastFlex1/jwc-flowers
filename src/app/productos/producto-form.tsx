@@ -15,6 +15,7 @@ const formSchema = z.object({
   tipo: z.string().min(2, { message: "El tipo debe tener al menos 2 caracteres." }),
   variedad: z.string().min(2, { message: "La variedad debe tener al menos 2 caracteres." }),
   nombre: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  stock: z.coerce.number().min(0, { message: "El stock no puede ser negativo." }),
 });
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
@@ -34,6 +35,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       tipo: '',
       variedad: '',
       nombre: '',
+      stock: 0,
     },
   });
 
@@ -42,6 +44,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       tipo: '',
       variedad: '',
       nombre: '',
+      stock: 0,
     });
   }, [initialData, form]);
 
@@ -87,6 +90,19 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
               <FormLabel>Nombre</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Rosa" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="stock"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Stock</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="100" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

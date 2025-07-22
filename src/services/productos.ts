@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import type { Producto } from '@/lib/types';
 import {
@@ -19,6 +20,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
     nombre: data.nombre,
     tipo: data.tipo,
     variedad: data.variedad,
+    stock: data.stock || 0,
   };
 };
 

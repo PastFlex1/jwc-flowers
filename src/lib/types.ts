@@ -119,6 +119,7 @@ export interface Producto {
   nombre: string;
   tipo: string;
   variedad: string;
+  stock: number;
 }
 
 export interface CreditNote {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -171,6 +172,7 @@ export function ProductosClient() {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Variedad</TableHead>
+                  <TableHead>Stock</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -180,6 +182,7 @@ export function ProductosClient() {
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
                     <TableCell>{producto.tipo}</TableCell>
                     <TableCell>{producto.variedad}</TableCell>
+                    <TableCell>{producto.stock}</TableCell>
                     <TableCell className="text-right space-x-0">
                        <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(producto)}>
                            <Edit className="h-4 w-4" />
