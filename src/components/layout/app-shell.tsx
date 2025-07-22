@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 isActive={pathname.startsWith(item.href)}
                 className="gap-3"
               >
-                <Link href={item.href}>
+                <Link href={item.href} prefetch={true}>
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
                 </Link>
