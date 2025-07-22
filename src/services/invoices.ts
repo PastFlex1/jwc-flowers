@@ -71,8 +71,8 @@ export async function addInvoice(invoiceData: Omit<Invoice, 'id' | 'status'>): P
    const invoicesCollection = collection(db, 'invoices');
    const dataWithStatus = {
     ...invoiceData,
-    farmDepartureDate: new Date(invoiceData.farmDepartureDate),
-    flightDate: new Date(invoiceData.flightDate),
+    farmDepartureDate: Timestamp.fromDate(new Date(invoiceData.farmDepartureDate)),
+    flightDate: Timestamp.fromDate(new Date(invoiceData.flightDate)),
     status: 'Pending' as const,
   };
   const docRef = await addDoc(invoicesCollection, dataWithStatus);
