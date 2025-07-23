@@ -33,8 +33,8 @@ export default function InvoiceDownloadButton() {
         logging: false,
         width: noteElement.scrollWidth,
         height: noteElement.scrollHeight,
-        windowWidth: noteElement.scrollWidth,
-        windowHeight: noteElement.scrollHeight,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -42,12 +42,22 @@ export default function InvoiceDownloadButton() {
       const imgHeight = canvas.height;
 
       const pdf = new jsPDF({
-        orientation: imgWidth > imgHeight ? 'l' : 'p',
-        unit: "pt",
-        format: [imgWidth, imgHeight]
+        orientation: 'landscape',
+        unit: 'pt',
+        format: 'a4'
       });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const newImgWidth = imgWidth * ratio;
+      const newImgHeight = imgHeight * ratio;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      const x = (pdfWidth - newImgWidth) / 2;
+      const y = (pdfHeight - newImgHeight) / 2;
+      
+      pdf.addImage(imgData, 'PNG', x, y, newImgWidth, newImgHeight);
       
       const fileName = `Factura-${invoiceNumber?.trim()}.pdf`;
       pdf.save(fileName);
