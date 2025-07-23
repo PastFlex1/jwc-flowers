@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import type { Payment, Invoice } from '@/lib/types';
+import type { Payment, Invoice, CreditNote, DebitNote } from '@/lib/types';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
@@ -33,12 +34,35 @@ type PaymentFormProps = {
   onClose: () => void;
   isSubmitting: boolean;
   invoices: Invoice[];
+  creditNotes: CreditNote[];
+  debitNotes: DebitNote[];
+  payments: Payment[];
   initialData?: PaymentFormData;
 };
 
-export function PaymentForm({ onSubmit, onClose, isSubmitting, invoices, initialData }: PaymentFormProps) {
+export function PaymentForm({ 
+    onSubmit, 
+    onClose, 
+    isSubmitting, 
+    invoices, 
+    creditNotes, 
+    debitNotes, 
+    payments, 
+    initialData 
+}: PaymentFormProps) {
+  const [selectedInvoiceBalance, setSelectedInvoiceBalance] = useState<number | null>(null);
+
   const form = useForm<PaymentFormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema.refine(
+        (data) => {
+            if (selectedInvoiceBalance === null) return true; // Don't validate if balance isn't calculated yet
+            return data.amount <= selectedInvoiceBalance;
+        },
+        {
+            message: "El monto del pago no puede exceder el saldo pendiente.",
+            path: ["amount"],
+        }
+    )),
     mode: 'onChange',
     defaultValues: initialData || {
       invoiceId: '',
@@ -50,12 +74,46 @@ export function PaymentForm({ onSubmit, onClose, isSubmitting, invoices, initial
     },
   });
 
+  const selectedInvoiceId = form.watch('invoiceId');
+
+  useEffect(() => {
+    if (selectedInvoiceId) {
+        const invoice = invoices.find(inv => inv.id === selectedInvoiceId);
+        if (invoice) {
+            const subtotal = invoice.items.reduce((total, item) => {
+                const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
+                const itemTotal = (item.salePrice || 0) * totalStems;
+                return total + itemTotal;
+            }, 0);
+            
+            const tax = subtotal * 0.12;
+            let totalCharge = subtotal + tax;
+
+            const creditsForInvoice = creditNotes.filter(cn => cn.invoiceId === invoice.id);
+            const debitsForInvoice = debitNotes.filter(dn => dn.invoiceId === invoice.id);
+            const paymentsForInvoice = payments.filter(p => p.invoiceId === invoice.id);
+
+            const totalCredits = creditsForInvoice.reduce((sum, note) => sum + note.amount, 0);
+            const totalDebits = debitsForInvoice.reduce((sum, note) => sum + note.amount, 0);
+            const totalPayments = paymentsForInvoice.reduce((sum, payment) => sum + payment.amount, 0);
+            
+            const balance = totalCharge + totalDebits - totalCredits - totalPayments;
+            setSelectedInvoiceBalance(balance);
+            form.setValue('amount', balance); // Pre-fill amount with remaining balance
+        }
+    } else {
+        setSelectedInvoiceBalance(null);
+    }
+  }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form]);
+
   function handleSubmit(values: PaymentFormData) {
     const dataToSubmit: FormSubmitData = {
         ...values,
         paymentDate: values.paymentDate.toISOString(),
     };
     onSubmit(dataToSubmit);
+    form.reset();
+    setSelectedInvoiceBalance(null);
   }
 
   return (
@@ -74,10 +132,12 @@ export function PaymentForm({ onSubmit, onClose, isSubmitting, invoices, initial
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {invoices.map(invoice => (
-                      <SelectItem key={invoice.id} value={invoice.id}>
-                        {invoice.invoiceNumber}
-                      </SelectItem>
+                    {invoices
+                      .filter(inv => inv.status !== 'Paid')
+                      .map(invoice => (
+                        <SelectItem key={invoice.id} value={invoice.id}>
+                          {invoice.invoiceNumber}
+                        </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -85,6 +145,14 @@ export function PaymentForm({ onSubmit, onClose, isSubmitting, invoices, initial
             </FormItem>
           )}
         />
+        
+        {selectedInvoiceBalance !== null && (
+            <div className="p-3 bg-accent/50 rounded-md border border-dashed">
+                <p className="text-sm text-muted-foreground">
+                    Saldo Pendiente: <span className="font-bold text-foreground">${selectedInvoiceBalance.toFixed(2)}</span>
+                </p>
+            </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <FormField

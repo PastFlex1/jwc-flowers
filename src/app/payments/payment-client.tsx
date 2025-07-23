@@ -11,7 +11,7 @@ import { addPayment } from '@/services/payments';
 
 
 export function PaymentClient() {
-  const { invoices, refreshData } = useAppData();
+  const { invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,6 +51,9 @@ export function PaymentClient() {
         <CardContent>
           <PaymentForm 
             invoices={invoices}
+            creditNotes={creditNotes}
+            debitNotes={debitNotes}
+            payments={payments}
             onSubmit={handleAddPayment}
             isSubmitting={isSubmitting}
             onClose={() => {}} 
