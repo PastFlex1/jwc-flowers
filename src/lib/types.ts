@@ -139,3 +139,13 @@ export interface DebitNote {
   reason: string;
   date: string; // ISO string
 }
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  paymentDate: string; // ISO string
+  paymentMethod: 'Efectivo' | 'Transferencia' | 'Cheque' | 'Tarjeta de Crédito' | 'Tarjeta de Débito';
+  reference?: string;
+  notes?: string;
+}

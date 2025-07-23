@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -127,7 +128,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                      <MenubarSeparator />
                     <MenubarItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</MenubarItem>
                     <MenubarItem onClick={() => router.push('/debit-notes')}>Notas de Débito</MenubarItem>
-                     <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/payments')}>Registrar Pago</MenubarItem>
                   </MenubarContent>
                 </MenubarMenu>
               </Menubar>
