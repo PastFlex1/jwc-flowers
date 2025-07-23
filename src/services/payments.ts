@@ -32,6 +32,12 @@ const paymentFromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Pa
   };
 };
 
+export async function getPayments(): Promise<Payment[]> {
+  if (!db) return [];
+  const paymentsCollection = collection(db, 'payments');
+  const snapshot = await getDocs(paymentsCollection);
+  return snapshot.docs.map(paymentFromFirestore);
+}
 
 export async function getPaymentsForInvoice(invoiceId: string): Promise<Payment[]> {
   if (!db) return [];
@@ -90,7 +96,7 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
     const newBalance = totalCharge - newTotalPaid;
     
     let newStatus: 'Paid' | 'Pending' | 'Overdue' = invoiceData.status;
-    if (newBalance <= 0) {
+    if (newBalance <= 0.01) { // Use a small threshold for floating point comparisons
         newStatus = 'Paid';
     }
 

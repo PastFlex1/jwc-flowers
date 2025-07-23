@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAppData } from '@/context/app-data-context';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment } from '@/lib/types';
 
 type HydrationProps = {
   paises?: Pais[];
@@ -18,6 +18,7 @@ type HydrationProps = {
   productos?: Producto[];
   creditNotes?: CreditNote[];
   debitNotes?: DebitNote[];
+  payments?: Payment[];
 }
 
 export function DataHydrator(props: HydrationProps) {

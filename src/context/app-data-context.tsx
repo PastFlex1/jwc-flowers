@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
 import { getCustomers } from '@/services/customers';
@@ -15,6 +15,7 @@ import { getInvoices } from '@/services/invoices';
 import { getProductos } from '@/services/productos';
 import { getCreditNotes } from '@/services/credit-notes';
 import { getDebitNotes } from '@/services/debit-notes';
+import { getPayments } from '@/services/payments';
 import { cargueras as defaultCargueras } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +33,7 @@ type AppData = {
   productos: Producto[];
   creditNotes: CreditNote[];
   debitNotes: DebitNote[];
+  payments: Payment[];
 };
 
 type AppDataContextType = AppData & {
@@ -57,6 +59,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     productos: [],
     creditNotes: [],
     debitNotes: [],
+    payments: [],
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +82,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         productosData,
         creditNotesData,
         debitNotesData,
+        paymentsData,
       ] = await Promise.all([
         getPaises(),
         getVendedores(),
@@ -93,6 +97,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getProductos(),
         getCreditNotes(),
         getDebitNotes(),
+        getPayments(),
       ]);
 
       setData({
@@ -109,6 +114,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         productos: productosData,
         creditNotes: creditNotesData,
         debitNotes: debitNotesData,
+        payments: paymentsData,
       });
 
     } catch (error) {

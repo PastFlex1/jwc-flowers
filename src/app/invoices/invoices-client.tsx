@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Invoice, Customer, CreditNote } from '@/lib/types';
+import type { Invoice, Customer, CreditNote, DebitNote, Payment } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +42,7 @@ function useDebounce<T>(value: T, delay: number): T {
 const ITEMS_PER_PAGE = 10;
 
 export function InvoicesClient() {
-  const { invoices, customers, creditNotes, refreshData } = useAppData();
+  const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,15 +58,33 @@ export function InvoicesClient() {
     }, {} as Record<string, Customer>);
   }, [customers]);
 
-  const creditNotesByInvoiceId = useMemo(() => {
-    return creditNotes.reduce((acc, note) => {
-      if (!acc[note.invoiceId]) {
-        acc[note.invoiceId] = [];
+  const notesAndPaymentsByInvoiceId = useMemo(() => {
+    const result: Record<string, { credits: number; debits: number; payments: number }> = {};
+    
+    invoices.forEach(inv => {
+      result[inv.id] = { credits: 0, debits: 0, payments: 0 };
+    });
+
+    creditNotes.forEach(note => {
+      if (result[note.invoiceId]) {
+        result[note.invoiceId].credits += note.amount;
       }
-      acc[note.invoiceId].push(note);
-      return acc;
-    }, {} as Record<string, CreditNote[]>);
-  }, [creditNotes]);
+    });
+
+    debitNotes.forEach(note => {
+      if (result[note.invoiceId]) {
+        result[note.invoiceId].debits += note.amount;
+      }
+    });
+
+    payments.forEach(payment => {
+      if (result[payment.invoiceId]) {
+        result[payment.invoiceId].payments += payment.amount;
+      }
+    });
+
+    return result;
+  }, [invoices, creditNotes, debitNotes, payments]);
 
   useEffect(() => {
     const filtered = invoices.filter(invoice => {
@@ -101,19 +119,18 @@ export function InvoicesClient() {
     return customerMap[customerId] || null;
   };
 
-  const getInvoiceTotal = (invoice: Invoice) => {
+  const getInvoiceBalance = (invoice: Invoice) => {
     const subtotal = invoice.items.reduce((total, item) => {
       const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
       const itemTotal = (item.salePrice || 0) * totalStems;
       return total + itemTotal;
     }, 0);
-    const tax = subtotal * 0.12; // Assuming 12% tax, adjust if needed
-    const totalWithTax = subtotal + tax;
+    const tax = subtotal * 0.12; 
+    const totalCharge = subtotal + tax;
     
-    const creditsForInvoice = creditNotesByInvoiceId[invoice.id] || [];
-    const totalCreditAmount = creditsForInvoice.reduce((sum, note) => sum + note.amount, 0);
-
-    return totalWithTax - totalCreditAmount;
+    const { credits, debits, payments: totalPayments } = notesAndPaymentsByInvoiceId[invoice.id] || { credits: 0, debits: 0, payments: 0 };
+    
+    return totalCharge + debits - credits - totalPayments;
   };
 
   const handleDeleteClick = (invoice: Invoice) => {
@@ -183,7 +200,7 @@ export function InvoicesClient() {
               </TableHeader>
               <TableBody>
                 {paginatedInvoices.map((invoice) => {
-                  const total = getInvoiceTotal(invoice);
+                  const balance = getInvoiceBalance(invoice);
                   return (
                     <TableRow key={invoice.id}>
                       <TableCell className="font-medium">
@@ -193,7 +210,7 @@ export function InvoicesClient() {
                       </TableCell>
                       <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
                       <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
-                      <TableCell>${total.toFixed(2)}</TableCell>
+                      <TableCell>${balance.toFixed(2)}</TableCell>
                       <TableCell>
                         <Badge
                           variant={invoice.status === 'Paid' ? 'secondary' : invoice.status === 'Overdue' ? 'destructive' : 'outline'}
