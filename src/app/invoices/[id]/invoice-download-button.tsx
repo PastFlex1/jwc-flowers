@@ -31,7 +31,7 @@ export default function InvoiceDownloadButton() {
         scale: 2,
         useCORS: true,
         logging: false,
-        width: noteElement.scrollWidth,
+        width: noteElement.clientWidth, // Use clientWidth for accurate rendering width
         height: noteElement.scrollHeight,
         windowWidth: document.documentElement.scrollWidth,
         windowHeight: document.documentElement.scrollHeight,
