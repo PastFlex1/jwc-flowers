@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { Payment } from '@/lib/types';
+import { addPayment } from '@/services/payments';
 
 
 export function PaymentClient() {
@@ -14,19 +15,17 @@ export function PaymentClient() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // This is a placeholder for the actual addPayment service function
   const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
     setIsSubmitting(true);
-    console.log("Submitting payment data:", data);
     try {
-      // Here you would call your service to add the payment to Firestore
-      // await addPayment(data); 
+      await addPayment(data); 
       toast({
-        title: "Éxito (Simulación)",
-        description: "El pago ha sido registrado.",
+        title: "Éxito",
+        description: "El pago ha sido registrado y la factura actualizada.",
       });
-      // await refreshData();
+      await refreshData();
     } catch (error) {
+      console.error("Error registering payment:", error);
       toast({
         title: "Error",
         description: "No se pudo registrar el pago.",
