@@ -1,14 +1,7 @@
-import { getCargueras } from '@/services/cargueras';
-import { DataHydrator } from '@/components/layout/data-hydrator';
 import { CarguerasClient } from './cargueras-client';
 
-export default async function CarguerasPage() {
-  const cargueras = await getCargueras();
-
-  return (
-    <>
-      <DataHydrator cargueras={cargueras} />
-      <CarguerasClient />
-    </>
-  );
+export default function CarguerasPage() {
+  // Data is now handled globally by AppDataProvider, ensuring dynamic updates.
+  // No need to pre-fetch or hydrate here.
+  return <CarguerasClient />;
 }
