@@ -84,10 +84,10 @@ export async function updateInvoice(id: string, invoiceData: Partial<Omit<Invoic
   const invoiceDoc = doc(db, 'invoices', id);
   const dataToUpdate = { ...invoiceData };
   if (dataToUpdate.farmDepartureDate) {
-    dataToUpdate.farmDepartureDate = new Date(dataToUpdate.farmDepartureDate) as any;
+    dataToUpdate.farmDepartureDate = Timestamp.fromDate(new Date(dataToUpdate.farmDepartureDate)) as any;
   }
   if (dataToUpdate.flightDate) {
-    dataToUpdate.flightDate = new Date(dataToUpdate.flightDate) as any;
+    dataToUpdate.flightDate = Timestamp.fromDate(new Date(dataToUpdate.flightDate)) as any;
   }
   await updateDoc(invoiceDoc, dataToUpdate);
 }

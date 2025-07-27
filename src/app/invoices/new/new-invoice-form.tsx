@@ -294,16 +294,12 @@ export function NewInvoiceForm() {
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
     
-    const processedValues = {
-        ...values,
-        consignatarioId: values.consignatarioId || '',
-        reference: values.reference || '',
-    };
-    
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
-      ...processedValues,
-      farmDepartureDate: processedValues.farmDepartureDate.toISOString(),
-      flightDate: processedValues.flightDate.toISOString(),
+      ...values,
+      consignatarioId: values.consignatarioId || '',
+      reference: values.reference || '',
+      farmDepartureDate: values.farmDepartureDate.toISOString(),
+      flightDate: values.flightDate.toISOString(),
     };
 
     try {
