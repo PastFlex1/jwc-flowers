@@ -41,7 +41,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
     houseAWB: data.houseAWB,
     items: Array.isArray(data.items) ? data.items.map((item: any) => ({
       ...item,
-      product: item.product || item.description || '', 
+      product: item.product || '', 
       variety: item.variety || '',
     })) : [],
     status: data.status || 'Pending',
@@ -69,13 +69,15 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
 export async function addInvoice(invoiceData: Omit<Invoice, 'id' | 'status'>): Promise<string> {
    if (!db) throw new Error("Firebase is not configured. Check your .env file.");
    const invoicesCollection = collection(db, 'invoices');
-   const dataWithStatus = {
+   
+   const dataToSave = {
     ...invoiceData,
     farmDepartureDate: Timestamp.fromDate(new Date(invoiceData.farmDepartureDate)),
     flightDate: Timestamp.fromDate(new Date(invoiceData.flightDate)),
     status: 'Pending' as const,
   };
-  const docRef = await addDoc(invoicesCollection, dataWithStatus);
+
+  const docRef = await addDoc(invoicesCollection, dataToSave);
   return docRef.id;
 }
 
@@ -97,3 +99,5 @@ export async function deleteInvoice(id: string): Promise<void> {
   const invoiceDoc = doc(db, 'invoices', id);
   await deleteDoc(invoiceDoc);
 }
+
+    

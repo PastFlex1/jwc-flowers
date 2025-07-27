@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
@@ -29,18 +27,15 @@ import { useAppData } from '@/context/app-data-context';
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
 const lineItemSchema = z.object({
-  id: z.string().optional(),
-  isSubItem: z.boolean().optional(),
-  parentIndex: z.number().optional(),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Select a type." }),
-  boxCount: z.coerce.number().min(1, "Must be > 0"),
-  bunchesPerBox: z.coerce.number().min(1, "Must be > 0"),
   product: z.string().min(1, "Product is required."),
   variety: z.string().min(1, "Variety is required."),
   length: z.coerce.number().positive("Must be > 0"),
+  bunchesPerBox: z.coerce.number().min(1, "Must be > 0"),
   stemCount: z.coerce.number().positive("Must be > 0"),
   purchasePrice: z.coerce.number().min(0, "Must be >= 0"),
   salePrice: z.coerce.number().min(0, "Must be >= 0"),
+  boxCount: z.coerce.number().min(1, "Must be > 0"),
   nci: z.string().optional(),
   ncf: z.string().optional(),
 });
@@ -100,43 +95,34 @@ export function NewInvoiceForm() {
     resolver: zodResolver(invoiceSchema),
     mode: 'onChange',
     defaultValues: {
-      items: [], // Start with empty items, will be populated from session storage on client
+      items: [],
     },
   });
 
-  const { fields, append, remove, insert } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'items',
   });
   
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
-  const isHeaderSet = watchItems && watchItems.length > 0;
   
-  // Set mounted state
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const initialValues = getInitialFormValues();
+    form.reset(initialValues);
+  }, [form]);
 
-  // Load from session storage only on the client after mounting
-  useEffect(() => {
-    if (isMounted) {
-      const initialValues = getInitialFormValues();
-      form.reset(initialValues);
-    }
-  }, [isMounted, form]);
-
-  // Save form data to session storage on change, but only if no items are added yet.
   useEffect(() => {
     if (isMounted) {
         const subscription = form.watch((value) => {
-            if (!isHeaderSet) {
+            if (value.items?.length === 0) {
               sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
             }
         });
         return () => subscription.unsubscribe();
     }
-  }, [isMounted, form, isHeaderSet]);
+  }, [isMounted, form]);
 
 
   const productTypes = useMemo(() => {
@@ -169,10 +155,6 @@ export function NewInvoiceForm() {
       const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
       
-      if (relatedMarcaciones.length === 1) {
-        form.setValue('reference', relatedMarcaciones[0].numeroMarcacion, { shouldValidate: true });
-      }
-
       const initialValues = getInitialFormValues();
       if (initialValues.customerId !== selectedCustomerId) {
           form.setValue('consignatarioId', '');
@@ -187,29 +169,6 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
   
-  const formattedItems = useMemo(() => {
-      let mainItemCounter = 0;
-      return fields.map((field) => {
-          if (!field.isSubItem) {
-              mainItemCounter++;
-              return { ...field, displayNumber: `${mainItemCounter}` };
-          }
-
-          if (field.parentIndex === undefined) {
-             return { ...field, displayNumber: `?` };
-          }
-          
-          const parentMainItemNumber = fields.slice(0, field.parentIndex + 1).filter(f => !f.isSubItem).length;
-          
-          const subItemCounter = fields
-              .filter(f => f.isSubItem && f.parentIndex === field.parentIndex)
-              .indexOf(field) + 1;
-
-          return { ...field, displayNumber: `${parentMainItemNumber}.${subItemCounter}` };
-      });
-  }, [fields]);
-
-
   const totals = useMemo(() => {
     let totalFob = 0;
     let totalBoxes = 0;
@@ -229,9 +188,7 @@ export function NewInvoiceForm() {
       const stemsInItem = bunchesPerBox * stemCount;
       totalFob += boxCount * stemsInItem * salePrice;
 
-      if (!item.isSubItem) {
-        totalBoxes += boxCount;
-      }
+      totalBoxes += boxCount;
       totalBunches += boxCount * bunchesPerBox;
       totalStems += boxCount * stemsInItem;
     });
@@ -244,14 +201,12 @@ export function NewInvoiceForm() {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
     append({
-      isSubItem: false,
-      parentIndex: undefined,
       boxType: 'hb',
       boxCount: 1,
-      bunchesPerBox: 0,
       product: '',
       variety: '',
       length: 70,
+      bunchesPerBox: 1,
       stemCount: 25,
       purchasePrice: 0,
       salePrice: 0,
@@ -260,44 +215,23 @@ export function NewInvoiceForm() {
     });
   }
   
-  const handleAddSubItem = (parentIndex: number) => {
-    let insertAtIndex = parentIndex + 1;
-    // Find last sub-item of the parent and insert after it
-    for (let i = fields.length - 1; i > parentIndex; i--) {
-        if (fields[i].parentIndex === parentIndex) {
-            insertAtIndex = i + 1;
-            break;
-        }
-    }
-    
-    const parentBoxCount = form.getValues(`items.${parentIndex}.boxCount`);
-
-    insert(insertAtIndex, {
-        isSubItem: true,
-        parentIndex: parentIndex,
-        boxType: 'hb',
-        boxCount: parentBoxCount,
-        bunchesPerBox: 0,
-        product: '',
-        variety: '',
-        length: 70,
-        stemCount: 25,
-        purchasePrice: 0,
-        salePrice: 0,
-        nci: '',
-        ncf: '',
-    });
-  };
-
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
 
     const processedItems = values.items.map(item => ({
-        ...item,
+        boxType: item.boxType,
+        product: item.product,
+        variety: item.variety,
+        length: item.length || 0,
+        bunchesPerBox: item.bunchesPerBox || 0,
+        stemCount: item.stemCount || 0,
+        purchasePrice: item.purchasePrice || 0,
+        salePrice: item.salePrice || 0,
+        boxCount: item.boxCount || 0,
         nci: item.nci || '',
         ncf: item.ncf || '',
     }));
-    
+
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
       ...values,
       items: processedItems,
@@ -332,10 +266,10 @@ export function NewInvoiceForm() {
 
   
   if (!isMounted) {
-    // Render a loading state or null on the server and initial client render
-    // to prevent hydration mismatch.
     return null;
   }
+  
+  const isHeaderSet = watchItems && watchItems.length > 0;
 
   return (
     <div className="space-y-6">
@@ -522,7 +456,7 @@ export function NewInvoiceForm() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {formattedItems.map((field, index) => {
+                      {fields.map((field, index) => {
                          const currentItem = watchItems[index];
                          const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
                          const boxCount = Number(currentItem?.boxCount) || 0;
@@ -534,7 +468,7 @@ export function NewInvoiceForm() {
                          const lineTotal = boxCount * totalStems * salePrice;
 
                          return (
-                          <TableRow key={field.id} className={cn(field.isSubItem && "bg-muted/50")}>
+                          <TableRow key={field.id}>
                            <TableCell>
                              <FormField control={form.control} name={`items.${index}.nci`} render={({ field }) => <Input {...field} value={field.value ?? ''} className="w-12" />} />
                            </TableCell>
@@ -543,12 +477,12 @@ export function NewInvoiceForm() {
                            </TableCell>
                            <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} value={field.value ?? ''} className="w-14" disabled={!!currentItem.isSubItem} />
+                                    <Input type="number" {...field} className="w-14" />
                                 )} />
                             </TableCell>
                             <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value ?? 'hb'}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                   <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.typePlaceholder')} /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
                                 </Select>
@@ -561,7 +495,7 @@ export function NewInvoiceForm() {
                                       field.onChange(value);
                                       form.setValue(`items.${index}.variety`, '');
                                     }} 
-                                    value={field.value ?? ''}
+                                    value={field.value}
                                   >
                                     <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.productPlaceholder')} /></SelectTrigger></FormControl>
                                     <SelectContent>
@@ -572,7 +506,7 @@ export function NewInvoiceForm() {
                                 <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
                                   <Select 
                                     onValueChange={field.onChange}
-                                    value={field.value ?? ''}
+                                    value={field.value}
                                     disabled={!currentItem?.product || varietiesForProduct.length === 0}
                                   >
                                     <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.varietyPlaceholder')} /></SelectTrigger></FormControl>
@@ -583,23 +517,18 @@ export function NewInvoiceForm() {
                                 )}/>
                                </div>
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => (
-                                    <Input type="number" {...field} value={field.value ?? ''} className="w-20" />
+                                    <Input type="number" {...field} className="w-20" />
                                   )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
                             <TableCell className="font-semibold text-center">{totalStems}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
-                               {!field.isSubItem && (
-                                <Button type="button" variant="ghost" size="icon" onClick={() => handleAddSubItem(index)}>
-                                    <SplitSquareHorizontal className="h-4 w-4" />
-                                </Button>
-                               )}
                               <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                             </TableCell>
                           </TableRow>
@@ -638,3 +567,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    

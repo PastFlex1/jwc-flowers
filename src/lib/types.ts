@@ -25,22 +25,18 @@ export interface InventoryItem {
 }
 
 export interface LineItem {
-  id?: string;
-  isSubItem?: boolean;
-  parentIndex?: number;
   boxType: 'qb' | 'eb' | 'hb';
-  boxCount: number;
-  bunchesPerBox: number;
   product: string;
   variety: string;
   length: number;
+  bunchesPerBox: number;
   stemCount: number;
   purchasePrice: number;
   salePrice: number;
+  boxCount: number;
   nci?: string;
   ncf?: string;
 }
-
 
 export interface Invoice {
   id: string;
@@ -148,3 +144,5 @@ export interface Payment {
   reference?: string;
   notes?: string;
 }
+
+    
