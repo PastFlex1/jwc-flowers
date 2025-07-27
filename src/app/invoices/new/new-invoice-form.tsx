@@ -247,7 +247,7 @@ export function NewInvoiceForm() {
     append({
       isSubItem: false,
       parentIndex: undefined,
-      boxType: 'qb',
+      boxType: 'hb',
       boxCount: 1,
       bunchesPerBox: 0,
       product: '',
@@ -277,7 +277,7 @@ export function NewInvoiceForm() {
     insert(insertAtIndex, {
         isSubItem: true,
         parentIndex: parentIndex,
-        boxType: 'qb',
+        boxType: 'hb',
         boxCount: parentBoxCount,
         bunchesPerBox: 0,
         product: '',
@@ -508,22 +508,21 @@ export function NewInvoiceForm() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[80px]">{t('invoices.new.items.no')}</TableHead>
-                        <TableHead className="min-w-[160px]">{t('invoices.new.items.product')}</TableHead>
-                        <TableHead className="min-w-[160px]">{t('invoices.new.items.variety')}</TableHead>
-                        <TableHead className="w-[130px]">{t('invoices.new.items.boxType')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.boxCount')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.bunchesPerBox')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.length')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.stemsPerBunch')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.purchasePrice')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.salePrice')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.netWeight')}</TableHead>
-                        <TableHead className="w-24">{t('invoices.new.items.grossWeight')}</TableHead>
-                        <TableHead className="w-[140px] text-right">{t('invoices.new.items.total')}</TableHead>
-                        <TableHead className="w-[80px]">{t('invoices.new.items.actions')}</TableHead>
-                      </TableRow>
+                       <TableRow>
+                          <TableHead className="w-[50px]">NCI</TableHead>
+                          <TableHead className="w-[50px]">NCF</TableHead>
+                          <TableHead className="w-[60px]">#BOX</TableHead>
+                          <TableHead className="w-[100px]">TIPO</TableHead>
+                          <TableHead className="min-w-[180px]">PRODUCTOS</TableHead>
+                          <TableHead className="w-[100px]">LONGITUD</TableHead>
+                          <TableHead className="w-[100px]">BON_BOX</TableHead>
+                          <TableHead className="w-[100px]">TALLOS</TableHead>
+                          <TableHead className="w-[100px]">P_COMPRA</TableHead>
+                          <TableHead className="w-[100px]">PRECIO</TableHead>
+                          <TableHead className="w-[100px]">TOTAL_U</TableHead>
+                          <TableHead className="w-[120px]">TOTAL</TableHead>
+                          <TableHead className="w-[80px]">{t('invoices.new.items.actions')}</TableHead>
+                        </TableRow>
                     </TableHeader>
                     <TableBody>
                       {formattedItems.map((field, index) => {
@@ -533,13 +532,28 @@ export function NewInvoiceForm() {
                          const bunchesPerBox = Number(currentItem?.bunchesPerBox) || 0;
                          const stemCount = Number(currentItem?.stemCount) || 0;
                          const salePrice = Number(currentItem?.salePrice) || 0;
-                         const lineTotal = boxCount * bunchesPerBox * stemCount * salePrice;
+                         
+                         const totalStems = bunchesPerBox * stemCount;
+                         const lineTotal = boxCount * totalStems * salePrice;
 
                          return (
                           <TableRow key={field.id} className={cn(field.isSubItem && "bg-muted/50")}>
-                           <TableCell className={cn("font-medium", field.isSubItem && "pl-8")}>{field.displayNumber}</TableCell>
+                           <TableCell><Input type="text" className="w-12" /></TableCell>
+                           <TableCell><Input type="text" className="w-12" /></TableCell>
+                           <TableCell>
+                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
+                                    <Input type="number" {...field} value={field.value ?? ''} className="w-14" disabled={!!currentItem.isSubItem} />
+                                )} />
+                            </TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value ?? 'hb'}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.typePlaceholder')} /></SelectTrigger></FormControl>
+                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
+                                </Select>
+                            )} /></TableCell>
                             <TableCell>
-                               <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
+                               <div className="flex gap-2">
+                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
                                   <Select 
                                     onValueChange={(value) => {
                                       field.onChange(value);
@@ -547,49 +561,36 @@ export function NewInvoiceForm() {
                                     }} 
                                     value={field.value ?? ''}
                                   >
-                                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.productPlaceholder')} /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.productPlaceholder')} /></SelectTrigger></FormControl>
                                     <SelectContent>
                                       {productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
-                              )} />
-                            </TableCell>
-                            <TableCell>
-                              <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
+                                )}/>
+                                <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
                                   <Select 
                                     onValueChange={field.onChange}
                                     value={field.value ?? ''}
                                     disabled={!currentItem?.product || varietiesForProduct.length === 0}
                                   >
-                                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.varietyPlaceholder')} /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.varietyPlaceholder')} /></SelectTrigger></FormControl>
                                     <SelectContent>
                                       {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
-                              )} />
+                                )}/>
+                               </div>
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value ?? 'qb'}>
-                                  <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.typePlaceholder')} /></SelectTrigger></FormControl>
-                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
-                                </Select>
-                            )} /></TableCell>
-                             <TableCell>
-                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} value={field.value ?? ''} className="w-20" disabled={!!currentItem.isSubItem} />
-                                )} />
-                            </TableCell>
+                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell>
                                <FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => (
                                     <Input type="number" {...field} value={field.value ?? ''} className="w-20" />
                                   )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
                             <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.netWeight`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.grossWeight`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? ''} className="w-20" />} /></TableCell>
+                            <TableCell className="font-semibold text-center">{totalStems}</TableCell>
                             <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
                             <TableCell className="flex items-center gap-1">
                                {!field.isSubItem && (
@@ -605,14 +606,10 @@ export function NewInvoiceForm() {
                     </TableBody>
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell colSpan={2}>{t('invoices.new.items.totals')} ({fields.length})</TableCell>
-                        <TableCell></TableCell>
-                        <TableCell></TableCell>
-                        <TableCell className="text-center">{totals.totalBoxes}</TableCell>
+                        <TableCell colSpan={6}>{t('invoices.new.items.totals')} ({fields.length})</TableCell>
                         <TableCell className="text-center">{totals.totalBunches}</TableCell>
-                        <TableCell></TableCell>
                         <TableCell className="text-center">{totals.totalStems}</TableCell>
-                        <TableCell colSpan={4}></TableCell>
+                        <TableCell colSpan={3}></TableCell>
                         <TableCell className="text-lg text-right font-bold pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
                         <TableCell></TableCell>
                       </TableRow>
