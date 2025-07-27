@@ -293,9 +293,17 @@ export function NewInvoiceForm() {
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
+
+    const processedItems = values.items.map(item => ({
+        ...item,
+        boxNumber: item.boxNumber || 0,
+        netWeight: item.netWeight || 0,
+        grossWeight: item.grossWeight || 0,
+    }));
     
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
       ...values,
+      items: processedItems,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
