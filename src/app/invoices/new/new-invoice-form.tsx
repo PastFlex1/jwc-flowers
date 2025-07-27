@@ -41,9 +41,8 @@ const lineItemSchema = z.object({
   stemCount: z.coerce.number().positive("Must be > 0"),
   purchasePrice: z.coerce.number().min(0, "Must be >= 0"),
   salePrice: z.coerce.number().min(0, "Must be >= 0"),
-  boxNumber: z.number().optional(),
-  netWeight: z.coerce.number().optional(),
-  grossWeight: z.coerce.number().optional(),
+  nci: z.string().optional(),
+  ncf: z.string().optional(),
 });
 
 const invoiceSchema = z.object({
@@ -256,9 +255,8 @@ export function NewInvoiceForm() {
       stemCount: 25,
       purchasePrice: 0,
       salePrice: 0,
-      netWeight: 0,
-      grossWeight: 0,
-      boxNumber: fields.length + 1,
+      nci: '',
+      ncf: '',
     });
   }
   
@@ -286,8 +284,8 @@ export function NewInvoiceForm() {
         stemCount: 25,
         purchasePrice: 0,
         salePrice: 0,
-        netWeight: 0,
-        grossWeight: 0,
+        nci: '',
+        ncf: '',
     });
   };
 
@@ -296,9 +294,8 @@ export function NewInvoiceForm() {
 
     const processedItems = values.items.map(item => ({
         ...item,
-        boxNumber: item.boxNumber || 0,
-        netWeight: item.netWeight || 0,
-        grossWeight: item.grossWeight || 0,
+        nci: item.nci || '',
+        ncf: item.ncf || '',
     }));
     
     const invoiceData: Omit<Invoice, 'id' | 'status'> = {
@@ -511,9 +508,9 @@ export function NewInvoiceForm() {
                        <TableRow>
                           <TableHead className="w-[50px]">NCI</TableHead>
                           <TableHead className="w-[50px]">NCF</TableHead>
-                          <TableHead className="w-[60px]">#BOX</TableHead>
-                          <TableHead className="w-[100px]">TIPO</TableHead>
-                          <TableHead className="min-w-[180px]">PRODUCTOS</TableHead>
+                          <TableHead className="w-[80px]">#BOX</TableHead>
+                          <TableHead className="w-[120px]">TIPO</TableHead>
+                          <TableHead className="min-w-[250px]">PRODUCTOS</TableHead>
                           <TableHead className="w-[100px]">LONGITUD</TableHead>
                           <TableHead className="w-[100px]">BON_BOX</TableHead>
                           <TableHead className="w-[100px]">TALLOS</TableHead>
@@ -538,14 +535,19 @@ export function NewInvoiceForm() {
 
                          return (
                           <TableRow key={field.id} className={cn(field.isSubItem && "bg-muted/50")}>
-                           <TableCell><Input type="text" className="w-12" /></TableCell>
-                           <TableCell><Input type="text" className="w-12" /></TableCell>
+                           <TableCell>
+                             <FormField control={form.control} name={`items.${index}.nci`} render={({ field }) => <Input {...field} value={field.value ?? ''} className="w-12" />} />
+                           </TableCell>
+                           <TableCell>
+                             <FormField control={form.control} name={`items.${index}.ncf`} render={({ field }) => <Input {...field} value={field.value ?? ''} className="w-12" />} />
+                           </TableCell>
                            <TableCell>
                                 <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
                                     <Input type="number" {...field} value={field.value ?? ''} className="w-14" disabled={!!currentItem.isSubItem} />
                                 )} />
                             </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
+                            <TableCell>
+                                <FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
                                 <Select onValueChange={field.onChange} value={field.value ?? 'hb'}>
                                   <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.typePlaceholder')} /></SelectTrigger></FormControl>
                                   <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>

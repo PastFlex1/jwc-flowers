@@ -30,7 +30,6 @@ export interface LineItem {
   parentIndex?: number;
   boxType: 'qb' | 'eb' | 'hb';
   boxCount: number;
-  boxNumber?: number;
   bunchesPerBox: number;
   product: string;
   variety: string;
@@ -38,8 +37,8 @@ export interface LineItem {
   stemCount: number;
   purchasePrice: number;
   salePrice: number;
-  netWeight?: number;
-  grossWeight?: number;
+  nci?: string;
+  ncf?: string;
 }
 
 
