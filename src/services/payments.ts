@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import type { Payment, Invoice, CreditNote, DebitNote } from '@/lib/types';
+import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import {
   collection,
   getDocs,
@@ -62,45 +62,39 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
 
     const invoiceData = invoiceDoc.data() as Omit<Invoice, 'id'>;
 
-    // 1. Calculate total charge on invoice
-    const subtotal = invoiceData.items.reduce((total, item) => {
-        const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-        return total + ((item.salePrice || 0) * totalStems);
+    const subtotal = invoiceData.items.reduce((acc, item) => {
+        return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+            const stems = bunch.stemsPerBunch * bunch.bunches;
+            return bunchAcc + (stems * bunch.salePrice);
+        }, 0);
     }, 0);
-    const tax = subtotal * 0.12; 
-    let totalCharge = subtotal + tax;
 
-    // 2. Fetch and subtract credit notes
     const creditNotesRef = collection(db, 'creditNotes');
     const creditQuery = query(creditNotesRef, where("invoiceId", "==", paymentData.invoiceId));
     const creditNotesSnapshot = await getDocs(creditQuery);
     const totalCreditAmount = creditNotesSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as CreditNote).amount, 0);
 
-    // 3. Fetch and add debit notes
     const debitNotesRef = collection(db, 'debitNotes');
     const debitQuery = query(debitNotesRef, where("invoiceId", "==", paymentData.invoiceId));
     const debitNotesSnapshot = await getDocs(debitQuery);
     const totalDebitAmount = debitNotesSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as DebitNote).amount, 0);
 
-    totalCharge = totalCharge - totalCreditAmount + totalDebitAmount;
+    let totalCharge = subtotal - totalCreditAmount + totalDebitAmount;
 
 
-    // 4. Fetch existing payments
     const paymentsRef = collection(db, 'payments');
     const paymentQuery = query(paymentsRef, where("invoiceId", "==", paymentData.invoiceId));
     const paymentsSnapshot = await getDocs(paymentQuery);
     const totalPaidAmount = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as Payment).amount, 0);
     
-    // 5. Calculate new balance and determine new status
     const newTotalPaid = totalPaidAmount + paymentData.amount;
     const newBalance = totalCharge - newTotalPaid;
     
     let newStatus: 'Paid' | 'Pending' | 'Overdue' = invoiceData.status;
-    if (newBalance <= 0.01) { // Use a small threshold for floating point comparisons
+    if (newBalance <= 0.01) {
         newStatus = 'Paid';
     }
 
-    // 6. Add the new payment
     const newPaymentRef = doc(collection(db, 'payments'));
     const newPaymentData = {
         ...paymentData,
@@ -109,7 +103,6 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
     transaction.set(newPaymentRef, newPaymentData);
     paymentId = newPaymentRef.id;
 
-    // 7. Update the invoice status
     transaction.update(invoiceRef, { status: newStatus });
    });
 

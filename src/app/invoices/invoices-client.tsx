@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Invoice, Customer, CreditNote, DebitNote, Payment } from '@/lib/types';
+import type { Invoice, Customer, CreditNote, DebitNote, Payment, BunchItem } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
@@ -120,17 +120,16 @@ export function InvoicesClient() {
   };
 
   const getInvoiceBalance = (invoice: Invoice) => {
-    const subtotal = invoice.items.reduce((total, item) => {
-      const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-      const itemTotal = (item.salePrice || 0) * totalStems;
-      return total + itemTotal;
+    const subtotal = invoice.items.reduce((acc, item) => {
+        return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+            const stems = bunch.stemsPerBunch * bunch.bunches;
+            return bunchAcc + (stems * bunch.salePrice);
+        }, 0);
     }, 0);
-    const tax = subtotal * 0.12; 
-    const totalCharge = subtotal + tax;
-    
+
     const { credits, debits, payments: totalPayments } = notesAndPaymentsByInvoiceId[invoice.id] || { credits: 0, debits: 0, payments: 0 };
     
-    return totalCharge + debits - credits - totalPayments;
+    return subtotal + debits - credits - totalPayments;
   };
 
   const handleDeleteClick = (invoice: Invoice) => {

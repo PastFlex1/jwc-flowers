@@ -93,7 +93,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
                     <div className="p-1 text-center">{invoice.invoiceNumber}</div>
                     <div className="p-1">{data.customer.name}</div>
                     <div className="p-1 text-right">${invoice.total.toFixed(2)}</div>
-                    <div className="p-1 text-right">${invoice.credits.toFixed(2)}</div>
+                    <div className="p-1 text-right">${(invoice.credits - invoice.debits).toFixed(2)}</div>
                     <div className="p-1 text-right">${invoice.payments.toFixed(2)}</div>
                     <div className="p-1 text-right font-semibold">${invoice.balance.toFixed(2)}</div>
                    </div>
@@ -105,7 +105,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
            <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-xs bg-gray-200 border-b border-l border-r border-black">
               <div className="p-1 border-r border-black col-span-3 text-center">TOTAL OUTSTANDING</div>
               <div className="p-1 border-r border-black text-right">${data.invoices.reduce((acc, inv) => acc + inv.total, 0).toFixed(2)}</div>
-              <div className="p-1 border-r border-black text-right">${data.totalCredits.toFixed(2)}</div>
+              <div className="p-1 border-r border-black text-right">${(data.totalCredits - data.totalDebits).toFixed(2)}</div>
               <div className="p-1 border-r border-black text-right">${data.totalPayments.toFixed(2)}</div>
               <div className="p-1 text-right">${data.totalOutstanding.toFixed(2)}</div>
             </div>

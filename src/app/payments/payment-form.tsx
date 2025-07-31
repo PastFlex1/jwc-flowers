@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import type { Payment, Invoice, CreditNote, DebitNote } from '@/lib/types';
+import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
@@ -55,7 +54,7 @@ export function PaymentForm({
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(formSchema.refine(
         (data) => {
-            if (selectedInvoiceBalance === null) return true; // Don't validate if balance isn't calculated yet
+            if (selectedInvoiceBalance === null) return true;
             return data.amount <= selectedInvoiceBalance;
         },
         {
@@ -80,14 +79,12 @@ export function PaymentForm({
     if (selectedInvoiceId) {
         const invoice = invoices.find(inv => inv.id === selectedInvoiceId);
         if (invoice) {
-            const subtotal = invoice.items.reduce((total, item) => {
-                const totalStems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-                const itemTotal = (item.salePrice || 0) * totalStems;
-                return total + itemTotal;
+            const subtotal = invoice.items.reduce((acc, item) => {
+              return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+                  const stems = bunch.stemsPerBunch * bunch.bunches;
+                  return bunchAcc + (stems * bunch.salePrice);
+              }, 0);
             }, 0);
-            
-            const tax = subtotal * 0.12;
-            let totalCharge = subtotal + tax;
 
             const creditsForInvoice = creditNotes.filter(cn => cn.invoiceId === invoice.id);
             const debitsForInvoice = debitNotes.filter(dn => dn.invoiceId === invoice.id);
@@ -97,9 +94,9 @@ export function PaymentForm({
             const totalDebits = debitsForInvoice.reduce((sum, note) => sum + note.amount, 0);
             const totalPayments = paymentsForInvoice.reduce((sum, payment) => sum + payment.amount, 0);
             
-            const balance = totalCharge + totalDebits - totalCredits - totalPayments;
+            const balance = subtotal + totalDebits - totalCredits - totalPayments;
             setSelectedInvoiceBalance(balance);
-            form.setValue('amount', balance); // Pre-fill amount with remaining balance
+            form.setValue('amount', balance);
         }
     } else {
         setSelectedInvoiceBalance(null);

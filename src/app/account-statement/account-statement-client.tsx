@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useAppData } from '@/context/app-data-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import type { Customer, Invoice, CreditNote, DebitNote } from '@/lib/types';
+import type { Customer, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { AccountStatementView } from './account-statement-view';
 import AccountStatementDownloadButton from './account-statement-download';
 
@@ -19,7 +19,7 @@ export type StatementData = {
 };
 
 export function AccountStatementClient() {
-  const { customers, invoices, creditNotes, debitNotes } = useAppData();
+  const { customers, invoices, creditNotes, debitNotes, payments } = useAppData();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   const statementData = useMemo((): StatementData | null => {
@@ -31,30 +31,30 @@ export function AccountStatementClient() {
     const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId);
 
     const processedInvoices = customerInvoices.map(invoice => {
-      const invoiceSubtotal = invoice.items.reduce((acc, item) => {
-        const stems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-        return acc + stems * (item.salePrice || 0);
+       const invoiceSubtotal = invoice.items.reduce((acc, item) => {
+        return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+            const stems = bunch.stemsPerBunch * bunch.bunches;
+            return bunchAcc + (stems * bunch.salePrice);
+        }, 0);
       }, 0);
 
       const creditsForInvoice = creditNotes.filter(cn => cn.invoiceId === invoice.id);
       const debitsForInvoice = debitNotes.filter(dn => dn.invoiceId === invoice.id);
+      const paymentsForInvoice = payments.filter(p => p.invoiceId === invoice.id);
 
       const totalCredits = creditsForInvoice.reduce((acc, note) => acc + note.amount, 0);
       const totalDebits = debitsForInvoice.reduce((acc, note) => acc + note.amount, 0);
+      const totalPayments = paymentsForInvoice.reduce((acc, payment) => acc + payment.amount, 0);
       
       const totalCharge = invoiceSubtotal + totalDebits;
-      
-      // NOTE: Payment logic is simulated as there's no payment data model yet.
-      // For now, we assume nothing has been paid.
-      const payments = 0; 
-      const balance = totalCharge - totalCredits - payments;
+      const balance = totalCharge - totalCredits - totalPayments;
 
       return {
         ...invoice,
         total: totalCharge,
         credits: totalCredits,
         debits: totalDebits,
-        payments,
+        payments: totalPayments,
         balance,
       };
     });
@@ -64,7 +64,6 @@ export function AccountStatementClient() {
     const totalDebits = processedInvoices.reduce((acc, inv) => acc + inv.debits, 0);
     const totalPayments = processedInvoices.reduce((acc, inv) => acc + inv.payments, 0);
 
-    // Placeholder for urgent payment logic
     const urgentPayment = processedInvoices
         .filter(inv => inv.status === 'Overdue')
         .reduce((acc, inv) => acc + inv.balance, 0);
@@ -78,7 +77,7 @@ export function AccountStatementClient() {
       totalPayments,
       urgentPayment
     };
-  }, [selectedCustomerId, customers, invoices, creditNotes, debitNotes]);
+  }, [selectedCustomerId, customers, invoices, creditNotes, debitNotes, payments]);
 
   return (
     <div className="space-y-6">
