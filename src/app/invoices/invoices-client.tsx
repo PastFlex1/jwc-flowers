@@ -121,6 +121,7 @@ export function InvoicesClient() {
 
   const getInvoiceBalance = (invoice: Invoice) => {
     const subtotal = invoice.items.reduce((acc, item) => {
+        if (!item.bunches) return acc;
         return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
             const stems = bunch.stemsPerBunch * bunch.bunches;
             return bunchAcc + (stems * bunch.salePrice);
