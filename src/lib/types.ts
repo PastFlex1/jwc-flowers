@@ -24,18 +24,24 @@ export interface InventoryItem {
   cost: number;
 }
 
-export interface LineItem {
-  boxType: 'qb' | 'eb' | 'hb';
+export interface BunchItem {
+  id: string;
   product: string;
   variety: string;
   length: number;
-  bunchesPerBox: number;
-  stemCount: number;
+  stemsPerBunch: number;
+  bunches: number;
   purchasePrice: number;
   salePrice: number;
-  boxCount: number;
+}
+
+export interface LineItem {
+  id: string;
+  boxType: 'qb' | 'eb' | 'hb';
+  boxNumber: number;
   nci?: string;
   ncf?: string;
+  bunches: BunchItem[];
 }
 
 export interface Invoice {

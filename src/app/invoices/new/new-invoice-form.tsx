@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate, parseISO } from 'date-fns';
-import { CalendarIcon, Trash2, PlusCircle, Loader2, SplitSquareHorizontal } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle, Loader2 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -21,23 +22,30 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, Consignatario, Marcacion } from '@/lib/types';
+import type { Invoice, Consignatario, Marcacion, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
-const lineItemSchema = z.object({
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Select a type." }),
+
+const bunchItemSchema = z.object({
+  id: z.string(),
   product: z.string().min(1, "Product is required."),
   variety: z.string().min(1, "Variety is required."),
   length: z.coerce.number().positive("Must be > 0"),
-  bunchesPerBox: z.coerce.number().min(1, "Must be > 0"),
-  stemCount: z.coerce.number().positive("Must be > 0"),
+  stemsPerBunch: z.coerce.number().positive("Must be > 0"),
+  bunches: z.coerce.number().min(1, "Must be > 0"),
   purchasePrice: z.coerce.number().min(0, "Must be >= 0"),
   salePrice: z.coerce.number().min(0, "Must be >= 0"),
-  boxCount: z.coerce.number().min(1, "Must be > 0"),
+});
+
+const lineItemSchema = z.object({
+  id: z.string(),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Select a type." }),
+  boxNumber: z.coerce.number().min(1, "Must be > 0"),
   nci: z.string().optional(),
   ncf: z.string().optional(),
+  bunches: z.array(bunchItemSchema).min(1, "Each box must have at least one bunch."),
 });
 
 const invoiceSchema = z.object({
@@ -53,7 +61,7 @@ const invoiceSchema = z.object({
   reference: z.string().optional(),
   masterAWB: z.string().min(1, 'Master AWB is required.'),
   houseAWB: z.string().min(1, 'House AWB is required.'),
-  items: z.array(lineItemSchema),
+  items: z.array(lineItemSchema).min(1, "At least one item is required."),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
@@ -99,7 +107,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -116,9 +124,7 @@ export function NewInvoiceForm() {
   useEffect(() => {
     if (isMounted) {
         const subscription = form.watch((value) => {
-            if (value.items?.length === 0) {
-              sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
-            }
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
         });
         return () => subscription.unsubscribe();
     }
@@ -171,78 +177,82 @@ export function NewInvoiceForm() {
   
   const totals = useMemo(() => {
     let totalFob = 0;
-    let totalBoxes = 0;
+    let totalBoxes = watchItems?.length || 0;
     let totalBunches = 0;
     let totalStems = 0;
     
-    if (!watchItems) {
-      return { totalFob, totalBoxes, totalBunches, totalStems };
-    }
-
-    watchItems.forEach(item => {
-      const boxCount = Number(item.boxCount) || 0;
-      const bunchesPerBox = Number(item.bunchesPerBox) || 0;
-      const stemCount = Number(item.stemCount) || 0;
-      const salePrice = Number(item.salePrice) || 0;
-      
-      const stemsInItem = bunchesPerBox * stemCount;
-      totalFob += boxCount * stemsInItem * salePrice;
-
-      totalBoxes += boxCount;
-      totalBunches += boxCount * bunchesPerBox;
-      totalStems += boxCount * stemsInItem;
+    watchItems?.forEach(item => {
+      item.bunches.forEach(bunch => {
+        const bunchesCount = Number(bunch.bunches) || 0;
+        const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
+        const salePrice = Number(bunch.salePrice) || 0;
+        
+        totalBunches += bunchesCount;
+        const stemsInBunch = bunchesCount * stemsPerBunch;
+        totalStems += stemsInBunch;
+        totalFob += stemsInBunch * salePrice;
+      });
     });
 
     return { totalFob, totalBoxes, totalBunches, totalStems };
   }, [watchItems]);
 
-  const handleAddItem = () => {
-    if (fields.length === 0) {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    }
+  const handleAddBox = () => {
     append({
+      id: uuidv4(),
       boxType: 'hb',
-      boxCount: 1,
-      product: '',
-      variety: '',
-      length: 70,
-      bunchesPerBox: 1,
-      stemCount: 25,
-      purchasePrice: 0,
-      salePrice: 0,
+      boxNumber: fields.length + 1,
       nci: '',
       ncf: '',
+      bunches: [],
     });
+  }
+
+  const handleAddBunch = (boxIndex: number) => {
+    const currentItem = form.getValues(`items.${boxIndex}`);
+    const updatedBunches = [...currentItem.bunches, {
+        id: uuidv4(),
+        product: '',
+        variety: '',
+        length: 70,
+        stemsPerBunch: 25,
+        bunches: 1,
+        purchasePrice: 0,
+        salePrice: 0,
+    }];
+    update(boxIndex, { ...currentItem, bunches: updatedBunches });
+  }
+
+  const handleRemoveBunch = (boxIndex: number, bunchIndex: number) => {
+     const currentItem = form.getValues(`items.${boxIndex}`);
+     const updatedBunches = currentItem.bunches.filter((_, i) => i !== bunchIndex);
+     update(boxIndex, { ...currentItem, bunches: updatedBunches });
   }
   
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
 
-    const processedItems = values.items.map(item => ({
-        boxType: item.boxType,
-        product: item.product,
-        variety: item.variety,
-        length: item.length || 0,
-        bunchesPerBox: item.bunchesPerBox || 0,
-        stemCount: item.stemCount || 0,
-        purchasePrice: item.purchasePrice || 0,
-        salePrice: item.salePrice || 0,
-        boxCount: item.boxCount || 0,
-        nci: item.nci || '',
-        ncf: item.ncf || '',
-    }));
-
-    const invoiceData: Omit<Invoice, 'id' | 'status'> = {
+    const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
-      items: processedItems,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
+      status: 'Pending',
+      items: values.items.map(item => ({
+        ...item,
+        nci: item.nci || '',
+        ncf: item.ncf || '',
+        bunches: item.bunches.map(bunch => ({
+            ...bunch,
+            purchasePrice: bunch.purchasePrice || 0,
+            salePrice: bunch.salePrice || 0,
+        }))
+      })),
     };
 
     try {
-      await addInvoice(invoiceData);
+      await addInvoice(processedInvoice);
       await refreshData();
       toast({
         title: t('invoices.new.toast.successTitle'),
@@ -263,14 +273,11 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
-
   
   if (!isMounted) {
     return null;
   }
   
-  const isHeaderSet = watchItems && watchItems.length > 0;
-
   return (
     <div className="space-y-6">
        <div>
@@ -283,12 +290,12 @@ export function NewInvoiceForm() {
           <Card>
             <CardHeader>
               <CardTitle>{t('invoices.new.detailsTitle')}</CardTitle>
-            </CardHeader>
+            </Header>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.invoiceNumber')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.invoiceNumberPlaceholder')} {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder={t('invoices.new.invoiceNumberPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
@@ -297,7 +304,7 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? format(toDate(field.value), "PPP") : <span>{t('invoices.new.selectDate')}</span>}
                           </Button>
@@ -316,7 +323,7 @@ export function NewInvoiceForm() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} disabled={isHeaderSet} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {field.value ? format(toDate(field.value), "PPP") : <span>{t('invoices.new.selectDate')}</span>}
                           </Button>
@@ -332,7 +339,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="sellerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.seller')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.sellerPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -341,7 +348,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="customerId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.customer')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.customerPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -350,7 +357,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="consignatarioId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.consignee')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet || !selectedCustomerId || filteredConsignatarios.length === 0}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedCustomerId || filteredConsignatarios.length === 0}>
                     <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? t('invoices.new.selectCustomerFirst') : t('invoices.new.consigneePlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -359,7 +366,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="farmId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.farm')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.farmPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -368,7 +375,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="carrierId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.carrier')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.carrierPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -377,7 +384,7 @@ export function NewInvoiceForm() {
               <FormField control={form.control} name="countryId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.country')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={isHeaderSet || !!selectedCustomerId}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!!selectedCustomerId}>
                     <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.countryPlaceholder')} /></SelectTrigger></FormControl>
                     <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
                   </Select><FormMessage />
@@ -389,7 +396,7 @@ export function NewInvoiceForm() {
                    <Select 
                       onValueChange={field.onChange} 
                       value={field.value ?? ''} 
-                      disabled={isHeaderSet || !selectedCustomerId || filteredMarcaciones.length === 0}
+                      disabled={!selectedCustomerId || filteredMarcaciones.length === 0}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -418,142 +425,92 @@ export function NewInvoiceForm() {
                <FormField control={form.control} name="masterAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.masterAWB')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.masterAWBPlaceholder')} {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder={t('invoices.new.masterAWBPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
               <FormField control={form.control} name="houseAWB" render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.new.houseAWB')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.houseAWBPlaceholder')} {...field} value={field.value ?? ''} disabled={isHeaderSet} /></FormControl><FormMessage />
+                  <FormControl><Input placeholder={t('invoices.new.houseAWBPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
                 </FormItem>
               )}/>
             </CardContent>
           </Card>
-
           
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                       <TableRow>
-                          <TableHead className="w-[50px]">NCI</TableHead>
-                          <TableHead className="w-[50px]">NCF</TableHead>
-                          <TableHead className="w-[80px]">#BOX</TableHead>
-                          <TableHead className="w-[120px]">TIPO</TableHead>
-                          <TableHead className="min-w-[250px]">PRODUCTOS</TableHead>
-                          <TableHead className="w-[100px]">LONGITUD</TableHead>
-                          <TableHead className="w-[100px]">BON_BOX</TableHead>
-                          <TableHead className="w-[100px]">TALLOS</TableHead>
-                          <TableHead className="w-[100px]">P_COMPRA</TableHead>
-                          <TableHead className="w-[100px]">PRECIO</TableHead>
-                          <TableHead className="w-[100px]">TOTAL_U</TableHead>
-                          <TableHead className="w-[120px]">TOTAL</TableHead>
-                          <TableHead className="w-[80px]">{t('invoices.new.items.actions')}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {fields.map((field, index) => {
-                         const currentItem = watchItems[index];
-                         const varietiesForProduct = getVarietiesForProduct(currentItem?.product);
-                         const boxCount = Number(currentItem?.boxCount) || 0;
-                         const bunchesPerBox = Number(currentItem?.bunchesPerBox) || 0;
-                         const stemCount = Number(currentItem?.stemCount) || 0;
-                         const salePrice = Number(currentItem?.salePrice) || 0;
-                         
-                         const totalStems = bunchesPerBox * stemCount;
-                         const lineTotal = boxCount * totalStems * salePrice;
-
-                         return (
-                          <TableRow key={field.id}>
-                           <TableCell>
-                             <FormField control={form.control} name={`items.${index}.nci`} render={({ field }) => <Input {...field} value={field.value ?? ''} className="w-12" />} />
-                           </TableCell>
-                           <TableCell>
-                             <FormField control={form.control} name={`items.${index}.ncf`} render={({ field }) => <Input {...field} value={field.value ?? ''} className="w-12" />} />
-                           </TableCell>
-                           <TableCell>
-                                <FormField control={form.control} name={`items.${index}.boxCount`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-14" />
-                                )} />
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`items.${index}.boxType`} render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.items.typePlaceholder')} /></SelectTrigger></FormControl>
-                                  <SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent>
-                                </Select>
-                            )} /></TableCell>
-                            <TableCell>
-                               <div className="flex gap-2">
-                                <FormField control={form.control} name={`items.${index}.product`} render={({ field }) => (
-                                  <Select 
-                                    onValueChange={(value) => {
-                                      field.onChange(value);
-                                      form.setValue(`items.${index}.variety`, '');
-                                    }} 
-                                    value={field.value}
-                                  >
-                                    <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.productPlaceholder')} /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                      {productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-                                )}/>
-                                <FormField control={form.control} name={`items.${index}.variety`} render={({ field }) => (
-                                  <Select 
-                                    onValueChange={field.onChange}
-                                    value={field.value}
-                                    disabled={!currentItem?.product || varietiesForProduct.length === 0}
-                                  >
-                                    <FormControl><SelectTrigger className="w-[120px]"><SelectValue placeholder={t('invoices.new.items.varietyPlaceholder')} /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                      {varietiesForProduct.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-                                )}/>
-                               </div>
-                            </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${index}.bunchesPerBox`} render={({ field }) => (
-                                    <Input type="number" {...field} className="w-20" />
-                                  )} />
-                            </TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.stemCount`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
-                            <TableCell><FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-20" />} /></TableCell>
-                            <TableCell className="font-semibold text-center">{totalStems}</TableCell>
-                            <TableCell className="font-semibold text-right pr-4">${lineTotal.toFixed(2)}</TableCell>
-                            <TableCell className="flex items-center gap-1">
-                              <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fields.map((field, boxIndex) => (
+                <div key={field.id} className="p-4 border rounded-lg mb-4 space-y-4 bg-muted/20">
+                  <div className="flex items-end gap-4 flex-wrap">
+                    <FormField control={form.control} name={`items.${boxIndex}.boxNumber`} render={({ field }) => <FormItem><FormLabel>Box #</FormLabel><FormControl><Input type="number" {...field} className="w-24" /></FormControl></FormItem>} />
+                    <FormField control={form.control} name={`items.${boxIndex}.boxType`} render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="w-28"><SelectValue placeholder="Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent></Select></FormItem>} />
+                    <FormField control={form.control} name={`items.${boxIndex}.nci`} render={({ field }) => <FormItem><FormLabel>NCI</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="w-24" /></FormControl></FormItem>} />
+                    <FormField control={form.control} name={`items.${boxIndex}.ncf`} render={({ field }) => <FormItem><FormLabel>NCF</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="w-24" /></FormControl></FormItem>} />
+                    <div className="ml-auto flex items-center gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => handleAddBunch(boxIndex)}><PlusCircle className="mr-2 h-4 w-4"/> Add Bunch</Button>
+                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(boxIndex)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
+                  </div>
+                  
+                  <div className="pl-4 border-l-2 border-primary/50">
+                    <Controller
+                        control={form.control}
+                        name={`items.${boxIndex}.bunches`}
+                        render={({ field }) => (
+                            <useFieldArray
+                                control={form.control}
+                                name={`items.${boxIndex}.bunches`}
+                                render={({ fields: bunchFields, append: appendBunch, remove: removeBunch, update: updateBunch }) => (
+                                    <>
+                                        {bunchFields.map((bunchField, bunchIndex) => {
+                                            const currentProductType = form.watch(`items.${boxIndex}.bunches.${bunchIndex}.product`);
+                                            const varieties = getVarietiesForProduct(currentProductType);
+                                            return (
+                                                <div key={bunchField.id} className="flex items-center gap-2 py-2 border-b border-dashed">
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.product`} render={({ field }) => (<Select onValueChange={(v) => { field.onChange(v); form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variety`, ''); }} value={field.value}><FormControl><SelectTrigger className="w-32"><SelectValue placeholder="Product" /></SelectTrigger></FormControl><SelectContent>{productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>)}/>
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.variety`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value} disabled={!currentProductType || varieties.length === 0}><FormControl><SelectTrigger className="w-32"><SelectValue placeholder="Variety" /></SelectTrigger></FormControl><SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>)} />
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" placeholder="L" {...field} className="w-16" />} />
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" placeholder="Stems" {...field} className="w-20" />} />
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" placeholder="Bunches" {...field} className="w-20" />} />
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" placeholder="Cost" {...field} className="w-20" />} />
+                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" placeholder="Price" {...field} className="w-20" />} />
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(boxIndex, bunchIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                                </div>
+                                            );
+                                        })}
+                                    </>
+                                )}
+                            />
+                        )}
+                    />
+                     <FormMessage>{form.formState.errors.items?.[boxIndex]?.bunches?.message}</FormMessage>
+                  </div>
+                </div>
+              ))}
+              <div className="mt-6 flex justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddBox}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Box
+                  </Button>
+              </div>
+              <FormMessage>{form.formState.errors.items?.message}</FormMessage>
+            </CardContent>
+             <CardContent>
+                <Table>
                     <TableFooter>
                       <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell colSpan={6}>{t('invoices.new.items.totals')} ({fields.length})</TableCell>
-                        <TableCell className="text-center">{totals.totalBunches}</TableCell>
-                        <TableCell className="text-center">{totals.totalStems}</TableCell>
-                        <TableCell colSpan={3}></TableCell>
+                        <TableCell>Boxes: {totals.totalBoxes}</TableCell>
+                        <TableCell>Bunches: {totals.totalBunches}</TableCell>
+                        <TableCell>Stems: {totals.totalStems}</TableCell>
+                        <TableCell className="text-right text-lg">TOTAL FOB</TableCell>
                         <TableCell className="text-lg text-right font-bold pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
-                        <TableCell></TableCell>
                       </TableRow>
                     </TableFooter>
-                  </Table>
-                </div>
-                <div className="mt-6 flex justify-end">
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
-                      <PlusCircle className="mr-2 h-4 w-4" /> {t('invoices.new.addItem')}
-                    </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </Table>
+             </CardContent>
+          </Card>
           
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>{t('common.cancel')}</Button>
@@ -567,5 +524,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    

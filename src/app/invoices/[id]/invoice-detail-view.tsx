@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
-import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
+import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from '@/lib/types';
 import InvoiceDownloadButton from './invoice-download-button';
 
 type InvoiceDetailViewProps = {
@@ -19,44 +19,54 @@ type InvoiceDetailViewProps = {
 export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais }: InvoiceDetailViewProps) {
   
   const totals = useMemo(() => {
-    if (!invoice?.items) return { totalBoxes: 0, totalBunchByBox: 0, totalStemsByBox: 0, totalFob: 0, totalNetWeight: 0, totalGrossWeight: 0 };
-    const allItems = invoice.items;
-    
-    const totalBoxes = allItems.reduce((acc, item) => acc + (item.isSubItem ? 0 : (item.boxCount || 0)), 0);
-    const totalBunchByBox = allItems.reduce((acc, item) => acc + (item.bunchesPerBox || 0), 0);
-    const totalStemsByBox = allItems.reduce((acc, item) => acc + ((item.stemCount || 0) * (item.bunchesPerBox || 0)), 0);
-    const totalFob = allItems.reduce((acc, item) => {
-       const stems = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-       return acc + (stems * (item.salePrice || 0));
-    }, 0);
-    const totalNetWeight = allItems.reduce((acc, item) => acc + (item.netWeight || 0), 0);
-    const totalGrossWeight = allItems.reduce((acc, item) => acc + (item.grossWeight || 0), 0);
+    let totalBoxes = invoice?.items?.length || 0;
+    let totalBunches = 0;
+    let totalStems = 0;
+    let totalFob = 0;
 
+    invoice?.items?.forEach(item => {
+      item.bunches.forEach(bunch => {
+        const bunchesCount = Number(bunch.bunches) || 0;
+        const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
+        const salePrice = Number(bunch.salePrice) || 0;
 
-    return { totalBoxes, totalBunchByBox, totalStemsByBox, totalFob, totalNetWeight, totalGrossWeight };
+        totalBunches += bunchesCount;
+        const stemsInBunch = bunchesCount * stemsPerBunch;
+        totalStems += stemsInBunch;
+        totalFob += stemsInBunch * salePrice;
+      });
+    });
+
+    return { totalBoxes, totalBunches, totalStems, totalFob };
   }, [invoice?.items]);
 
 
-  const renderItemRow = (item: Invoice['items'][0], index: number) => {
-    const stemsByBox = (item.stemCount || 0) * (item.bunchesPerBox || 0);
-    const totalPrice = stemsByBox * (item.salePrice || 0);
+  const renderItemRow = (item: LineItem, index: number) => {
     return (
        <React.Fragment key={item.id || index}>
-        <div className="contents text-xs">
-          <div className="border-b border-l border-border p-1 text-center">{index + 1}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.boxCount}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.boxType.toUpperCase()}</div>
-          <div className="border-b border-l border-border p-1 text-left">{item.product}</div>
-          <div className="border-b border-l border-border p-1 text-left">{item.variety}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.length}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.stemCount}</div>
-          <div className="border-b border-l border-border p-1 text-center">{item.bunchesPerBox}</div>
-          <div className="border-b border-l border-border p-1 text-center">{stemsByBox}</div>
-          <div className="border-b border-l border-border p-1 text-right">{item.netWeight?.toFixed(2)}</div>
-          <div className="border-b border-l border-border p-1 text-right">{item.grossWeight?.toFixed(2)}</div>
-          <div className="border-b border-l border-border p-1 text-right">{item.salePrice.toFixed(3)}</div>
-          <div className="border-b border-r border-l border-border p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
+        <div className="contents text-xs font-semibold bg-gray-50">
+          <div className="border-b border-l border-border p-1 text-center">{item.boxNumber}</div>
+          <div className="border-b border-l border-border p-1 text-center col-span-2">{item.boxType.toUpperCase()}</div>
+          <div className="border-b border-l border-r border-border p-1 text-left col-span-10"></div>
         </div>
+        {item.bunches.map((bunch, bunchIndex) => {
+            const totalPrice = (bunch.bunches * bunch.stemsPerBunch) * bunch.salePrice;
+            return (
+                 <div key={bunch.id || bunchIndex} className="contents text-xs">
+                    <div className="border-b border-l border-border p-1 text-center col-span-3"></div>
+                    <div className="border-b border-l border-border p-1 text-left">{bunch.product}</div>
+                    <div className="border-b border-l border-border p-1 text-left">{bunch.variety}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{bunch.length}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{bunch.stemsPerBunch}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{bunch.bunches}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{(bunch.stemsPerBunch * bunch.bunches)}</div>
+                    <div className="border-b border-l border-border p-1 text-right">0.00</div>
+                    <div className="border-b border-l border-border p-1 text-right">0.00</div>
+                    <div className="border-b border-l border-border p-1 text-right">{bunch.salePrice.toFixed(3)}</div>
+                    <div className="border-b border-r border-l border-border p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
+                </div>
+            )
+        })}
        </React.Fragment>
     )
   }
@@ -148,10 +158,10 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="p-1 border-r border-gray-300 col-span-4 text-center">TOTALES</div>
                     <div className="p-1 border-r border-gray-300"></div> {/* length */}
                     <div className="p-1 border-r border-gray-300"></div> {/* stems/bunch */}
-                    <div className="p-1 border-r border-gray-300">{totals.totalBunchByBox}</div>
-                    <div className="p-1 border-r border-gray-300">{totals.totalStemsByBox}</div>
-                    <div className="p-1 border-r border-gray-300">{totals.totalNetWeight.toFixed(2)}</div>
-                    <div className="p-1 border-r border-gray-300">{totals.totalGrossWeight.toFixed(2)}</div>
+                    <div className="p-1 border-r border-gray-300">{totals.totalBunches}</div>
+                    <div className="p-1 border-r border-gray-300">{totals.totalStems}</div>
+                    <div className="p-1 border-r border-gray-300">0.00</div>
+                    <div className="p-1 border-r border-gray-300">0.00</div>
                     <div className="p-1 border-r border-gray-300"></div> {/* unit price */}
                     <div className="p-1"></div> {/* total price */}
                 </div>
