@@ -249,7 +249,7 @@ export function NewInvoiceForm() {
             salePrice: bunch.salePrice || 0,
         }))
       })),
-    };
+    }
 
     try {
       await addInvoice(processedInvoice);
@@ -290,7 +290,7 @@ export function NewInvoiceForm() {
           <Card>
             <CardHeader>
               <CardTitle>{t('invoices.new.detailsTitle')}</CardTitle>
-            </Header>
+            </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
                 <FormItem>
