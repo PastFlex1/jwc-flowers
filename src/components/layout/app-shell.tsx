@@ -172,7 +172,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
                      <Avatar>
-                        <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'User'} />
                         <AvatarFallback>
                            <UserCircle />
                         </AvatarFallback>
@@ -180,7 +179,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+                  <DropdownMenuLabel>{user?.username}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />

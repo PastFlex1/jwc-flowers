@@ -1,19 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { auth } from '@/lib/firebase';
-import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  type User,
-} from 'firebase/auth';
+import { createContext, useContext, useEffect, useState, type ReactNode, useCallback } from 'react';
 import type { LoginCredentials } from '@/app/login/login-form';
 
 type AuthContextType = {
-  user: User | null;
+  user: { username: string } | null;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
 };
@@ -21,30 +14,36 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<{ username: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
-        setIsLoading(false);
-        return;
+    try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
+    } catch (error) {
+        console.error("Failed to parse user from localStorage", error);
+        localStorage.removeItem('user');
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
-    return () => unsubscribe();
+    setIsLoading(false);
   }, []);
 
-  const login = async ({ email, password }: LoginCredentials) => {
-    if (!auth) throw new Error("Firebase Auth is not initialized.");
-    await signInWithEmailAndPassword(auth, email, password);
-  };
+  const login = useCallback(async ({ username, password }: LoginCredentials) => {
+    if (username === 'admin' && password === 'admin123') {
+        const userData = { username: 'admin' };
+        setUser(userData);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return true;
+    }
+    return false;
+  }, []);
 
-  const logout = async () => {
-    if (!auth) throw new Error("Firebase Auth is not initialized.");
-    await signOut(auth);
-  };
+  const logout = useCallback(async () => {
+    setUser(null);
+    localStorage.removeItem('user');
+  }, []);
 
   const value: AuthContextType = {
     user,

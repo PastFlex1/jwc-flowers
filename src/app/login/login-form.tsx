@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
-  email: z.string().email({ message: 'Por favor ingrese un correo válido.' }),
+  username: z.string().min(1, { message: 'El usuario es requerido.' }),
   password: z.string().min(1, { message: 'La contraseña es requerida.' }),
 });
 
@@ -30,7 +30,7 @@ export function LoginForm() {
   const form = useForm<LoginCredentials>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
     },
   });
@@ -40,19 +40,19 @@ export function LoginForm() {
   const onSubmit = async (values: LoginCredentials) => {
     setError(null);
     try {
-      await login(values);
-      toast({
-        title: '¡Bienvenido!',
-        description: 'Has iniciado sesión correctamente.',
-      });
-      router.push('/');
+      const success = await login(values);
+      if (success) {
+        toast({
+          title: '¡Bienvenido!',
+          description: 'Has iniciado sesión correctamente.',
+        });
+        router.push('/');
+      } else {
+         setError('El usuario o la contraseña son incorrectos.');
+      }
     } catch (err: any) {
       console.error(err);
-      let errorMessage = 'Ocurrió un error inesperado.';
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        errorMessage = 'El correo o la contraseña son incorrectos.';
-      }
-      setError(errorMessage);
+      setError('Ocurrió un error inesperado.');
     }
   };
 
@@ -67,12 +67,12 @@ export function LoginForm() {
         )}
         <FormField
           control={form.control}
-          name="email"
+          name="username"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Correo Electrónico</FormLabel>
+              <FormLabel>Usuario</FormLabel>
               <FormControl>
-                <Input type="email" placeholder="tu@correo.com" {...field} />
+                <Input placeholder="admin" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
