@@ -1,20 +1,41 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import InvoiceDownloadButton from './invoice-download-button';
+import { SendInvoiceDialog } from '../send-invoice-dialog';
+import type { Invoice, Customer } from '@/lib/types';
+import { Send } from 'lucide-react';
 
 type InvoiceActionsProps = {
-  // Props are no longer needed as this component is simplified
+  invoice: Invoice;
+  customer: Customer | null;
 };
 
-export function InvoiceActions({}: InvoiceActionsProps) {
+export function InvoiceActions({ invoice, customer }: InvoiceActionsProps) {
   const router = useRouter();
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
   return (
     <>
-      <Button variant="outline" onClick={() => router.back()}>
-        Back
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" onClick={() => router.back()}>
+          Back
+        </Button>
+        <InvoiceDownloadButton />
+        <Button onClick={() => setIsSendDialogOpen(true)} variant="outline">
+          <Send className="mr-2 h-4 w-4" />
+          Enviar por Correo
+        </Button>
+      </div>
+
+      <SendInvoiceDialog
+        isOpen={isSendDialogOpen}
+        onClose={() => setIsSendDialogOpen(false)}
+        invoice={invoice}
+        customer={customer}
+      />
     </>
   );
 }

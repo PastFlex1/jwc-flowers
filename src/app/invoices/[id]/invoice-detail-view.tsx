@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
 import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from '@/lib/types';
-import InvoiceDownloadButton from './invoice-download-button';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -76,13 +75,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
   return (
     <>
       <div className="max-w-5xl mx-auto space-y-4">
-        <div className="flex justify-between items-center no-print">
-          <InvoiceActions />
-          <div className="flex gap-2">
-             {customer && (
-                <InvoiceDownloadButton />
-            )}
-          </div>
+        <div className="flex justify-end items-center no-print">
+          <InvoiceActions invoice={invoice} customer={customer} />
         </div>
         
         <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="invoice-to-print">
