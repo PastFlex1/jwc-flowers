@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import type { Customer, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { AccountStatementView } from './account-statement-view';
 import AccountStatementDownloadButton from './account-statement-download';
+import SendDocumentsDialog from './send-documents-dialog'; // Import the new component
 
 export type StatementData = {
   customer: Customer;
@@ -21,6 +22,7 @@ export type StatementData = {
 export function AccountStatementClient() {
   const { customers, invoices, creditNotes, debitNotes, payments } = useAppData();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
   const statementData = useMemo((): StatementData | null => {
     if (!selectedCustomerId) return null;
@@ -32,6 +34,7 @@ export function AccountStatementClient() {
 
     const processedInvoices = customerInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
+        if (!item.bunches) return acc;
         return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
             const stems = bunch.stemsPerBunch * bunch.bunches;
             return bunchAcc + (stems * bunch.salePrice);
@@ -80,45 +83,61 @@ export function AccountStatementClient() {
   }, [selectedCustomerId, customers, invoices, creditNotes, debitNotes, payments]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Estado de Cuenta</h2>
-          <p className="text-muted-foreground">Seleccione un cliente para ver su estado de cuenta detallado.</p>
+    <>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">Estado de Cuenta</h2>
+            <p className="text-muted-foreground">Seleccione un cliente para ver su estado de cuenta detallado.</p>
+          </div>
+          {statementData && (
+             <div className="flex gap-2">
+                <AccountStatementDownloadButton data={statementData} />
+                <Button variant="outline" onClick={() => setIsSendDialogOpen(true)}>Enviar Documentos</Button>
+            </div>
+          )}
         </div>
-        {statementData && <AccountStatementDownloadButton data={statementData} />}
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Seleccionar Cliente</CardTitle>
-          <CardDescription>Elija un cliente de la lista para generar su estado de cuenta.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Select onValueChange={setSelectedCustomerId}>
-            <SelectTrigger className="w-full md:w-1/2 lg:w-1/3">
-              <SelectValue placeholder="Seleccione un cliente..." />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Seleccionar Cliente</CardTitle>
+            <CardDescription>Elija un cliente de la lista para generar su estado de cuenta.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Select onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="w-full md:w-1/2 lg:w-1/3">
+                <SelectValue placeholder="Seleccione un cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+        
+        {statementData && (
+          <AccountStatementView data={statementData} />
+        )}
+
+        {!selectedCustomerId && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>Por favor, seleccione un cliente para continuar.</p>
+          </div>
+        )}
+      </div>
       
       {statementData && (
-        <AccountStatementView data={statementData} />
+        <SendDocumentsDialog 
+          isOpen={isSendDialogOpen}
+          onClose={() => setIsSendDialogOpen(false)}
+          customer={statementData.customer}
+          invoices={statementData.invoices}
+        />
       )}
-
-      {!selectedCustomerId && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>Por favor, seleccione un cliente para continuar.</p>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
