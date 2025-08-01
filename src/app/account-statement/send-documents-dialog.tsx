@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, Paperclip } from 'lucide-react';
 import type { Customer, Invoice } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
+import { Card, CardContent } from '@/components/ui/card';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
