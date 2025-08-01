@@ -25,16 +25,18 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     let totalFob = 0;
 
     invoice?.items?.forEach(item => {
-      item.bunches.forEach(bunch => {
-        const bunchesCount = Number(bunch.bunches) || 0;
-        const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
-        const salePrice = Number(bunch.salePrice) || 0;
+      if (item.bunches && Array.isArray(item.bunches)) {
+        item.bunches.forEach(bunch => {
+          const bunchesCount = Number(bunch.bunches) || 0;
+          const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
+          const salePrice = Number(bunch.salePrice) || 0;
 
-        totalBunches += bunchesCount;
-        const stemsInBunch = bunchesCount * stemsPerBunch;
-        totalStems += stemsInBunch;
-        totalFob += stemsInBunch * salePrice;
-      });
+          totalBunches += bunchesCount;
+          const stemsInBunch = bunchesCount * stemsPerBunch;
+          totalStems += stemsInBunch;
+          totalFob += stemsInBunch * salePrice;
+        });
+      }
     });
 
     return { totalBoxes, totalBunches, totalStems, totalFob };
@@ -49,7 +51,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <div className="border-b border-l border-border p-1 text-center col-span-2">{item.boxType.toUpperCase()}</div>
           <div className="border-b border-l border-r border-border p-1 text-left col-span-10"></div>
         </div>
-        {item.bunches.map((bunch, bunchIndex) => {
+        {item.bunches && item.bunches.map((bunch, bunchIndex) => {
             const totalPrice = (bunch.bunches * bunch.stemsPerBunch) * bunch.salePrice;
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-xs">
