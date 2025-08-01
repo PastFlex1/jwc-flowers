@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -24,12 +23,14 @@ import { Loader2, Send, Paperclip } from 'lucide-react';
 import type { Customer, Invoice } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
 import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { sendDocumentsAction } from './actions';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
   subject: z.string().min(1, 'Subject is required.'),
   body: z.string(),
-  attachments: z.array(z.string()).min(1, 'You must select at least one document to send.'),
+  invoiceIds: z.array(z.string()).min(1, 'You must select at least one document to send.'),
 });
 
 type SendDocumentsDialogProps = {
@@ -43,13 +44,14 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
   });
   
-  const allInvoiceIds = invoices.map(inv => inv.invoiceNumber);
+  const allInvoiceIds = invoices.map(inv => inv.id);
 
   useEffect(() => {
     if (customer && isOpen) {
@@ -57,8 +59,9 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
         to: customer.email,
         subject: `Documentos para ${customer.name}`,
         body: `Estimado/a ${customer.name},\n\nAdjunto encontrará los documentos solicitados.\n\nGracias,\nEl equipo de JCW Flowers`,
-        attachments: allInvoiceIds,
+        invoiceIds: allInvoiceIds,
       });
+      setError(null);
     }
   }, [customer, invoices, isOpen, form, allInvoiceIds]);
   
@@ -66,19 +69,28 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     return null;
   }
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSending(true);
-    console.log("Simulating email send with values:", values);
+    setError(null);
     
-    // Simulate sending email and generating PDFs
-    setTimeout(() => {
+    const result = await sendDocumentsAction(values);
+
+    if (result.success) {
       toast({
-        title: "Correo Enviado (Simulación)",
-        description: `Se han enviado ${values.attachments.length} documentos a ${values.to}.`,
+        title: "Correo Enviado",
+        description: `Se han enviado ${values.invoiceIds.length} documentos a ${values.to}.`,
       });
-      setIsSending(false);
       onClose();
-    }, 1500);
+    } else {
+      setError(result.error);
+      toast({
+        title: "Error al Enviar",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+
+    setIsSending(false);
   };
 
   return (
@@ -92,6 +104,13 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                 Seleccione los documentos para enviar a {customer.name}.
               </DialogDescription>
             </DialogHeader>
+
+            {error && (
+              <Alert variant="destructive" className="my-4">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
                 <div className="space-y-4">
@@ -139,7 +158,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                    <FormLabel>Archivos Adjuntos</FormLabel>
                    <FormField
                       control={form.control}
-                      name="attachments"
+                      name="invoiceIds"
                       render={() => (
                         <Card>
                             <CardContent className="p-4">
@@ -148,9 +167,9 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                                    <div className="flex items-center space-x-2 p-2 rounded-md transition-colors hover:bg-muted/50">
                                       <Checkbox
                                         id="select-all"
-                                        checked={form.getValues('attachments')?.length === allInvoiceIds.length}
+                                        checked={form.getValues('invoiceIds')?.length === allInvoiceIds.length}
                                         onCheckedChange={(checked) => {
-                                           form.setValue('attachments', checked ? allInvoiceIds : [], { shouldValidate: true });
+                                           form.setValue('invoiceIds', checked ? allInvoiceIds : [], { shouldValidate: true });
                                         }}
                                       />
                                       <label htmlFor="select-all" className="font-medium">
@@ -161,18 +180,18 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                                     <FormField
                                         key={invoice.id}
                                         control={form.control}
-                                        name="attachments"
+                                        name="invoiceIds"
                                         render={({ field }) => (
                                           <FormItem className="flex flex-row items-center space-x-2 space-y-0 p-2 rounded-md transition-colors hover:bg-muted/50">
                                             <FormControl>
                                               <Checkbox
-                                                checked={field.value?.includes(invoice.invoiceNumber)}
+                                                checked={field.value?.includes(invoice.id)}
                                                 onCheckedChange={(checked) => {
                                                   return checked
-                                                    ? field.onChange([...(field.value || []), invoice.invoiceNumber])
+                                                    ? field.onChange([...(field.value || []), invoice.id])
                                                     : field.onChange(
                                                         field.value?.filter(
-                                                          (value) => value !== invoice.invoiceNumber
+                                                          (value) => value !== invoice.id
                                                         )
                                                       )
                                                 }}
@@ -194,7 +213,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                         </Card>
                       )}
                     />
-                    <FormMessage>{form.formState.errors.attachments?.message}</FormMessage>
+                    <FormMessage>{form.formState.errors.invoiceIds?.message}</FormMessage>
                 </div>
             </div>
             
@@ -208,7 +227,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {isSending ? 'Enviando...' : `Enviar ${form.watch('attachments')?.length || 0} Documentos`}
+                {isSending ? 'Enviando...' : `Enviar ${form.watch('invoiceIds')?.length || 0} Documentos`}
               </Button>
             </DialogFooter>
           </form>

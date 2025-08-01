@@ -19,13 +19,12 @@ const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!valu
 let app;
 let db;
 
-// This check is now more strict. If the configuration is incomplete,
-// the app will stop immediately with a clear error message.
+// Initialize Firebase only if the config is complete
 if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
 } else {
-    throw new Error("Firebase configuration is incomplete. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly in your .env file.");
+    console.warn("Firebase configuration is incomplete. App will run in offline mode. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly in your .env file.");
 }
 
 
