@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { AppShell } from './app-shell';
 import { useAppData } from '@/context/app-data-context';
@@ -16,20 +18,32 @@ function AppLoadingScreen() {
     );
 }
 
-
 export function AppInitializer({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-  const { isLoading } = useAppData();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { isLoading: isDataLoading } = useAppData();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  if (isAuthenticated) {
-     if (isLoading) {
-        return <AppLoadingScreen />;
-     }
-     return (
-        <AppShell>{children}</AppShell>
-      );
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated && pathname !== '/login') {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isAuthLoading, pathname, router]);
+
+  if (isAuthLoading) {
+    return <AppLoadingScreen />;
   }
 
-  // Fallback for non-authenticated state if ever needed
-  return <AppLoadingScreen />;
+  if (isAuthenticated) {
+     if (isDataLoading) {
+        return <AppLoadingScreen />;
+     }
+     if (pathname === '/login') {
+        return <AppLoadingScreen />; // Or show children if you want login page to be accessible when logged in
+     }
+     return <AppShell>{children}</AppShell>;
+  }
+
+  // Not authenticated, and not loading, show children (which should be the login page)
+  return <>{children}</>;
 }

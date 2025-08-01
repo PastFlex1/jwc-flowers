@@ -1,9 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -25,6 +25,8 @@ import {
   Settings,
   Plus,
   Languages,
+  LogOut,
+  UserCircle,
 } from 'lucide-react';
 import {
   Menubar,
@@ -36,11 +38,26 @@ import {
   MenubarTrigger,
 } from '@/components/ui/menubar';
 import { useTranslation } from '@/context/i18n-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, setLocale, locale } = useTranslation();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
 
   const navItems = [
     { href: '/invoices', label: t('sidebar.invoices'), icon: FileText },
@@ -97,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <div className="flex-1">
              {/* This can be a breadcrumb or page title */}
            </div>
-           <div className="ml-auto flex items-center gap-2">
+           <div className="ml-auto flex items-center gap-4">
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newSale')}</span>
@@ -151,6 +168,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </MenubarContent>
                 </MenubarMenu>
               </Menubar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                     <Avatar>
+                        <AvatarImage src={user?.photoURL ?? undefined} alt={user?.displayName ?? 'User'} />
+                        <AvatarFallback>
+                           <UserCircle />
+                        </AvatarFallback>
+                      </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
            </div>
         </header>
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">

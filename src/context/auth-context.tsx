@@ -1,26 +1,57 @@
 'use client';
 
-import { createContext, useContext, type ReactNode } from 'react';
-
-// This is now a mock Auth Provider. It does not connect to Firebase Auth.
-// It simply provides a consistent 'authenticated' state to the rest of the app
-// to prevent the need for major refactoring.
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { auth } from '@/lib/firebase';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from 'firebase/auth';
+import type { LoginCredentials } from '@/app/login/login-form';
 
 type AuthContextType = {
-  user: null; // User is always null
-  isAuthenticated: true; // Always true
-  logout: () => void; // Does nothing
-  isLoading: false; // Never loading
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!auth) {
+        setIsLoading(false);
+        return;
+    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const login = async ({ email, password }: LoginCredentials) => {
+    if (!auth) throw new Error("Firebase Auth is not initialized.");
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const logout = async () => {
+    if (!auth) throw new Error("Firebase Auth is not initialized.");
+    await signOut(auth);
+  };
+
   const value: AuthContextType = {
-    user: null,
-    isAuthenticated: true,
-    logout: () => console.log("Logout function called, but auth is disabled."),
-    isLoading: false,
+    user,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    isLoading,
   };
 
   return (
