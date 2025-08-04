@@ -196,11 +196,12 @@ export function NewInvoiceForm() {
   const handleProductChange = (itemIndex: number, productoId: string) => {
     const product = productos.find((p) => p.id === productoId);
     if (product) {
-      form.setValue(`items.${itemIndex}.productoId`, product.id, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.color`, product.color, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.variedad`, product.variedad, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.salePrice`, product.precio, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.productoId`, product.id);
+      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre);
+      form.setValue(`items.${itemIndex}.color`, product.color);
+      form.setValue(`items.${itemIndex}.variedad`, product.variedad);
+      form.setValue(`items.${itemIndex}.salePrice`, product.precio);
+      form.trigger(`items.${itemIndex}`);
     }
   };
 
