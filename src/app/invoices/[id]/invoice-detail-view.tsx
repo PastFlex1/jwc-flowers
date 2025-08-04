@@ -71,7 +71,13 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     <>
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="flex justify-end items-center no-print">
-          <InvoiceActions invoice={invoice} customer={customer} />
+          <InvoiceActions
+            invoice={invoice}
+            customer={customer}
+            consignatario={consignatario}
+            carguera={carguera}
+            pais={pais}
+          />
         </div>
         
         <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="invoice-to-print">

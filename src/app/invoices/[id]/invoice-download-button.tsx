@@ -1,25 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { generateInvoicePdf } from '@/lib/pdfmake-generator';
+import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
+import pdfMake from "pdfmake/build/pdfmake";
+import pdfFonts from "pdfmake/build/vfs_fonts";
 
-export default function InvoiceDownloadButton() {
+pdfMake.vfs = pdfFonts.pdfMake.vfs;
+
+
+type InvoiceDownloadButtonProps = {
+  invoice: Invoice;
+  customer: Customer | null;
+  consignatario: Consignatario | null;
+  carguera: Carguera | null;
+  pais: Pais | null;
+};
+
+export default function InvoiceDownloadButton({ invoice, customer, consignatario, carguera, pais }: InvoiceDownloadButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const handleDownloadPdf = async () => {
-    const invoiceNumberEl = document.querySelector('#invoice-to-print .font-bold.text-base');
-    const invoiceNumber = invoiceNumberEl ? invoiceNumberEl.textContent : 'factura';
-    const noteElement = document.getElementById('invoice-to-print');
-
-    if (!noteElement) {
+    if (!customer) {
       toast({
         title: "Error",
-        description: "No se pudo encontrar el contenido de la factura para generar el PDF.",
+        description: "Datos del cliente no encontrados.",
         variant: "destructive",
       });
       return;
@@ -27,23 +36,16 @@ export default function InvoiceDownloadButton() {
 
     setIsGenerating(true);
     try {
-      const canvas = await html2canvas(noteElement, {
-        scale: 2, // Aumenta la escala para mejor resolución
-        useCORS: true,
-        logging: false,
+      const docDefinition = await generateInvoicePdf({
+        invoice,
+        customer,
+        consignatario,
+        carguera,
+        pais,
       });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'pt', 'a4'); // Orientación vertical, unidades en puntos, formato A4
-
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
-      const fileName = `Factura-${invoiceNumber?.trim()}.pdf`;
-      pdf.save(fileName);
+      const fileName = `Factura-${invoice.invoiceNumber?.trim()}.pdf`;
+      pdfMake.createPdf(docDefinition).download(fileName);
       
       toast({
           title: "Éxito",
@@ -51,7 +53,7 @@ export default function InvoiceDownloadButton() {
       });
 
     } catch (error) {
-      console.error("Error processing PDF:", error);
+      console.error("Error processing PDF with pdfmake:", error);
       toast({
           title: "Error",
           description: "Ocurrió un error inesperado al procesar el PDF.",
