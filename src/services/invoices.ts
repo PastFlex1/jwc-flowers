@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import type { Invoice, LineItem } from '@/lib/types';
+import type { Invoice, LineItem, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 import {
   collection,
   getDocs,
@@ -13,6 +13,10 @@ import {
   type DocumentSnapshot,
   Timestamp,
 } from 'firebase/firestore';
+import { getCustomerById } from './customers';
+import { getConsignatarioById } from './consignatarios';
+import { getCargueraById } from './cargueras';
+import { getPaisById } from './paises';
 
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Invoice => {
   const data = snapshot.data();
@@ -61,6 +65,29 @@ export async function getInvoiceById(id: string): Promise<Invoice | null> {
   }
   return null;
 }
+
+type InvoiceWithDetails = {
+    invoice: Invoice;
+    customer: Customer | null;
+    consignatario: Consignatario | null;
+    carguera: Carguera | null;
+    pais: Pais | null;
+}
+
+export async function getInvoiceWithDetails(id: string): Promise<InvoiceWithDetails | null> {
+    const invoice = await getInvoiceById(id);
+    if (!invoice) return null;
+
+    const [customer, consignatario, carguera, pais] = await Promise.all([
+        getCustomerById(invoice.customerId),
+        invoice.consignatarioId ? getConsignatarioById(invoice.consignatarioId) : null,
+        invoice.carrierId ? getCargueraById(invoice.carrierId) : null,
+        invoice.countryId ? getPaisById(invoice.countryId) : null
+    ]);
+
+    return { invoice, customer, consignatario, carguera, pais };
+}
+
 
 export async function addInvoice(invoiceData: Omit<Invoice, 'id'>): Promise<string> {
    if (!db) throw new Error("Firebase is not configured. Check your .env file.");

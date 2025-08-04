@@ -239,7 +239,7 @@
     "sending": "Enviando...",
     "defaultSubject": "Factura {invoiceNumber} de JCW Flowers",
     "defaultBody": "Estimado/a {customerName},\n\nAdjunto encontrará la factura de su reciente pedido.\n\nGracias por su compra.\n\nSaludos cordiales,\nEl equipo de JCW Flowers",
-    "successTitle": "Correo Enviado (Simulación)",
+    "successTitle": "Correo Enviado",
     "successDescription": "La factura {invoiceNumber} ha sido enviada a {email}."
   },
   "common": {

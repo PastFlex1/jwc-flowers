@@ -239,7 +239,7 @@
     "sending": "Sending...",
     "defaultSubject": "Invoice {invoiceNumber} from JCW Flowers",
     "defaultBody": "Dear {customerName},\n\nPlease find your invoice attached.\n\nThank you for your business.\n\nBest regards,\nThe JCW Flowers Team",
-    "successTitle": "Email Sent (Simulation)",
+    "successTitle": "Email Sent",
     "successDescription": "Invoice {invoiceNumber} has been sent to {email}."
   },
   "common": {

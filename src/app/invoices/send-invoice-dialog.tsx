@@ -21,6 +21,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import type { Invoice, Customer } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
+import { sendInvoiceAction } from './actions';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
@@ -39,6 +41,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -46,30 +49,45 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   });
 
   useEffect(() => {
-    if (customer && invoice) {
+    if (customer && invoice && isOpen) {
       form.reset({
         to: customer.email,
         subject: t('sendInvoiceDialog.defaultSubject', { invoiceNumber: invoice.invoiceNumber }),
         body: t('sendInvoiceDialog.defaultBody', { customerName: customer.name }),
       });
+      setError(null);
     }
-  }, [customer, invoice, form, t]);
+  }, [customer, invoice, isOpen, form, t]);
   
   if (!invoice || !customer) {
     return null;
   }
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSending(true);
-    // Simulate sending email
-    setTimeout(() => {
+    setError(null);
+
+    const result = await sendInvoiceAction({
+      ...values,
+      invoiceId: invoice.id,
+    });
+
+    if (result.success) {
       toast({
         title: t('sendInvoiceDialog.successTitle'),
         description: t('sendInvoiceDialog.successDescription', { invoiceNumber: invoice.invoiceNumber, email: values.to }),
       });
-      setIsSending(false);
       onClose();
-    }, 1500);
+    } else {
+      setError(result.error);
+      toast({
+        title: "Error al Enviar",
+        description: result.error,
+        variant: "destructive",
+      });
+    }
+
+    setIsSending(false);
   };
 
   return (
@@ -83,6 +101,13 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                 {t('sendInvoiceDialog.description', { invoiceNumber: invoice.invoiceNumber, customerName: customer.name })}
               </DialogDescription>
             </DialogHeader>
+
+            {error && (
+              <Alert variant="destructive" className="my-4">
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
             <div className="py-6 space-y-4">
               <FormField
