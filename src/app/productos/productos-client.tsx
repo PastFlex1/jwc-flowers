@@ -91,7 +91,7 @@ export function ProductosClient() {
 
   const handleFormSubmit = async (productoData: ProductoFormData) => {
     setIsSubmitting(true);
-    handleCloseDialog();
+    
     try {
       if (productoData.id) {
         const { id, ...dataToUpdate } = productoData;
@@ -113,6 +113,7 @@ export function ProductosClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 

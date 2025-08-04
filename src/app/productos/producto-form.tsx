@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import type { Producto } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from '@/lib/firebase';
 
 const formSchema = z.object({
   variedad: z.string().min(1, "Variedad es requerida."),
@@ -42,6 +43,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
       precio: initialData?.precio || 0,
+      image: null,
     },
   });
 
@@ -51,13 +53,14 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
       precio: initialData?.precio || 0,
+      image: null,
     });
   }, [initialData, form]);
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     let imageUrl = initialData?.imageUrl || '';
 
-    if (imageFile) {
+    if (imageFile && db) { // Ensure db is initialized
         const storage = getStorage();
         const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
         const snapshot = await uploadBytes(storageRef, imageFile);
@@ -68,7 +71,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         ...values,
         id: initialData?.id,
         imageUrl,
-        tipo: initialData?.tipo || values.variedad,
+        tipo: values.variedad,
         barras: initialData?.barras || '',
         estado: initialData?.estado || 'Activo',
     };
