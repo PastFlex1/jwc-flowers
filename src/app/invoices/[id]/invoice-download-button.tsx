@@ -42,7 +42,7 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'pt', 'a4');
+      const pdf = new jsPDF('p', 'pt', 'a4');
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -51,23 +51,48 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
       const canvasHeight = canvas.height;
 
       const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+      
       const imgWidth = canvasWidth * ratio;
       const imgHeight = canvasHeight * ratio;
-
+      
       const x = (pdfWidth - imgWidth) / 2;
+      
+      // Lógica de multipágina para orientación vertical
+      let position = 0;
+      let remainingCanvasHeight = canvas.height;
+      const pageCanvasHeight = (pdfHeight / imgHeight) * canvasHeight;
 
-      // Multipágina
-      let positionY = 0;
-      let remainingHeight = imgHeight;
 
-      pdf.addImage(imgData, 'PNG', x, positionY, imgWidth, imgHeight);
-      remainingHeight -= pdfHeight;
+      while (remainingCanvasHeight > 0) {
+        // Clonar el canvas para recortar la porción de la página actual
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = pageCanvasHeight;
+        
+        const pageCtx = pageCanvas.getContext('2d');
+        if (pageCtx) {
+           pageCtx.drawImage(
+              canvas,
+              0, // sx
+              position, // sy
+              canvas.width, // sWidth
+              pageCanvasHeight, // sHeight
+              0, // dx
+              0, // dy
+              canvas.width, // dWidth
+              pageCanvasHeight // dHeight
+            );
 
-      while (remainingHeight > 0) {
-        positionY -= pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', x, positionY, imgWidth, imgHeight);
-        remainingHeight -= pdfHeight;
+            const pageImgData = pageCanvas.toDataURL('image/png');
+            pdf.addImage(pageImgData, 'PNG', x, 0, imgWidth, pdfHeight * (pageCanvas.height / pageCanvasHeight));
+        }
+
+        remainingCanvasHeight -= pageCanvasHeight;
+        position += pageCanvasHeight;
+        
+        if (remainingCanvasHeight > 0) {
+          pdf.addPage();
+        }
       }
 
       const fileName = `Factura-${invoice.invoiceNumber.trim()}.pdf`;
