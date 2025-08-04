@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate, parseISO } from 'date-fns';
@@ -210,7 +210,7 @@ export function NewInvoiceForm() {
       const { bunches, ...restOfItem } = item;
       return {
         ...restOfItem,
-        bunches: [ // We wrap the single line item logic into a bunches array to match the type
+        bunches: [
           {
             id: uuidv4(),
             productoId: item.productoId,
@@ -568,80 +568,90 @@ export function NewInvoiceForm() {
                   </TableHeader>
                   <TableBody>
                   {fields.map((field, index) => {
-                      const itemValues = watchItems[index];
-                      const totalStems = (itemValues?.stemsPerBunch || 0) * (itemValues?.bunches || 0);
-                      const difference = (itemValues?.salePrice || 0) - (itemValues?.purchasePrice || 0);
-                      const total = totalStems * (itemValues?.salePrice || 0);
+                      const bunches = watchItems[index]?.bunches || 0;
+                      const stemsPerBunch = watchItems[index]?.stemsPerBunch || 0;
+                      const purchasePrice = watchItems[index]?.purchasePrice || 0;
+                      const salePrice = watchItems[index]?.salePrice || 0;
+                      const totalStems = stemsPerBunch * bunches;
+                      const difference = salePrice - purchasePrice;
+                      const total = totalStems * salePrice;
 
                       return (
                         <TableRow key={field.id}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.boxType`}
-                              render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-24">
-                                      <SelectValue placeholder="Tipo" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="hb">HB</SelectItem>
-                                    <SelectItem value="qb">QB</SelectItem>
-                                    <SelectItem value="eb">EB</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
+                            <Controller
+                                name={`items.${index}.boxNumber`}
+                                control={form.control}
+                                render={({ field }) => <Input type="number" {...field} className="w-20" />}
                             />
                           </TableCell>
                           <TableCell>
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.productoId`}
-                              render={({ field }) => (
-                                <Select onValueChange={(value) => handleProductChange(index, value)} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Flor" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {productos.map((p) => (
-                                      <SelectItem key={p.id} value={p.id}>
-                                        {p.nombre}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
+                            <Controller
+                                name={`items.${index}.boxType`}
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="w-24">
+                                        <SelectValue placeholder="Tipo" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="hb">HB</SelectItem>
+                                        <SelectItem value="qb">QB</SelectItem>
+                                        <SelectItem value="eb">EB</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                )}
                             />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.color`} render={({ field }) => <Input {...field} readOnly disabled className="w-24" />} />
+                             <Controller
+                                name={`items.${index}.productoId`}
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Select onValueChange={(value) => {
+                                        field.onChange(value);
+                                        handleProductChange(index, value);
+                                    }} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Flor" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {productos.map((p) => (
+                                        <SelectItem key={p.id} value={p.id}>
+                                            {p.nombre}
+                                        </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                )}
+                             />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.variedad`} render={({ field }) => <Input {...field} readOnly disabled className="w-28" />} />
+                            <Controller name={`items.${index}.color`} control={form.control} render={({ field }) => <Input {...field} readOnly disabled className="w-24" />} />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                            <Controller name={`items.${index}.variedad`} control={form.control} render={({ field }) => <Input {...field} readOnly disabled className="w-28" />} />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                             <Controller name={`items.${index}.length`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                          </TableCell>
-                          <TableCell>{itemValues?.bunches || 0}</TableCell>
-                          <TableCell>
-                            <FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                             <Controller name={`items.${index}.stemsPerBunch`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                             <Controller name={`items.${index}.bunches`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>{bunches}</TableCell>
+                          <TableCell>
+                             <Controller name={`items.${index}.purchasePrice`} control={form.control} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                          </TableCell>
+                          <TableCell>
+                             <Controller name={`items.${index}.salePrice`} control={form.control} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
                           </TableCell>
                           <TableCell>{totalStems}</TableCell>
                           <TableCell>${difference.toFixed(2)}</TableCell>
