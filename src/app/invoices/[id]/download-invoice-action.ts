@@ -1,8 +1,5 @@
 'use server';
 
-import { getInvoiceWithDetails } from '@/services/invoices';
-import { generatePdfFromHtml } from '@/lib/pdf';
-
 // This is a server-side action to fetch PDF data from the API route.
 // It does NOT do any rendering itself.
 export async function downloadInvoiceAction(invoiceId: string): Promise<{ success: boolean; pdf?: string; invoiceNumber?: string; error?: string }> {
