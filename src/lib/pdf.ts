@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer-core';
-import chrome from 'chrome-aws-lambda';
+import chromium from '@sparticuz/chromium';
 
 // This function generates a PDF from an HTML string using Puppeteer.
 // It's designed to run in a serverless environment.
@@ -7,9 +7,10 @@ export async function generatePdfFromHtml(htmlContent: string): Promise<string> 
   let browser = null;
   try {
     browser = await puppeteer.launch({
-      args: chrome.args,
-      executablePath: await chrome.executablePath,
-      headless: chrome.headless,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
