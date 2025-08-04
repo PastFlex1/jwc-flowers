@@ -553,7 +553,7 @@ export function NewInvoiceForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fields.map((item, index) => {
+                    {fields.map((field, index) => {
                       const currentItem = watchItems[index];
                       const totalStems = (currentItem.stemsPerBunch || 0) * (currentItem.bunches || 0);
                       const difference = (currentItem.salePrice || 0) - (currentItem.purchasePrice || 0);
@@ -561,7 +561,7 @@ export function NewInvoiceForm() {
                       const totalBunchesInRow = currentItem?.bunches || 0;
 
                       return (
-                        <TableRow key={item.id}>
+                        <TableRow key={field.id}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>
                             <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
