@@ -1,57 +1,81 @@
 'use client';
 
 import { useState } from 'react';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { downloadInvoiceAction } from './download-invoice-action';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 
 type InvoiceDownloadButtonProps = {
   invoice: Invoice;
+  customer: Customer | null;
+  consignatario: Consignatario | null;
+  carguera: Carguera | null;
+  pais: Pais | null;
 };
 
 export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const handleDownload = async () => {
+  const handleDownloadPdf = async () => {
+    const invoiceElement = document.getElementById('invoice-to-print');
+
+    if (!invoiceElement) {
+      toast({
+        title: "Error",
+        description: "No se pudo encontrar el contenido de la factura para generar el PDF.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      const result = await downloadInvoiceAction(invoice.id);
+      const canvas = await html2canvas(invoiceElement, {
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        width: invoiceElement.scrollWidth,
+        height: invoiceElement.scrollHeight,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight
+      });
 
-      if (result.success && result.pdf) {
-        const byteCharacters = atob(result.pdf);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'pt', 'a4'); 
 
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        const fileName = `Factura-${result.invoiceNumber?.trim() || invoice.invoiceNumber?.trim()}.pdf`;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
 
-        toast({
-          title: 'Éxito',
-          description: `El archivo ${fileName} se ha descargado.`,
-        });
-      } else {
-        throw new Error(result.error || 'No se pudo generar el PDF.');
-      }
-    } catch (error) {
-      console.error('Error al descargar el PDF:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+      
+      const imgWidth = canvasWidth * ratio;
+      const imgHeight = canvasHeight * ratio;
+
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = 0; // Align to top
+      
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      const fileName = `Factura-${invoice.invoiceNumber.trim()}.pdf`;
+      pdf.save(fileName);
+
       toast({
-        title: 'Error',
-        description: `No se pudo descargar el PDF: ${errorMessage}`,
-        variant: 'destructive',
+        title: 'Éxito',
+        description: `El archivo ${fileName} se ha descargado.`,
+      });
+
+    } catch (error) {
+      console.error("Error al generar el PDF:", error);
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado al generar el PDF.",
+        variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
@@ -59,13 +83,9 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
   };
 
   return (
-    <Button onClick={handleDownload} disabled={isGenerating}>
-      {isGenerating ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
-        <Download className="mr-2 h-4 w-4" />
-      )}
-      {isGenerating ? 'Generando PDF...' : 'Descargar PDF'}
+    <Button onClick={handleDownloadPdf} disabled={isGenerating}>
+      {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+      {isGenerating ? 'Generando...' : 'Descargar PDF'}
     </Button>
   );
 }

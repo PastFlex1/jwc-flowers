@@ -36,8 +36,8 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
         logging: false,
         width: statementElement.scrollWidth,
         height: statementElement.scrollHeight,
-        windowWidth: statementElement.scrollWidth,
-        windowHeight: statementElement.scrollHeight,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -60,7 +60,7 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
       const imgHeight = canvasHeight * ratio;
       
       const x = (pdfWidth - imgWidth) / 2;
-      const y = (pdfHeight - imgHeight) / 2;
+      const y = 0; // Align to top
 
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       
