@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
@@ -85,8 +84,9 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             {/* Header Section */}
             <header className="flex justify-between items-start mb-4">
                 <div className="w-1/2">
-                    <Image src="/logo.png" alt="JCW Flowers Logo" width={180} height={54} className="mb-4" />
-                    <div className="text-[10px] space-y-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/logo.png" alt="JCW Flowers Logo" width={180} height={54} className="mb-4" />
+                    <div className="text-[10px] space-y-1 mt-6">
                         <p><strong>E-MAIL:</strong> jcwf@outlook.es</p>
                         <p><strong>PHONE:</strong> +593 096 744 1343</p>
                         <p><strong>ADDRESS:</strong> Pasaje F y Calle Quito, EL QUINCHE - QUITO - ECUADOR</p>
