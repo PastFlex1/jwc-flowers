@@ -204,7 +204,6 @@ export function ProductosClient() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>IMG</TableHead>
                   <TableHead>NOMBRE</TableHead>
                   <TableHead>VARIEDAD</TableHead>
                   <TableHead>TIPO</TableHead>
@@ -217,16 +216,6 @@ export function ProductosClient() {
               <TableBody>
                 {paginatedProductos.map((producto) => (
                   <TableRow key={producto.id}>
-                    <TableCell>
-                      <Image 
-                        src={producto.imageUrl || 'https://placehold.co/40x40.png'} 
-                        alt={producto.nombre}
-                        width={40}
-                        height={40}
-                        className="rounded-sm"
-                        data-ai-hint="flower"
-                      />
-                    </TableCell>
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
                     <TableCell>{producto.variedad}</TableCell>
                     <TableCell>{producto.tipo}</TableCell>

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,15 +10,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import type { Producto } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db } from '@/lib/firebase';
 
 const formSchema = z.object({
   variedad: z.string().min(1, "Variedad es requerida."),
   nombre: z.string().min(1, "Nombre es requerido."),
   color: z.string().min(1, "Color es requerido."),
   precio: z.coerce.number().min(0, "Precio debe ser positivo."),
-  image: z.any().optional(),
 });
 
 type ProductoFormData = z.infer<typeof formSchema>;
@@ -32,61 +29,7 @@ type ProductoFormProps = {
   isSubmitting: boolean;
 };
 
-const compressAndResizeImage = (file: File, maxSize = 200, quality = 0.7): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target?.result as string;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-
-        if (width > height) {
-          if (width > maxSize) {
-            height *= maxSize / width;
-            width = maxSize;
-          }
-        } else {
-          if (height > maxSize) {
-            width *= maxSize / height;
-            height = maxSize;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          return reject(new Error('Failed to get canvas context'));
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              return reject(new Error('Canvas to Blob conversion failed'));
-            }
-            const newFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            });
-            resolve(newFile);
-          },
-          'image/jpeg',
-          quality
-        );
-      };
-      img.onerror = (error) => reject(error);
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
-
 export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: ProductoFormProps) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -95,7 +38,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
       precio: initialData?.precio || 0,
-      image: null,
     },
   });
 
@@ -105,24 +47,12 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
       precio: initialData?.precio || 0,
-      image: null,
     });
   }, [initialData, form]);
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
-    let imageUrl = initialData?.imageUrl || '';
-
-    if (imageFile && db) { 
-        const compressedFile = await compressAndResizeImage(imageFile);
-        const storage = getStorage();
-        const storageRef = ref(storage, `products/${Date.now()}_${compressedFile.name}`);
-        const snapshot = await uploadBytes(storageRef, compressedFile);
-        imageUrl = await getDownloadURL(snapshot.ref);
-    }
-    
     const dataToSubmit: FormSubmitData = {
       ...values,
-      imageUrl: imageUrl,
       tipo: values.variedad,
       barras: initialData?.barras || '',
       estado: initialData?.estado || 'Activo',
@@ -130,8 +60,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     
     if (initialData?.id) {
       dataToSubmit.id = initialData.id;
-    } else {
-      delete dataToSubmit.id;
     }
 
     onSubmit(dataToSubmit);
@@ -140,27 +68,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="image"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Imagen</FormLabel>
-              <FormControl>
-                <Input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setImageFile(file);
-                    field.onChange(file);
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="variedad"

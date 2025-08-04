@@ -17,7 +17,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
   if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
-    imageUrl: data.imageUrl || '',
     nombre: data.nombre || '',
     variedad: data.variedad || '',
     tipo: data.tipo || '',
