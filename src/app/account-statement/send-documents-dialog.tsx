@@ -18,14 +18,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, Paperclip } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 import type { Customer, Invoice } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
-  invoiceIds: z.array(z.string()).min(1, 'You must select at least one document to send.'),
+  invoiceIds: z.array(z.string()),
 });
 
 type SendDocumentsDialogProps = {
@@ -34,6 +36,46 @@ type SendDocumentsDialogProps = {
   isOpen: boolean;
   onClose: () => void;
 };
+
+// Helper function to generate PDF on the client-side
+async function generatePdfForElement(elementId: string): Promise<string | null> {
+    const element = document.getElementById(elementId);
+    if (!element) return null;
+
+    try {
+        const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+        });
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+        const imgWidth = canvasWidth * ratio;
+        const imgHeight = canvasHeight * ratio;
+        const x = (pdfWidth - imgWidth) / 2;
+        let position = 0;
+
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, position, imgWidth, imgHeight);
+        let remainingHeight = imgHeight - pdfHeight;
+        
+        while (remainingHeight > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, position, imgWidth, imgHeight);
+            remainingHeight -= pdfHeight;
+        }
+
+        return pdf.output('datauristring').split(',')[1]; // Return base64 content
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        return null;
+    }
+}
+
 
 export default function SendDocumentsDialog({ customer, invoices, isOpen, onClose }: SendDocumentsDialogProps) {
   const { toast } = useToast();
@@ -69,6 +111,17 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     const body = `Estimado/a ${customer.name},\n\nAdjunto encontrará los documentos solicitados.\n\nGracias,\nEl equipo de JCW Flowers`;
     
     try {
+        // Generate statement PDF on the client
+        const statementPdfBase64 = await generatePdfForElement('statement-to-print');
+        if (!statementPdfBase64) {
+          throw new Error("Failed to generate the account statement PDF.");
+        }
+
+        const attachments = [{
+            filename: `Estado-de-Cuenta-${customer.name.replace(/ /g, '_')}.pdf`,
+            content: statementPdfBase64,
+        }];
+
         const response = await fetch('/api/send-invoice', {
             method: 'POST',
             headers: {
@@ -78,9 +131,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                 to: values.to,
                 subject: subject,
                 body: body,
-                invoiceIds: values.invoiceIds,
-                isStatement: true,
-                statementData: { customer, invoices }
+                attachments,
             }),
         });
 
@@ -92,7 +143,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
 
         toast({
             title: "Correo Enviado",
-            description: `Se han enviado ${values.invoiceIds.length} documentos a ${values.to}.`,
+            description: `Se han enviado los documentos a ${values.to}.`,
         });
         onClose();
         
@@ -112,13 +163,13 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
 
   return (
     <Dialog open={isOpen} onOpenChange={!isSending ? onClose : () => {}}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-lg">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>Enviar Documentos por Correo</DialogTitle>
+              <DialogTitle>Enviar Estado de Cuenta</DialogTitle>
               <DialogDescription>
-                Seleccione los documentos para enviar a {customer.name}.
+                Se enviará el estado de cuenta por correo a {customer.name}.
               </DialogDescription>
             </DialogHeader>
 
@@ -129,83 +180,20 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
               </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="to"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Para</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="space-y-4">
-                   <FormLabel>Archivos Adjuntos</FormLabel>
-                   <FormField
-                      control={form.control}
-                      name="invoiceIds"
-                      render={() => (
-                        <Card>
-                            <CardContent className="p-4">
-                               <ScrollArea className="h-64">
-                                <div className="space-y-2">
-                                   <div className="flex items-center space-x-2 p-2 rounded-md transition-colors hover:bg-muted/50">
-                                      <Checkbox
-                                        id="select-all"
-                                        checked={form.getValues('invoiceIds')?.length === allInvoiceIds.length}
-                                        onCheckedChange={(checked) => {
-                                           form.setValue('invoiceIds', checked ? allInvoiceIds : [], { shouldValidate: true });
-                                        }}
-                                      />
-                                      <label htmlFor="select-all" className="font-medium">
-                                        Seleccionar todo
-                                      </label>
-                                  </div>
-                                  {invoices.map((invoice) => (
-                                    <FormField
-                                        key={invoice.id}
-                                        control={form.control}
-                                        name="invoiceIds"
-                                        render={({ field }) => (
-                                          <FormItem className="flex flex-row items-center space-x-2 space-y-0 p-2 rounded-md transition-colors hover:bg-muted/50">
-                                            <FormControl>
-                                              <Checkbox
-                                                checked={field.value?.includes(invoice.id)}
-                                                onCheckedChange={(checked) => {
-                                                  return checked
-                                                    ? field.onChange([...(field.value || []), invoice.id])
-                                                    : field.onChange(
-                                                        field.value?.filter(
-                                                          (value) => value !== invoice.id
-                                                        )
-                                                      )
-                                                }}
-                                              />
-                                            </FormControl>
-                                            <FormLabel className="font-normal w-full cursor-pointer">
-                                              <div className="flex justify-between items-center">
-                                                <span>Factura-{invoice.invoiceNumber}.pdf</span>
-                                                <Paperclip className="h-4 w-4 text-muted-foreground" />
-                                              </div>
-                                            </FormLabel>
-                                          </FormItem>
-                                        )}
-                                      />
-                                  ))}
-                                </div>
-                               </ScrollArea>
-                            </CardContent>
-                        </Card>
-                      )}
-                    />
-                    <FormMessage>{form.formState.errors.invoiceIds?.message}</FormMessage>
-                </div>
+            <div className="py-6">
+              <FormField
+                control={form.control}
+                name="to"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Para</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             
             <DialogFooter>
@@ -218,7 +206,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {isSending ? 'Enviando...' : `Enviar ${form.watch('invoiceIds')?.length || 0} Documentos`}
+                {isSending ? 'Enviando...' : `Enviar`}
               </Button>
             </DialogFooter>
           </form>

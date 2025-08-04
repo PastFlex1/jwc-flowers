@@ -4,6 +4,8 @@ import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -51,7 +53,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
       });
       setError(null);
     }
-  }, [customer, invoice, isOpen, form, t]);
+  }, [customer, invoice, isOpen, form]);
   
   if (!invoice || !customer) {
     return null;
@@ -62,8 +64,46 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
     startTransition(async () => {
       const subject = t('sendInvoiceDialog.defaultSubject', { invoiceNumber: invoice.invoiceNumber });
       const body = t('sendInvoiceDialog.defaultBody', { customerName: customer.name });
-
+      
+      const invoiceElement = document.getElementById('invoice-to-print');
+      if (!invoiceElement) {
+        setError("Could not find invoice content to generate PDF.");
+        return;
+      }
+      
       try {
+        const canvas = await html2canvas(invoiceElement, {
+          scale: 3,
+          useCORS: true,
+          logging: false,
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgWidth = canvas.width;
+        const imgHeight = canvas.height;
+        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+        const finalImgWidth = imgWidth * ratio;
+        const finalImgHeight = imgHeight * ratio;
+        const xPos = (pdfWidth - finalImgWidth) / 2;
+
+        let position = 0;
+        let remainingHeight = finalImgHeight;
+        
+        pdf.addImage(imgData, 'PNG', xPos, position, finalImgWidth, finalImgHeight);
+        remainingHeight -= pdfHeight;
+
+        while (remainingHeight > 0) {
+            position -= pdfHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', xPos, position, finalImgWidth, finalImgHeight);
+            remainingHeight -= pdfHeight;
+        }
+
+        const pdfBase64 = pdf.output('datauristring').split(',')[1];
+        
         const response = await fetch('/api/send-invoice', {
             method: 'POST',
             headers: {
@@ -73,7 +113,10 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                 to: values.to,
                 subject,
                 body,
-                invoiceId: invoice.id,
+                attachments: [{
+                    filename: `Factura-${invoice.invoiceNumber.trim()}.pdf`,
+                    content: pdfBase64,
+                }],
             }),
         });
 
@@ -138,7 +181,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-                {t('sendInvoiceDialog.cancel')}
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
