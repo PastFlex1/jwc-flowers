@@ -15,7 +15,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
@@ -25,8 +24,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
-  subject: z.string().min(1, 'Subject is required.'),
-  body: z.string(),
 });
 
 type SendInvoiceDialogProps = {
@@ -51,8 +48,6 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
     if (customer && invoice && isOpen) {
       form.reset({
         to: customer.email,
-        subject: t('sendInvoiceDialog.defaultSubject', { invoiceNumber: invoice.invoiceNumber }),
-        body: t('sendInvoiceDialog.defaultBody', { customerName: customer.name }),
       });
       setError(null);
     }
@@ -65,6 +60,9 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setError(null);
     startTransition(async () => {
+      const subject = t('sendInvoiceDialog.defaultSubject', { invoiceNumber: invoice.invoiceNumber });
+      const body = t('sendInvoiceDialog.defaultBody', { customerName: customer.name });
+
       try {
         const response = await fetch('/api/send-invoice', {
             method: 'POST',
@@ -72,7 +70,9 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                ...values,
+                to: values.to,
+                subject,
+                body,
                 invoiceId: invoice.id,
             }),
         });
@@ -129,32 +129,6 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                     <FormLabel>{t('sendInvoiceDialog.to')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('sendInvoiceDialog.subject')}</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="body"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('sendInvoiceDialog.body')}</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={6} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

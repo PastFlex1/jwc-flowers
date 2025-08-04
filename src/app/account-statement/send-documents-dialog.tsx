@@ -14,22 +14,17 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, Paperclip } from 'lucide-react';
 import type { Customer, Invoice } from '@/lib/types';
-import { useTranslation } from '@/context/i18n-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { sendDocumentsAction } from '@/app/account-statement/actions';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
-  subject: z.string().min(1, 'Subject is required.'),
-  body: z.string(),
   invoiceIds: z.array(z.string()).min(1, 'You must select at least one document to send.'),
 });
 
@@ -42,7 +37,6 @@ type SendDocumentsDialogProps = {
 
 export default function SendDocumentsDialog({ customer, invoices, isOpen, onClose }: SendDocumentsDialogProps) {
   const { toast } = useToast();
-  const { t } = useTranslation();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,13 +51,11 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     if (customer && isOpen) {
       form.reset({
         to: customer.email,
-        subject: `Documentos para ${customer.name}`,
-        body: `Estimado/a ${customer.name},\n\nAdjunto encontrará los documentos solicitados.\n\nGracias,\nEl equipo de JCW Flowers`,
         invoiceIds: allInvoiceIds,
       });
       setError(null);
     }
-  }, [customer, invoices, isOpen, form, allInvoiceIds]);
+  }, [customer, isOpen, form, allInvoiceIds]);
   
   if (!customer) {
     return null;
@@ -72,6 +64,9 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSending(true);
     setError(null);
+
+    const subject = `Documentos para ${customer.name}`;
+    const body = `Estimado/a ${customer.name},\n\nAdjunto encontrará los documentos solicitados.\n\nGracias,\nEl equipo de JCW Flowers`;
     
     try {
         const response = await fetch('/api/send-invoice', {
@@ -80,7 +75,10 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                ...values,
+                to: values.to,
+                subject: subject,
+                body: body,
+                invoiceIds: values.invoiceIds,
                 isStatement: true,
                 statementData: { customer, invoices }
             }),
@@ -141,32 +139,6 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
                         <FormLabel>Para</FormLabel>
                         <FormControl>
                           <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Asunto</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="body"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mensaje</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} rows={10} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
