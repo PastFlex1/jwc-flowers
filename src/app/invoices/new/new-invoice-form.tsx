@@ -547,11 +547,11 @@ export function NewInvoiceForm() {
                   </TableHeader>
                   <TableBody>
                     {fields.map((field, index) => {
-                      const currentItem = watchItems[index];
-                      const totalStems = (currentItem?.stemsPerBunch || 0) * (currentItem?.bunches || 0);
-                      const difference = (currentItem?.salePrice || 0) - (currentItem?.purchasePrice || 0);
-                      const total = totalStems * (currentItem?.salePrice || 0);
-                      const totalBunchesInRow = currentItem?.bunches || 0;
+                      const item = watchItems[index];
+                      const totalStems = (item?.stemsPerBunch || 0) * (item?.bunches || 0);
+                      const difference = (item?.salePrice || 0) - (item?.purchasePrice || 0);
+                      const total = totalStems * (item?.salePrice || 0);
+                      const totalBunchesInRow = item?.bunches || 0;
 
                       return (
                         <TableRow key={field.id}>
