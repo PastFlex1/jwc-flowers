@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     }
 
     await resend.emails.send({
-      from: 'JCW Flowers <facturacion@puntodeventastore.tienda>',
+      from: 'JCW Flowers <onboarding@resend.dev>',
       to: [to],
       subject: subject,
       html: `<p>${emailBody.replace(/\n/g, '<br>')}</p>`,
