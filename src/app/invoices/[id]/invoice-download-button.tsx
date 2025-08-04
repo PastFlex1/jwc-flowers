@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { generateInvoicePdf } from '@/lib/pdfmake-generator';
 import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
 
 
 type InvoiceDownloadButtonProps = {
@@ -35,7 +35,7 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
     setIsGenerating(true);
     try {
       // Assign fonts inside the handler
-      pdfMake.vfs = pdfFonts.pdfMake.vfs;
+      (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
       
       const docDefinition = await generateInvoicePdf({
         invoice,
