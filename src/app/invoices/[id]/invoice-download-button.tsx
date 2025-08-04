@@ -9,8 +9,6 @@ import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/typ
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
 
 type InvoiceDownloadButtonProps = {
   invoice: Invoice;
@@ -36,6 +34,9 @@ export default function InvoiceDownloadButton({ invoice, customer, consignatario
 
     setIsGenerating(true);
     try {
+      // Assign fonts inside the handler
+      pdfMake.vfs = pdfFonts.pdfMake.vfs;
+      
       const docDefinition = await generateInvoicePdf({
         invoice,
         customer,
