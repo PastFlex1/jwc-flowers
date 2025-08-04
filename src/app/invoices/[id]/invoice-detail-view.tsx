@@ -49,7 +49,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             const totalPrice = (bunch.stemsPerBunch * bunch.bunches) * bunch.salePrice;
             const stemsPerBox = bunch.stemsPerBunch * bunch.bunches;
             return (
-                 <div key={bunch.id || bunchIndex} className="contents text-xs">
+                 <div key={bunch.id || bunchIndex} className="contents text-[10px]">
                     <div className="border-b border-l border-border p-1 text-center">{item.boxNumber}</div>
                     <div className="border-b border-l border-border p-1 text-center">{item.boxType.toUpperCase()}</div>
                     <div className="border-b border-l border-border p-1 text-left">{bunch.product}</div>
@@ -80,21 +80,21 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           />
         </div>
         
-        <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="invoice-to-print">
-          <CardContent className="p-0 text-sm leading-tight">
+        <Card className="p-4 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="invoice-to-print">
+          <CardContent className="p-0 text-xs leading-tight">
             {/* Header Section */}
-            <header className="flex justify-between items-start mb-6">
+            <header className="flex justify-between items-start mb-4">
                 <div className="w-1/2">
-                    <Image src="/logo.png" alt="JCW Flowers Logo" width={200} height={60} />
-                    <div className="border border-gray-300 p-2 text-xs mt-4">
+                    <Image src="/logo.png" alt="JCW Flowers Logo" width={180} height={54} />
+                    <div className="border border-gray-300 p-2 text-[10px] mt-2">
                         <p><strong>E-MAIL:</strong> jcwf@outlook.es</p>
                         <p><strong>PHONE:</strong> +593 096 744 1343</p>
                         <p><strong>ADDRESS:</strong> Pasaje F y Calle Quito, EL QUINCHE - QUITO - ECUADOR</p>
                     </div>
                 </div>
                 <div className="w-1/2 flex flex-col items-end">
-                    <h1 className="text-3xl font-bold mb-4 tracking-wider">INVOICE</h1>
-                    <div className="w-[280px] text-xs">
+                    <h1 className="text-2xl font-bold mb-2 tracking-wider">INVOICE</h1>
+                    <div className="w-[250px] text-[10px]">
                         <div className="flex border border-gray-300">
                             <div className="w-1/3 border-r border-gray-300 p-1 font-bold">DATE:</div>
                             <div className="w-2/3 p-1 text-center">{format(parseISO(invoice.flightDate), 'MM/dd/yyyy')}</div>
@@ -104,7 +104,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                             <div className="w-2/3 p-1 text-center font-bold text-base">{invoice.invoiceNumber}</div>
                         </div>
                     </div>
-                    <div className="w-[280px] text-xs mt-4">
+                    <div className="w-[250px] text-[10px] mt-2">
                          <div className="flex border border-gray-300">
                             <div className="w-1/3 border-r border-gray-300 p-1 font-bold">AWB:</div>
                             <div className="w-2/3 p-1 text-center">{invoice.masterAWB}</div>
@@ -118,7 +118,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             </header>
 
             {/* Client Info Section */}
-            <section className="border border-gray-300 p-2 mb-6 text-xs">
+            <section className="border border-gray-300 p-2 mb-4 text-[10px]">
                 <div className="grid grid-cols-[auto,1fr] gap-x-4">
                     <strong>Name Client:</strong> <span>{customer?.name}</span>
                     <strong>Mark:</strong> <span>{invoice.reference}</span>
@@ -130,24 +130,24 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
             {/* Items Table */}
             <section>
-                <div className="grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[10px] leading-tight">
+                <div className="grid grid-cols-[auto,auto,1.5fr,1.5fr,1fr,auto,auto,auto,auto,auto] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[9px] leading-tight">
                     <div className="p-1 border-r border-gray-300">CAJAS</div>
-                    <div className="p-1 border-r border-gray-300">TIPO DE CAJA</div>
+                    <div className="p-1 border-r border-gray-300">TIPO</div>
                     <div className="p-1 border-r border-gray-300 text-left">NOMBRE DE LA FLOR</div>
                     <div className="p-1 border-r border-gray-300 text-left">VARIEDAD</div>
                     <div className="p-1 border-r border-gray-300 text-left">COLOR</div>
-                    <div className="p-1 border-r border-gray-300">LONGITUD</div>
-                    <div className="p-1 border-r border-gray-300">TALLOS POR CAJA</div>
-                    <div className="p-1 border-r border-gray-300">BUNCHES POR CAJA</div>
-                    <div className="p-1 border-r border-gray-300">PRECIO DE VENTA</div>
+                    <div className="p-1 border-r border-gray-300">LONG.</div>
+                    <div className="p-1 border-r border-gray-300">TALLOS</div>
+                    <div className="p-1 border-r border-gray-300">BUNCHES</div>
+                    <div className="p-1 border-r border-gray-300">P. VENTA</div>
                     <div className="p-1">TOTAL</div>
                 </div>
                 
-                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px]">
+                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[auto,auto,1.5fr,1.5fr,1fr,auto,auto,auto,auto,auto]">
                     {invoice.items.map((item, index) => renderItemRow(item, index))}
                 </div>
                 
-                 <div className="grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
+                 <div className="grid grid-cols-[auto,auto,1.5fr,1.5fr,1fr,auto,auto,auto,auto,auto] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
                     <div className="p-1 border-r border-gray-300 text-center">{totals.totalBoxes}</div>
                     <div className="p-1 border-r border-gray-300 col-span-5 text-center">TOTALES</div>
                     <div className="p-1 border-r border-gray-300">{totals.totalStems}</div>
@@ -158,14 +158,14 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             </section>
 
             {/* Footer */}
-            <footer className="mt-6 flex justify-between items-end">
-                <p className="text-[10px] max-w-md">
+            <footer className="mt-4 flex justify-between items-end">
+                <p className="text-[8px] max-w-sm">
                     All prices are FOB Quito. Please remember that you have 10 days after the date on the invoice to
                     make a claim and that we do not accept credits for freight or handling charges in any case.
                 </p>
                 <div className="text-sm">
-                    <div className="flex border border-gray-300 w-64">
-                         <div className="p-1 font-bold w-1/2 border-r border-gray-300">TOTAL FOB</div>
+                    <div className="flex border border-gray-300 w-56">
+                         <div className="p-1 font-bold w-1/2 border-r border-gray-300 text-xs">TOTAL FOB</div>
                          <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
                     </div>
                 </div>
