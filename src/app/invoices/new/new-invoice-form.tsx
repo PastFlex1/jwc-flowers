@@ -33,7 +33,7 @@ const lineItemSchema = z.object({
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
   boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   productoId: z.string().min(1, 'Product is required.'),
-  nombreFlor: z.string(),
+  nombreFlor: z.string().min(1, 'Product name is required'),
   color: z.string().min(1, 'Color is required.'),
   variedad: z.string().min(1, 'Variety is required.'),
   length: z.coerce.number().positive('Must be > 0'),
@@ -91,8 +91,7 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
-  const [availableVarieties, setAvailableVarieties] = useState<Record<number, string[]>>({});
-  const [availableColors, setAvailableColors] = useState<Record<number, string[]>>({});
+  const [availableOptions, setAvailableOptions] = useState<Record<string, { varieties: string[], colors: string[] }>>({});
   const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
@@ -156,8 +155,9 @@ export function NewInvoiceForm() {
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
 
   const handleAddItem = () => {
+    const newItemId = uuidv4();
     append({
-      id: uuidv4(),
+      id: newItemId,
       boxNumber: fields.length + 1,
       boxType: 'hb',
       productoId: '',
@@ -170,33 +170,41 @@ export function NewInvoiceForm() {
       purchasePrice: 0,
       salePrice: 0,
     });
+    // Ensure the new item has a clean slate for options
+    setAvailableOptions(prev => ({
+      ...prev,
+      [newItemId]: { varieties: [], colors: [] }
+    }));
   };
 
-  const handleProductChange = (index: number, productName: string) => {
+  const handleProductChange = (itemId: string, index: number, productName: string) => {
     const matchingProducts = productos.filter((p) => p.nombre === productName);
     
     if (matchingProducts.length > 0) {
       const firstProduct = matchingProducts[0];
-      form.setValue(`items.${index}.productoId`, firstProduct.id); // Assign a representative ID
+      form.setValue(`items.${index}.productoId`, firstProduct.id);
       form.setValue(`items.${index}.nombreFlor`, firstProduct.nombre);
-      form.setValue(`items.${index}.salePrice`, firstProduct.precio); // Set price from the first match
+      form.setValue(`items.${index}.salePrice`, firstProduct.precio);
       
       const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
       const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
 
-      setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
-      setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
+      setAvailableOptions(prev => ({
+        ...prev,
+        [itemId]: { varieties: uniqueVarieties, colors: uniqueColors }
+      }));
       
       form.setValue(`items.${index}.variedad`, '');
       form.setValue(`items.${index}.color`, '');
-
     } else {
-       setAvailableVarieties(prev => ({ ...prev, [index]: [] }));
-       setAvailableColors(prev => ({ ...prev, [index]: [] }));
+       setAvailableOptions(prev => ({
+        ...prev,
+        [itemId]: { varieties: [], colors: [] }
+      }));
     }
      form.trigger(`items.${index}`);
   };
-
+  
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
   
@@ -608,7 +616,7 @@ export function NewInvoiceForm() {
                                     <Select
                                     onValueChange={(value) => {
                                         field.onChange(value);
-                                        handleProductChange(index, value);
+                                        handleProductChange(item.id, index, value);
                                     }}
                                     value={field.value}
                                     >
@@ -638,7 +646,7 @@ export function NewInvoiceForm() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {(availableVarieties[index] || []).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                    {(availableOptions[item.id]?.varieties || []).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -656,7 +664,7 @@ export function NewInvoiceForm() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {(availableColors[index] || []).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                     {(availableOptions[item.id]?.colors || []).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
