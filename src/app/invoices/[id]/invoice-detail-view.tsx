@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
-import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from '@/lib/types';
+import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem } from '@/lib/types';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -74,9 +74,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <InvoiceActions
             invoice={invoice}
             customer={customer}
-            consignatario={consignatario}
-            carguera={carguera}
-            pais={pais}
           />
         </div>
         
