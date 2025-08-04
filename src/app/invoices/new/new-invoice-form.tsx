@@ -205,7 +205,28 @@ export function NewInvoiceForm() {
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
-
+  
+    const processedItems: LineItem[] = values.items.map(item => {
+      const { bunches, ...restOfItem } = item;
+      return {
+        ...restOfItem,
+        bunches: [ // We wrap the single line item logic into a bunches array to match the type
+          {
+            id: uuidv4(),
+            productoId: item.productoId,
+            product: item.nombreFlor,
+            variety: item.variedad,
+            length: item.length,
+            stemsPerBunch: item.stemsPerBunch,
+            bunches: item.bunches,
+            salePrice: item.salePrice,
+            color: item.color,
+            purchasePrice: item.purchasePrice,
+          }
+        ]
+      };
+    });
+  
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
       consignatarioId: values.consignatarioId || '',
@@ -213,22 +234,9 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: values.items.map(item => ({
-        id: item.id,
-        boxType: item.boxType,
-        boxNumber: item.boxNumber,
-        bunches: [],
-        productoId: item.productoId,
-        nombreFlor: item.nombreFlor,
-        color: item.color,
-        variedad: item.variedad,
-        length: item.length,
-        stemsPerBunch: item.stemsPerBunch,
-        purchasePrice: item.purchasePrice,
-        salePrice: item.salePrice,
-      })),
+      items: processedItems,
     };
-
+  
     try {
       await addInvoice(processedInvoice);
       await refreshData();
@@ -251,6 +259,7 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
+  
 
   if (!isMounted) {
     return null;
@@ -558,13 +567,12 @@ export function NewInvoiceForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fields.map((field, index) => {
-                      const item = watchItems[index];
-                      const totalBunchesInRow = item?.bunches || 0;
-                      const totalStems = (item?.stemsPerBunch || 0) * (item?.bunches || 0);
-                      const difference = (item?.salePrice || 0) - (item?.purchasePrice || 0);
-                      const total = totalStems * (item?.salePrice || 0);
-                      
+                  {fields.map((field, index) => {
+                      const itemValues = watchItems[index];
+                      const totalStems = (itemValues?.stemsPerBunch || 0) * (itemValues?.bunches || 0);
+                      const difference = (itemValues?.salePrice || 0) - (itemValues?.purchasePrice || 0);
+                      const total = totalStems * (itemValues?.salePrice || 0);
+
                       return (
                         <TableRow key={field.id}>
                           <TableCell>{index + 1}</TableCell>
@@ -628,7 +636,7 @@ export function NewInvoiceForm() {
                           <TableCell>
                             <FormField control={form.control} name={`items.${index}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
                           </TableCell>
-                          <TableCell>{totalBunchesInRow}</TableCell>
+                          <TableCell>{itemValues?.bunches || 0}</TableCell>
                           <TableCell>
                             <FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
                           </TableCell>

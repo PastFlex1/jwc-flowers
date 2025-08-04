@@ -25,9 +25,9 @@ export interface InventoryItem {
 export interface BunchItem {
   id: string;
   productoId: string;
-  nombreFlor: string;
+  product: string; // Changed from nombreFlor to product for consistency
   color: string;
-  variedad: string;
+  variety: string; // Changed from variedad to variety
   length: number;
   stemsPerBunch: number;
   bunches: number;
@@ -39,17 +39,7 @@ export interface LineItem {
   id: string;
   boxType: 'qb' | 'eb' | 'hb';
   boxNumber: number;
-  nci?: string;
-  ncf?: string;
-  bunches: BunchItem[]; // This remains for data structure, but UI is flattened
-  productoId: string;
-  nombreFlor: string;
-  color: string;
-  variedad: string;
-  length: number;
-  stemsPerBunch: number;
-  purchasePrice: number;
-  salePrice: number;
+  bunches: BunchItem[];
 }
 
 export interface Invoice {
