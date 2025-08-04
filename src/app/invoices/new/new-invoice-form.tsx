@@ -193,13 +193,15 @@ export function NewInvoiceForm() {
   const handleProductChange = (itemIndex: number, productoId: string) => {
     const product = productos.find((p) => p.id === productoId);
     if (product) {
-      form.setValue(`items.${itemIndex}.productoId`, product.id, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.color`, product.color, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.variedad`, product.variedad, { shouldValidate: true });
-      form.setValue(`items.${itemIndex}.salePrice`, product.precio, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.productoId`, product.id);
+      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre);
+      form.setValue(`items.${itemIndex}.color`, product.color);
+      form.setValue(`items.${itemIndex}.variedad`, product.variedad);
+      form.setValue(`items.${itemIndex}.salePrice`, product.precio);
+      form.trigger(`items.${itemIndex}`);
     }
   };
+
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
@@ -211,11 +213,11 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-       items: values.items.map(item => ({
+      items: values.items.map(item => ({
         id: item.id,
         boxType: item.boxType,
         boxNumber: item.boxNumber,
-        bunches: [], // This is simplified now
+        bunches: [],
         productoId: item.productoId,
         nombreFlor: item.nombreFlor,
         color: item.color,
