@@ -24,7 +24,7 @@ import type { Customer, Invoice } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { sendDocumentsAction } from './actions';
+import { sendDocumentsAction } from '@/app/account-statement/actions';
 
 const formSchema = z.object({
   to: z.string().email('Invalid email address.'),
@@ -82,10 +82,11 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
       });
       onClose();
     } else {
-      setError(result.error);
+      const errorMessage = result.error || 'An unknown error occurred.';
+      setError(errorMessage);
       toast({
         title: "Error al Enviar",
-        description: result.error,
+        description: errorMessage,
         variant: "destructive",
       });
     }

@@ -43,9 +43,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
 
   const renderItemRow = (item: LineItem, index: number) => {
-    const boxStems = item.bunches.reduce((acc, bunch) => acc + (bunch.stemsPerBunch * bunch.bunches), 0);
-    const boxBunches = item.bunches.reduce((acc, bunch) => acc + bunch.bunches, 0);
-
     return (
        <React.Fragment key={item.id || index}>
         {item.bunches.map((bunch, bunchIndex) => {
@@ -53,8 +50,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             const stemsPerBox = bunch.stemsPerBunch * bunch.bunches;
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-xs">
-                    <div className="border-b border-l border-border p-1 text-center">{bunchIndex === 0 ? item.boxNumber : ''}</div>
-                    <div className="border-b border-l border-border p-1 text-center">{bunchIndex === 0 ? item.boxType.toUpperCase() : ''}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{item.boxNumber}</div>
+                    <div className="border-b border-l border-border p-1 text-center">{item.boxType.toUpperCase()}</div>
                     <div className="border-b border-l border-border p-1 text-left">{bunch.product}</div>
                     <div className="border-b border-l border-border p-1 text-left">{bunch.variety}</div>
                     <div className="border-b border-l border-border p-1 text-left">{bunch.color}</div>
@@ -127,7 +124,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
             {/* Items Table */}
             <section>
-                <div className="grid grid-cols-[40px,50px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[10px] leading-tight">
+                <div className="grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-300 text-[10px] leading-tight">
                     <div className="p-1 border-r border-gray-300">CAJAS</div>
                     <div className="p-1 border-r border-gray-300">TIPO DE CAJA</div>
                     <div className="p-1 border-r border-gray-300 text-left">NOMBRE DE LA FLOR</div>
@@ -140,11 +137,11 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="p-1">TOTAL</div>
                 </div>
                 
-                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[40px,50px,1fr,1fr,1fr,60px,80px,80px,80px,80px]">
+                <div className="border-l border-r border-b border-gray-300 grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px]">
                     {invoice.items.map((item, index) => renderItemRow(item, index))}
                 </div>
                 
-                 <div className="grid grid-cols-[40px,50px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
+                 <div className="grid grid-cols-[40px,60px,1fr,1fr,1fr,60px,80px,80px,80px,80px] font-bold text-center bg-gray-50 border-l border-r border-b border-gray-300 text-xs">
                     <div className="p-1 border-r border-gray-300 text-center">{totals.totalBoxes}</div>
                     <div className="p-1 border-r border-gray-300 col-span-5 text-center">TOTALES</div>
                     <div className="p-1 border-r border-gray-300">{totals.totalStems}</div>

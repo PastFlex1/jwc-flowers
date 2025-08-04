@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import type { Invoice, Customer } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
-import { sendInvoiceAction } from './actions';
+import { sendInvoiceAction } from './send-invoice-action';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
@@ -78,10 +78,11 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
         });
         onClose();
       } else {
-        setError(result.error);
+        const errorMessage = result.error || 'An unknown error occurred.';
+        setError(errorMessage);
         toast({
           title: "Error al Enviar",
-          description: result.error,
+          description: errorMessage,
           variant: "destructive",
         });
       }

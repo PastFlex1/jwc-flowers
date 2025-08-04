@@ -1,13 +1,14 @@
 'use server';
 
+import React from 'react';
 import { z } from 'zod';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { v4 as uuidv4 } from 'uuid';
+
 import { generatePdfFromHtml } from '@/lib/pdf';
 import { sendEmailWithAttachments } from '@/services/email';
 import { getInvoiceWithDetails } from '@/services/invoices';
-import { InvoicePdf } from './[id]/invoice-pdf';
-import React from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-
+import { InvoiceDetailView } from './[id]/invoice-detail-view';
 
 const formSchema = z.object({
   to: z.string().email(),
@@ -17,7 +18,6 @@ const formSchema = z.object({
 });
 
 type SendInvoiceInput = z.infer<typeof formSchema>;
-
 
 export async function sendInvoiceAction(input: SendInvoiceInput) {
   const validation = formSchema.safeParse(input);
@@ -33,40 +33,56 @@ export async function sendInvoiceAction(input: SendInvoiceInput) {
         throw new Error(`Invoice with ID ${invoiceId} not found.`);
     }
 
-    const invoiceHtml = renderToStaticMarkup(
-      React.createElement(InvoicePdf, { invoiceDetails })
-    );
+    const { invoice } = invoiceDetails;
+
+     if (invoice.items && Array.isArray(invoice.items)) {
+        invoice.items.forEach(item => {
+        if (!item.id) item.id = uuidv4();
+        if (item.bunches && Array.isArray(item.bunches)) {
+            item.bunches.forEach(bunch => {
+                if (!bunch.id) bunch.id = uuidv4();
+            });
+        }
+        });
+    }
+
+    const invoiceComponent = React.createElement(InvoiceDetailView, invoiceDetails);
+    const invoiceHtmlString = renderToStaticMarkup(invoiceComponent);
 
     const fullHtml = `
-      <!DOCTYPE html>
-      <html>
+        <!DOCTYPE html>
+        <html lang="en">
         <head>
-          <meta charset="utf-8" />
-           <link rel="preconnect" href="https://fonts.googleapis.com" />
-           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-           <style>
-             body { font-family: 'Alegreya', sans-serif; }
-             /* You can include more critical CSS for the PDF here if needed */
-           </style>
+            <meta charset="utf-8" />
+            <title>Invoice ${invoice.invoiceNumber}</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet" />
+            <style>
+            body { 
+                font-family: 'Alegreya', serif;
+                font-size: 12px;
+            }
+            </style>
         </head>
         <body>
-          ${invoiceHtml}
+            ${invoiceHtmlString}
         </body>
-      </html>
+        </html>
     `;
     
     const pdfBase64 = await generatePdfFromHtml(fullHtml);
     
-    const attachment = {
+    const attachments = [{
         filename: `Factura-${invoiceDetails.invoice.invoiceNumber}.pdf`,
         content: pdfBase64,
-    };
+    }];
 
     await sendEmailWithAttachments({
       to,
       subject,
       body,
-      attachments: [attachment],
+      attachments,
     });
 
     return { success: true };
