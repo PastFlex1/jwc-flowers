@@ -117,11 +117,17 @@ export interface Consignatario {
 
 export interface Producto {
   id: string;
+  imageUrl: string;
+  codigo: string;
   nombre: string;
-  tipo: string;
   variedad: string;
-  stock: number;
+  tipo: string;
+  barras: string;
+  color: string;
+  precio: number;
+  estado: 'Activo' | 'Inactivo';
 }
+
 
 export interface CreditNote {
   id: string;
@@ -150,5 +156,3 @@ export interface Payment {
   reference?: string;
   notes?: string;
 }
-
-    

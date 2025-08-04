@@ -1,6 +1,7 @@
 // Import the functions you need from the SDKs you need
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // For security, these values are stored in environment variables
@@ -18,14 +19,16 @@ const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!valu
 
 let app;
 let db;
+let storage;
 
 // Initialize Firebase only if the config is complete
 if (isFirebaseConfigured) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
+    storage = getStorage(app);
 } else {
     console.warn("Firebase configuration is incomplete. App will run in offline mode. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly in your .env file.");
 }
 
 
-export { app, db };
+export { app, db, storage };

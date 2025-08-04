@@ -17,10 +17,15 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
   if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
-    nombre: data.nombre,
-    tipo: data.tipo,
-    variedad: data.variedad,
-    stock: data.stock || 0,
+    imageUrl: data.imageUrl || '',
+    codigo: data.codigo || '',
+    nombre: data.nombre || '',
+    variedad: data.variedad || '',
+    tipo: data.tipo || '',
+    barras: data.barras || '',
+    color: data.color || '',
+    precio: data.precio || 0,
+    estado: data.estado || 'Activo',
   };
 };
 

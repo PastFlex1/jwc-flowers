@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,46 +10,71 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import type { Producto } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const formSchema = z.object({
-  tipo: z.string().min(2, { message: "Type must be at least 2 characters." }),
-  variedad: z.string().min(2, { message: "Variety must be at least 2 characters." }),
-  nombre: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  stock: z.coerce.number().min(0, { message: "Stock cannot be negative." }),
+  codigo: z.string().min(1, "Código es requerido."),
+  variedad: z.string().min(1, "Variedad es requerida."),
+  nombre: z.string().min(1, "Nombre es requerido."),
+  color: z.string().min(1, "Color es requerido."),
+  precio: z.coerce.number().min(0, "Precio debe ser positivo."),
+  image: z.any().optional(),
 });
 
-type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
+type ProductoFormData = Omit<Producto, 'id' | 'imageUrl' | 'tipo' | 'barras' | 'estado'>;
+type FormSubmitData = Omit<Producto, 'id'>;
 
 type ProductoFormProps = {
-  onSubmit: (data: ProductoFormData) => void;
+  onSubmit: (data: FormSubmitData) => void;
   onClose: () => void;
   initialData?: Producto | null;
   isSubmitting: boolean;
 };
 
 export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: ProductoFormProps) {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
-    defaultValues: initialData || {
-      tipo: '',
-      variedad: '',
-      nombre: '',
-      stock: 0,
+    defaultValues: {
+      codigo: initialData?.codigo || '',
+      variedad: initialData?.variedad || '',
+      nombre: initialData?.nombre || '',
+      color: initialData?.color || '',
+      precio: initialData?.precio || 0,
     },
   });
 
   useEffect(() => {
-    form.reset(initialData || {
-      tipo: '',
-      variedad: '',
-      nombre: '',
-      stock: 0,
+    form.reset({
+      codigo: initialData?.codigo || '',
+      variedad: initialData?.variedad || '',
+      nombre: initialData?.nombre || '',
+      color: initialData?.color || '',
+      precio: initialData?.precio || 0,
     });
   }, [initialData, form]);
 
-  function handleSubmit(values: z.infer<typeof formSchema>) {
-    const dataToSubmit = initialData ? { ...values, id: initialData.id } : values;
+  async function handleSubmit(values: z.infer<typeof formSchema>) {
+    let imageUrl = initialData?.imageUrl || '';
+
+    if (imageFile) {
+        const storage = getStorage();
+        const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
+        const snapshot = await uploadBytes(storageRef, imageFile);
+        imageUrl = await getDownloadURL(snapshot.ref);
+    }
+
+    const dataToSubmit: FormSubmitData = {
+        ...initialData,
+        ...values,
+        id: initialData?.id || '',
+        imageUrl,
+        tipo: initialData?.tipo || values.variedad,
+        barras: initialData?.barras || values.codigo,
+        estado: initialData?.estado || 'Activo',
+    };
     onSubmit(dataToSubmit);
   }
 
@@ -58,12 +83,33 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="tipo"
+          name="image"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Type</FormLabel>
+              <FormLabel>Imagen</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Fresh" {...field} />
+                <Input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setImageFile(file);
+                    field.onChange(file);
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="codigo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Código</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., 00125933" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -74,9 +120,9 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="variedad"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Variety</FormLabel>
+              <FormLabel>Variedad</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Explorer" {...field} />
+                <Input placeholder="e.g., TALLOS" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -87,9 +133,9 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Nombre</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Rose" {...field} />
+                <Input placeholder="e.g., ABSOLUT IN PINK" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -97,12 +143,25 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         />
          <FormField
           control={form.control}
-          name="stock"
+          name="color"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Stock</FormLabel>
+              <FormLabel>Color</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="100" {...field} />
+                <Input placeholder="e.g., Rosa" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <FormField
+          control={form.control}
+          name="precio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Precio</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" placeholder="0.01" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -110,11 +169,11 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         />
         <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancel
+                Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Product')}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Producto')}
             </Button>
         </div>
       </form>
