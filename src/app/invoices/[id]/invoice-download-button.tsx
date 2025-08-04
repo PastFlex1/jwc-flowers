@@ -1,14 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { generateInvoicePdf } from '@/lib/pdfmake-generator';
+import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
-import pdfMake from "pdfmake/build/pdfmake";
-import * as pdfFonts from 'pdfmake/build/vfs_fonts';
-
+import { InvoicePdfDocument } from './invoice-pdf-document';
 
 type InvoiceDownloadButtonProps = {
   invoice: Invoice;
@@ -19,56 +16,46 @@ type InvoiceDownloadButtonProps = {
 };
 
 export default function InvoiceDownloadButton({ invoice, customer, consignatario, carguera, pais }: InvoiceDownloadButtonProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
 
-  const handleDownloadPdf = async () => {
-    if (!customer) {
-      toast({
-        title: "Error",
-        description: "Datos del cliente no encontrados.",
-        variant: "destructive",
-      });
-      return;
-    }
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
-    setIsGenerating(true);
-    try {
-      // Assign fonts inside the handler
-      (pdfMake as any).vfs = pdfFonts.pdfMake.vfs;
-      
-      const docDefinition = await generateInvoicePdf({
-        invoice,
-        customer,
-        consignatario,
-        carguera,
-        pais,
-      });
-      
-      const fileName = `Factura-${invoice.invoiceNumber?.trim()}.pdf`;
-      pdfMake.createPdf(docDefinition).download(fileName);
-      
-      toast({
-          title: "Éxito",
-          description: `El archivo ${fileName} se ha descargado.`,
-      });
+  if (!isClient) {
+    return (
+      <Button disabled>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Generando PDF...
+      </Button>
+    );
+  }
 
-    } catch (error) {
-      console.error("Error processing PDF with pdfmake:", error);
-      toast({
-          title: "Error",
-          description: "Ocurrió un error inesperado al procesar el PDF.",
-          variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+  const fileName = `Factura-${invoice.invoiceNumber?.trim()}.pdf`;
 
   return (
-    <Button onClick={handleDownloadPdf} disabled={isGenerating}>
-      {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-      Descargar PDF
-    </Button>
+    <PDFDownloadLink
+      document={
+        <InvoicePdfDocument
+          invoice={invoice}
+          customer={customer}
+          consignatario={consignatario}
+          carguera={carguera}
+          pais={pais}
+        />
+      }
+      fileName={fileName}
+    >
+      {({ loading }) => (
+        <Button disabled={loading}>
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="mr-2 h-4 w-4" />
+          )}
+          {loading ? 'Generando PDF...' : 'Descargar PDF'}
+        </Button>
+      )}
+    </PDFDownloadLink>
   );
 }
