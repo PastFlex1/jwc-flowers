@@ -1,4 +1,6 @@
-import { InvoiceDetailView } from '@/app/invoices/[id]/invoice-detail-view';
+'use server';
+
+import { InvoiceDetailView } from './invoice-detail-view';
 import { v4 as uuidv4 } from 'uuid';
 import type { InvoiceWithDetails } from '@/services/invoices';
 
