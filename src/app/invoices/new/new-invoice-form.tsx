@@ -223,11 +223,11 @@ export function NewInvoiceForm() {
   const handleProductChange = (boxIndex: number, bunchIndex: number, productoId: string) => {
     const product = productos.find(p => p.id === productoId);
     if(product) {
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.productoId`, product.id);
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.nombreFlor`, product.nombre);
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.color`, product.color);
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variedad`, product.variedad);
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.salePrice`, product.precio);
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.productoId`, product.id, { shouldValidate: true });
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.color`, product.color, { shouldValidate: true });
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variedad`, product.variedad, { shouldValidate: true });
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.salePrice`, product.precio, { shouldValidate: true });
     }
   }
   
@@ -506,14 +506,28 @@ export function NewInvoiceForm() {
                                                 </Select>
                                             )} />
                                         </TableCell>
-                                        <TableCell><Input readOnly disabled value={bunch.color || ''} /></TableCell>
-                                        <TableCell><Input readOnly disabled value={bunch.variedad || ''} /></TableCell>
-                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                                        <TableCell></TableCell> {/* Total Bunches Placeholder */}
-                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
-                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.color`} render={({ field }) => <Input {...field} readOnly disabled />} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.variedad`} render={({ field }) => <Input {...field} readOnly disabled />} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                                        </TableCell>
+                                        <TableCell>{/* Total Bunches Placeholder */}</TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                                        </TableCell>
                                         <TableCell>{totalStems}</TableCell>
                                         <TableCell>${difference.toFixed(2)}</TableCell>
                                         <TableCell>${total.toFixed(2)}</TableCell>
@@ -542,6 +556,8 @@ export function NewInvoiceForm() {
                 </Table>
               </div>
               <FormMessage>{form.formState.errors.items?.message}</FormMessage>
+              <FormMessage>{(form.formState.errors.items as any)?.root?.message}</FormMessage>
+
             </CardContent>
           </Card>
           
@@ -557,3 +573,4 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
