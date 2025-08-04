@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate, parseISO } from 'date-fns';
@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, LineItem as LineItemType } from '@/lib/types';
+import type { Invoice, LineItem as LineItemType, Producto } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
@@ -34,8 +34,8 @@ const lineItemSchema = z.object({
   boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   productoId: z.string().min(1, 'Product is required.'),
   nombreFlor: z.string(),
-  color: z.string(),
-  variedad: z.string(),
+  color: z.string().min(1, 'Color is required.'),
+  variedad: z.string().min(1, 'Variety is required.'),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunches: z.coerce.number().min(1, 'Must be > 0'),
@@ -91,6 +91,8 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
+  const [availableVarieties, setAvailableVarieties] = useState<Record<number, string[]>>({});
+  const [availableColors, setAvailableColors] = useState<Record<number, string[]>>({});
   const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
@@ -170,16 +172,29 @@ export function NewInvoiceForm() {
     });
   };
 
-  const handleProductChange = (index: number, productoId: string) => {
-    const product = productos.find((p) => p.id === productoId);
-    if (product) {
-      form.setValue(`items.${index}.productoId`, product.id);
-      form.setValue(`items.${index}.nombreFlor`, product.nombre);
-      form.setValue(`items.${index}.color`, product.color);
-      form.setValue(`items.${index}.variedad`, product.variedad);
-      form.setValue(`items.${index}.salePrice`, product.precio);
-      form.trigger(`items.${index}`);
+  const handleProductChange = (index: number, productName: string) => {
+    const matchingProducts = productos.filter((p) => p.nombre === productName);
+    
+    if (matchingProducts.length > 0) {
+      const firstProduct = matchingProducts[0];
+      form.setValue(`items.${index}.productoId`, firstProduct.id); // Assign a representative ID
+      form.setValue(`items.${index}.nombreFlor`, firstProduct.nombre);
+      form.setValue(`items.${index}.salePrice`, firstProduct.precio); // Set price from the first match
+      
+      const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
+      const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+
+      setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
+      setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
+      
+      form.setValue(`items.${index}.variedad`, '');
+      form.setValue(`items.${index}.color`, '');
+
+    } else {
+       setAvailableVarieties(prev => ({ ...prev, [index]: [] }));
+       setAvailableColors(prev => ({ ...prev, [index]: [] }));
     }
+     form.trigger(`items.${index}`);
   };
 
   async function onSubmit(values: InvoiceFormValues) {
@@ -192,23 +207,26 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: values.items.map(item => ({
-        id: item.id,
-        boxType: item.boxType,
-        boxNumber: item.boxNumber,
-        bunches: [{
-          id: uuidv4(), // generate new id for sub-item
-          productoId: item.productoId,
-          product: item.nombreFlor,
-          color: item.color,
-          variety: item.variedad,
-          length: item.length,
-          stemsPerBunch: item.stemsPerBunch,
-          bunches: item.bunches,
-          purchasePrice: item.purchasePrice,
-          salePrice: item.salePrice,
-        }]
-      })),
+      items: values.items.map(item => {
+        const productInfo = productos.find(p => p.nombre === item.nombreFlor && p.variedad === item.variedad && p.nombreColor === item.color);
+        return {
+          id: item.id,
+          boxType: item.boxType,
+          boxNumber: item.boxNumber,
+          bunches: [{
+            id: uuidv4(), 
+            productoId: productInfo?.id || item.productoId,
+            product: item.nombreFlor,
+            color: item.color,
+            variety: item.variedad,
+            length: item.length,
+            stemsPerBunch: item.stemsPerBunch,
+            bunches: item.bunches,
+            purchasePrice: item.purchasePrice,
+            salePrice: item.salePrice,
+          }]
+        }
+      }),
     };
   
     try {
@@ -233,6 +251,10 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
+
+  const uniqueProductNames = useMemo(() => {
+    return [...new Set(productos.map(p => p.nombre))];
+  }, [productos]);
 
   if (!isMounted) {
     return null;
@@ -525,8 +547,8 @@ export function NewInvoiceForm() {
                       <TableHead>N° de Cajas</TableHead>
                       <TableHead>Tipo de Caja</TableHead>
                       <TableHead>Nombre Flor</TableHead>
-                      <TableHead>Color</TableHead>
                       <TableHead>Variedad</TableHead>
+                      <TableHead>Color</TableHead>
                       <TableHead>Longitud</TableHead>
                       <TableHead>N° Tallos</TableHead>
                       <TableHead>N° Bunches</TableHead>
@@ -541,11 +563,11 @@ export function NewInvoiceForm() {
                   </TableHeader>
                   <TableBody>
                     {fields.map((item, index) => {
-                      const itemValues = watchItems[index];
-                      const totalBunches = itemValues?.bunches || 0;
-                      const totalStems = (itemValues?.stemsPerBunch || 0) * totalBunches;
-                      const difference = (itemValues?.salePrice || 0) - (itemValues?.purchasePrice || 0);
-                      const total = totalStems * (itemValues?.salePrice || 0);
+                       const { bunches, stemsPerBunch, salePrice, purchasePrice } = watchItems[index] || {};
+                       const totalBunches = bunches || 0;
+                       const totalStems = (stemsPerBunch || 0) * totalBunches;
+                       const difference = (salePrice || 0) - (purchasePrice || 0);
+                       const total = totalStems * (salePrice || 0);
 
                       return (
                         <TableRow key={item.id}>
@@ -578,36 +600,66 @@ export function NewInvoiceForm() {
                             />
                           </TableCell>
                           <TableCell>
-                            <FormField
+                            <Controller
+                                control={form.control}
+                                name={`items.${index}.nombreFlor`}
+                                render={({ field }) => (
+                                    <Select
+                                    onValueChange={(value) => {
+                                        field.onChange(value);
+                                        handleProductChange(index, value);
+                                    }}
+                                    value={field.value}
+                                    >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Flor" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {uniqueProductNames.map((name) => (
+                                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                          </TableCell>
+                           <TableCell>
+                            <Controller
                               control={form.control}
-                              name={`items.${index}.productoId`}
+                              name={`items.${index}.variedad`}
                               render={({ field }) => (
-                                <Select
-                                  onValueChange={(value) => {
-                                    field.onChange(value);
-                                    handleProductChange(index, value);
-                                  }}
-                                  defaultValue={field.value}
-                                >
+                                <Select onValueChange={field.onChange} value={field.value} disabled={!availableVarieties[index]}>
                                   <FormControl>
                                     <SelectTrigger>
-                                      <SelectValue placeholder="Flor" />
+                                      <SelectValue placeholder="Variedad" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {productos.map((p) => (
-                                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                                    ))}
+                                    {(availableVarieties[index] || []).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
                             />
                           </TableCell>
                           <TableCell>
-                            <FormField control={form.control} name={`items.${index}.color`} render={({ field }) => <Input {...field} className="w-24" readOnly disabled />} />
-                          </TableCell>
-                          <TableCell>
-                            <FormField control={form.control} name={`items.${index}.variedad`} render={({ field }) => <Input {...field} className="w-28" readOnly disabled />} />
+                            <Controller
+                              control={form.control}
+                              name={`items.${index}.color`}
+                              render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value} disabled={!availableColors[index]}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Color" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {(availableColors[index] || []).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
                           </TableCell>
                           <TableCell>
                             <FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
@@ -631,10 +683,10 @@ export function NewInvoiceForm() {
                             <Input type="number" readOnly disabled value={totalStems} className="w-20 bg-muted/50" />
                           </TableCell>
                           <TableCell>
-                            <Input type="number" readOnly disabled value={difference} className="w-24 bg-muted/50" />
+                            <Input type="number" readOnly disabled value={difference.toFixed(2)} className="w-24 bg-muted/50" />
                           </TableCell>
                           <TableCell>
-                            <Input type="number" readOnly disabled value={total} className="w-24 bg-muted/50" />
+                            <Input type="number" readOnly disabled value={total.toFixed(2)} className="w-24 bg-muted/50" />
                           </TableCell>
                           <TableCell>
                             <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
@@ -666,5 +718,7 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
 
     
