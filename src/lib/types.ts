@@ -25,9 +25,9 @@ export interface InventoryItem {
 export interface BunchItem {
   id: string;
   productoId: string;
-  product: string; // Changed from nombreFlor to product for consistency
+  product: string; 
   color: string;
-  variety: string; // Changed from variedad to variety
+  variety: string; 
   length: number;
   stemsPerBunch: number;
   bunches: number;

@@ -23,25 +23,31 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, LineItem } from '@/lib/types';
+import type { Invoice, LineItem, BunchItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
-const lineItemSchema = z.object({
+const bunchItemSchema = z.object({
   id: z.string(),
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
-  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   productoId: z.string().min(1, 'Product is required.'),
-  nombreFlor: z.string(),
+  product: z.string(),
+  variety: z.string(),
   color: z.string(),
-  variedad: z.string(),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunches: z.coerce.number().min(1, 'Must be > 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
+
+const lineItemSchema = z.object({
+  id: z.string(),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
+  bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
+});
+
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required.'),
@@ -153,79 +159,42 @@ export function NewInvoiceForm() {
     }
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
 
-  const totals = useMemo(() => {
-    let totalFob = 0;
-    let totalBoxes = watchItems?.length || 0;
-    let totalBunches = 0;
-    let totalStems = 0;
-
-    watchItems?.forEach((item) => {
-      const bunchesCount = Number(item.bunches) || 0;
-      const stemsPerBunch = Number(item.stemsPerBunch) || 0;
-      const salePrice = Number(item.salePrice) || 0;
-
-      totalBunches += bunchesCount;
-      const stemsInItem = bunchesCount * stemsPerBunch;
-      totalStems += stemsInItem;
-      totalFob += stemsInItem * salePrice;
-    });
-
-    return { totalFob, totalBoxes, totalBunches, totalStems };
-  }, [watchItems]);
-
   const handleAddItem = () => {
     append({
       id: uuidv4(),
       boxNumber: fields.length + 1,
       boxType: 'hb',
-      productoId: '',
-      nombreFlor: '',
-      color: '',
-      variedad: '',
-      length: 70,
-      stemsPerBunch: 25,
-      bunches: 1,
-      purchasePrice: 0,
-      salePrice: 0,
+      bunches: [
+        {
+          id: uuidv4(),
+          productoId: '',
+          product: '',
+          variety: '',
+          color: '',
+          length: 70,
+          stemsPerBunch: 25,
+          bunches: 1,
+          purchasePrice: 0,
+          salePrice: 0,
+        },
+      ],
     });
   };
 
-  const handleProductChange = (itemIndex: number, productoId: string) => {
+  const handleProductChange = (itemIndex: number, bunchIndex: number, productoId: string) => {
     const product = productos.find((p) => p.id === productoId);
     if (product) {
-      form.setValue(`items.${itemIndex}.productoId`, product.id);
-      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre);
-      form.setValue(`items.${itemIndex}.color`, product.color);
-      form.setValue(`items.${itemIndex}.variedad`, product.variedad);
-      form.setValue(`items.${itemIndex}.salePrice`, product.precio);
-      form.trigger(`items.${itemIndex}`);
+      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.productoId`, product.id);
+      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.product`, product.nombre);
+      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.color`, product.color);
+      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.variety`, product.variedad);
+      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`, product.precio);
+      form.trigger(`items.${itemIndex}.bunches.${bunchIndex}`);
     }
   };
 
-
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
-  
-    const processedItems: LineItem[] = values.items.map(item => {
-      const { bunches, ...restOfItem } = item;
-      return {
-        ...restOfItem,
-        bunches: [
-          {
-            id: uuidv4(),
-            productoId: item.productoId,
-            product: item.nombreFlor,
-            variety: item.variedad,
-            length: item.length,
-            stemsPerBunch: item.stemsPerBunch,
-            bunches: item.bunches,
-            salePrice: item.salePrice,
-            color: item.color,
-            purchasePrice: item.purchasePrice,
-          }
-        ]
-      };
-    });
   
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
@@ -234,7 +203,9 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: processedItems,
+      items: values.items.map(item => ({
+        ...item,
+      })),
     };
   
     try {
@@ -259,7 +230,6 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
-  
 
   if (!isMounted) {
     return null;
@@ -567,116 +537,107 @@ export function NewInvoiceForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                  {fields.map((field, index) => {
-                      const bunches = watchItems[index]?.bunches || 0;
-                      const stemsPerBunch = watchItems[index]?.stemsPerBunch || 0;
-                      const purchasePrice = watchItems[index]?.purchasePrice || 0;
-                      const salePrice = watchItems[index]?.salePrice || 0;
-                      const totalStems = stemsPerBunch * bunches;
-                      const difference = salePrice - purchasePrice;
-                      const total = totalStems * salePrice;
-
-                      return (
-                        <TableRow key={field.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>
-                            <Controller
-                                name={`items.${index}.boxNumber`}
+                    {fields.map((item, itemIndex) => (
+                      <React.Fragment key={item.id}>
+                        {item.bunches.map((bunch, bunchIndex) => (
+                           <TableRow key={bunch.id}>
+                            <TableCell>{itemIndex + 1}</TableCell>
+                            <TableCell>
+                              <FormField
                                 control={form.control}
+                                name={`items.${itemIndex}.boxNumber`}
                                 render={({ field }) => <Input type="number" {...field} className="w-20" />}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Controller
-                                name={`items.${index}.boxType`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <FormField
                                 control={form.control}
+                                name={`items.${itemIndex}.boxType`}
                                 render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value}>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="w-24">
+                                      <SelectTrigger className="w-24">
                                         <SelectValue placeholder="Tipo" />
-                                        </SelectTrigger>
+                                      </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="hb">HB</SelectItem>
-                                        <SelectItem value="qb">QB</SelectItem>
-                                        <SelectItem value="eb">EB</SelectItem>
+                                      <SelectItem value="hb">HB</SelectItem>
+                                      <SelectItem value="qb">QB</SelectItem>
+                                      <SelectItem value="eb">EB</SelectItem>
                                     </SelectContent>
-                                    </Select>
+                                  </Select>
                                 )}
-                            />
-                          </TableCell>
-                          <TableCell>
-                             <Controller
-                                name={`items.${index}.productoId`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <FormField
                                 control={form.control}
+                                name={`items.${itemIndex}.bunches.${bunchIndex}.productoId`}
                                 render={({ field }) => (
-                                    <Select onValueChange={(value) => {
-                                        field.onChange(value);
-                                        handleProductChange(index, value);
-                                    }} value={field.value}>
+                                  <Select
+                                    onValueChange={(value) => {
+                                      field.onChange(value);
+                                      handleProductChange(itemIndex, bunchIndex, value);
+                                    }}
+                                    defaultValue={field.value}
+                                  >
                                     <FormControl>
-                                        <SelectTrigger>
+                                      <SelectTrigger>
                                         <SelectValue placeholder="Flor" />
-                                        </SelectTrigger>
+                                      </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {productos.map((p) => (
-                                        <SelectItem key={p.id} value={p.id}>
-                                            {p.nombre}
-                                        </SelectItem>
-                                        ))}
+                                      {productos.map((p) => (
+                                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                                      ))}
                                     </SelectContent>
-                                    </Select>
+                                  </Select>
                                 )}
-                             />
-                          </TableCell>
-                          <TableCell>
-                            <Controller name={`items.${index}.color`} control={form.control} render={({ field }) => <Input {...field} readOnly disabled className="w-24" />} />
-                          </TableCell>
-                          <TableCell>
-                            <Controller name={`items.${index}.variedad`} control={form.control} render={({ field }) => <Input {...field} readOnly disabled className="w-28" />} />
-                          </TableCell>
-                          <TableCell>
-                             <Controller name={`items.${index}.length`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                          </TableCell>
-                          <TableCell>
-                             <Controller name={`items.${index}.stemsPerBunch`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                          </TableCell>
-                          <TableCell>
-                             <Controller name={`items.${index}.bunches`} control={form.control} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                          </TableCell>
-                          <TableCell>{bunches}</TableCell>
-                          <TableCell>
-                             <Controller name={`items.${index}.purchasePrice`} control={form.control} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                          </TableCell>
-                          <TableCell>
-                             <Controller name={`items.${index}.salePrice`} control={form.control} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                          </TableCell>
-                          <TableCell>{totalStems}</TableCell>
-                          <TableCell>${difference.toFixed(2)}</TableCell>
-                          <TableCell>${total.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                              />
+                            </TableCell>
+                            <TableCell>
+                                <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.color`} render={({ field }) => <Input {...field} className="w-24" />} />
+                            </TableCell>
+                            <TableCell>
+                                <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.variety`} render={({ field }) => <Input {...field} className="w-28" />} />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)} className="w-20 bg-muted/50" />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                            </TableCell>
+                            <TableCell>
+                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                            </TableCell>
+                             <TableCell>
+                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`) || 0) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)} className="w-20 bg-muted/50" />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`) || 0) - (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.purchasePrice`) || 0)} className="w-24 bg-muted/50" />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" readOnly disabled value={((form.watch(`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`) || 0) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`) || 0)} className="w-24 bg-muted/50" />
+                            </TableCell>
+                            <TableCell>
+                              <Button type="button" variant="destructive" size="icon" onClick={() => remove(itemIndex)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </React.Fragment>
+                    ))}
                   </TableBody>
-                  <TableFooter>
-                    <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50 text-lg">
-                      <TableCell colSpan={2}>Totales:</TableCell>
-                      <TableCell>Cajas: {totals.totalBoxes}</TableCell>
-                      <TableCell colSpan={6}></TableCell>
-                      <TableCell>Ramos: {totals.totalBunches}</TableCell>
-                      <TableCell colSpan={2}></TableCell>
-                      <TableCell>Tallos: {totals.totalStems}</TableCell>
-                      <TableCell colSpan={2}></TableCell>
-                      <TableCell className="text-right pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  </TableFooter>
                 </Table>
               </div>
               <FormMessage>{form.formState.errors.items?.message}</FormMessage>
