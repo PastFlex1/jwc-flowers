@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, Consignatario, Marcacion, LineItem } from '@/lib/types';
+import type { Invoice, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
@@ -91,8 +91,8 @@ export function NewInvoiceForm() {
   const { t } = useTranslation();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [filteredConsignatarios, setFilteredConsignatarios] = useState<Consignatario[]>([]);
-  const [filteredMarcaciones, setFilteredMarcaciones] = useState<Marcacion[]>([]);
+  const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
+  const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
   const [isMounted, setIsMounted] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
@@ -218,7 +218,7 @@ export function NewInvoiceForm() {
       status: 'Pending',
       items: values.items.map((item) => ({
         ...item,
-        bunches: [], // This is now a flat structure, bunches array is not needed.
+        bunches: [],
         nci: item.nci || '',
         ncf: item.ncf || '',
       })),
