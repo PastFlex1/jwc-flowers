@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -557,7 +558,7 @@ export function NewInvoiceForm() {
                       const totalStems = (currentItem.stemsPerBunch || 0) * (currentItem.bunches || 0);
                       const difference = (currentItem.salePrice || 0) - (currentItem.purchasePrice || 0);
                       const total = totalStems * (currentItem.salePrice || 0);
-                      const totalBunchesInRow = currentItem.bunches || 0;
+                      const totalBunchesInRow = currentItem?.bunches || 0;
 
                       return (
                         <TableRow key={item.id}>
