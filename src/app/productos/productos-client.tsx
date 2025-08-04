@@ -61,7 +61,6 @@ export function ProductosClient() {
   useEffect(() => {
     const filtered = productos.filter(producto =>
       (producto.nombre?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
-      (producto.codigo?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
       (producto.variedad?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase())
     );
     setLocalProductos(filtered);
@@ -205,7 +204,6 @@ export function ProductosClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead>IMG</TableHead>
-                  <TableHead>CODIGO</TableHead>
                   <TableHead>NOMBRE</TableHead>
                   <TableHead>VARIEDAD</TableHead>
                   <TableHead>TIPO</TableHead>
@@ -228,7 +226,6 @@ export function ProductosClient() {
                         data-ai-hint="flower"
                       />
                     </TableCell>
-                    <TableCell>{producto.codigo}</TableCell>
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
                     <TableCell>{producto.variedad}</TableCell>
                     <TableCell>{producto.tipo}</TableCell>

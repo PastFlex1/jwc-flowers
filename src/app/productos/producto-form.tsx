@@ -13,7 +13,6 @@ import { Loader2 } from 'lucide-react';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 const formSchema = z.object({
-  codigo: z.string().min(1, "Código es requerido."),
   variedad: z.string().min(1, "Variedad es requerida."),
   nombre: z.string().min(1, "Nombre es requerido."),
   color: z.string().min(1, "Color es requerido."),
@@ -39,7 +38,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     resolver: zodResolver(formSchema),
     mode: 'onChange',
     defaultValues: {
-      codigo: initialData?.codigo || '',
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
@@ -49,7 +47,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
 
   useEffect(() => {
     form.reset({
-      codigo: initialData?.codigo || '',
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
       color: initialData?.color || '',
@@ -72,7 +69,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         id: initialData?.id,
         imageUrl,
         tipo: initialData?.tipo || values.variedad,
-        barras: initialData?.barras || values.codigo,
+        barras: initialData?.barras || '',
         estado: initialData?.estado || 'Activo',
     };
     onSubmit(dataToSubmit);
@@ -97,19 +94,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
                     field.onChange(file);
                   }}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="codigo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Código</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., 00125933" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

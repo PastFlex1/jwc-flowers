@@ -18,7 +18,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
   return {
     id: snapshot.id,
     imageUrl: data.imageUrl || '',
-    codigo: data.codigo || '',
     nombre: data.nombre || '',
     variedad: data.variedad || '',
     tipo: data.tipo || '',

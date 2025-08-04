@@ -118,7 +118,6 @@ export interface Consignatario {
 export interface Producto {
   id: string;
   imageUrl: string;
-  codigo: string;
   nombre: string;
   variedad: string;
   tipo: string;
