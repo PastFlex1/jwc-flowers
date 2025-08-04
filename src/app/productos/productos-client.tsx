@@ -164,7 +164,7 @@ export function ProductosClient() {
             <p className="text-muted-foreground">Administra tus productos.</p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Acciones
+            <Plus className="mr-2 h-4 w-4" /> Añadir Producto
           </Button>
         </div>
 

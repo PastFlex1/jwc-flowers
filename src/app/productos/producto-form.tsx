@@ -69,7 +69,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
 
     const dataToSubmit: FormSubmitData = {
         ...values,
-        id: initialData?.id, // Ensure id is passed for updates
+        id: initialData?.id,
         imageUrl,
         tipo: initialData?.tipo || values.variedad,
         barras: initialData?.barras || values.codigo,
