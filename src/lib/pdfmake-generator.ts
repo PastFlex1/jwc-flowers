@@ -4,8 +4,6 @@ import type { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { format, parseISO } from 'date-fns';
 import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from './types';
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
-
 type GeneratorProps = {
   invoice: Invoice;
   customer: Customer | null;
