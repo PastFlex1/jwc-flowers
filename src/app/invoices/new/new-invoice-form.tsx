@@ -1,10 +1,8 @@
-
-
-'use client'
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate, parseISO } from 'date-fns';
@@ -24,38 +22,32 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, Consignatario, Marcacion, LineItem, BunchItem } from '@/lib/types';
+import type { Invoice, Consignatario, Marcacion, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
-
-const bunchItemSchema = z.object({
+const lineItemSchema = z.object({
   id: z.string(),
-  productoId: z.string().min(1, "Product is required."),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
+  productoId: z.string().min(1, 'Product is required.'),
   nombreFlor: z.string(),
   color: z.string(),
   variedad: z.string(),
-  length: z.coerce.number().positive("Must be > 0"),
-  stemsPerBunch: z.coerce.number().positive("Must be > 0"),
-  bunches: z.coerce.number().min(1, "Must be > 0"),
-  purchasePrice: z.coerce.number().min(0, "Must be >= 0"),
-  salePrice: z.coerce.number().min(0, "Must be >= 0"),
-});
-
-const lineItemSchema = z.object({
-  id: z.string(),
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: "Select a type." }),
-  boxNumber: z.coerce.number().min(1, "Must be > 0"),
+  length: z.coerce.number().positive('Must be > 0'),
+  stemsPerBunch: z.coerce.number().positive('Must be > 0'),
+  bunches: z.coerce.number().min(1, 'Must be > 0'),
+  purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
+  salePrice: z.coerce.number().min(0, 'Must be >= 0'),
   nci: z.string().optional(),
   ncf: z.string().optional(),
-  bunches: z.array(bunchItemSchema).min(1, "Each box must have at least one bunch."),
 });
 
 const invoiceSchema = z.object({
-  invoiceNumber: z.string().min(1, "Invoice number is required."),
-  farmDepartureDate: z.date({ required_error: "Departure date is required." }),
-  flightDate: z.date({ required_error: "Flight date is required." }),
+  invoiceNumber: z.string().min(1, 'Invoice number is required.'),
+  farmDepartureDate: z.date({ required_error: 'Departure date is required.' }),
+  flightDate: z.date({ required_error: 'Flight date is required.' }),
   sellerId: z.string().min(1, 'Select a seller.'),
   customerId: z.string().min(1, 'Select a customer.'),
   consignatarioId: z.string().optional(),
@@ -65,32 +57,31 @@ const invoiceSchema = z.object({
   reference: z.string().optional(),
   masterAWB: z.string().min(1, 'Master AWB is required.'),
   houseAWB: z.string().min(1, 'House AWB is required.'),
-  items: z.array(lineItemSchema).min(1, "At least one item is required."),
+  items: z.array(lineItemSchema).min(1, 'At least one item is required.'),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
 const getInitialFormValues = (): Partial<InvoiceFormValues> => {
-    if (typeof window === 'undefined') return { items: [] };
-    const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (savedData) {
-        try {
-            const parsedData = JSON.parse(savedData);
-            if (parsedData.farmDepartureDate) {
-                parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
-            }
-            if (parsedData.flightDate) {
-                parsedData.flightDate = parseISO(parsedData.flightDate);
-            }
-            return parsedData;
-        } catch (e) {
-            console.error("Failed to parse form data from session storage", e);
-            return { items: [] };
-        }
+  if (typeof window === 'undefined') return { items: [] };
+  const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+  if (savedData) {
+    try {
+      const parsedData = JSON.parse(savedData);
+      if (parsedData.farmDepartureDate) {
+        parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
+      }
+      if (parsedData.flightDate) {
+        parsedData.flightDate = parseISO(parsedData.flightDate);
+      }
+      return parsedData;
+    } catch (e) {
+      console.error('Failed to parse form data from session storage', e);
+      return { items: [] };
     }
-    return { items: [] };
+  }
+  return { items: [] };
 };
-
 
 export function NewInvoiceForm() {
   const router = useRouter();
@@ -111,14 +102,14 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'items',
   });
-  
+
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
-  
+
   useEffect(() => {
     setIsMounted(true);
     const initialValues = getInitialFormValues();
@@ -127,35 +118,34 @@ export function NewInvoiceForm() {
 
   useEffect(() => {
     if (isMounted) {
-        const subscription = form.watch((value) => {
-            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
-        });
-        return () => subscription.unsubscribe();
+      const subscription = form.watch((value) => {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
     }
   }, [isMounted, form]);
 
   useEffect(() => {
     if (selectedCustomerId) {
-      const customer = customers.find(c => c.id === selectedCustomerId);
+      const customer = customers.find((c) => c.id === selectedCustomerId);
       if (customer) {
-        const country = paises.find(p => p.nombre === customer.pais);
+        const country = paises.find((p) => p.nombre === customer.pais);
         if (country) {
           form.setValue('countryId', country.id, { shouldValidate: true });
         }
       }
 
-      const relatedConsignatarios = consignatarios.filter(c => c.customerId === selectedCustomerId);
+      const relatedConsignatarios = consignatarios.filter((c) => c.customerId === selectedCustomerId);
       setFilteredConsignatarios(relatedConsignatarios);
-      
-      const relatedMarcaciones = marcaciones.filter(m => m.cliente === selectedCustomerId);
+
+      const relatedMarcaciones = marcaciones.filter((m) => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
-      
+
       const initialValues = getInitialFormValues();
       if (initialValues.customerId !== selectedCustomerId) {
-          form.setValue('consignatarioId', '');
-          form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
+        form.setValue('consignatarioId', '');
+        form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
       }
-      
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
@@ -163,74 +153,57 @@ export function NewInvoiceForm() {
       form.setValue('reference', '');
     }
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
-  
+
   const totals = useMemo(() => {
     let totalFob = 0;
     let totalBoxes = watchItems?.length || 0;
     let totalBunches = 0;
     let totalStems = 0;
-    
-    watchItems?.forEach(item => {
-      item.bunches.forEach(bunch => {
-        const bunchesCount = Number(bunch.bunches) || 0;
-        const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
-        const salePrice = Number(bunch.salePrice) || 0;
-        
-        totalBunches += bunchesCount;
-        const stemsInBunch = bunchesCount * stemsPerBunch;
-        totalStems += stemsInBunch;
-        totalFob += stemsInBunch * salePrice;
-      });
+
+    watchItems?.forEach((item) => {
+      const bunchesCount = Number(item.bunches) || 0;
+      const stemsPerBunch = Number(item.stemsPerBunch) || 0;
+      const salePrice = Number(item.salePrice) || 0;
+
+      totalBunches += bunchesCount;
+      const stemsInItem = bunchesCount * stemsPerBunch;
+      totalStems += stemsInItem;
+      totalFob += stemsInItem * salePrice;
     });
 
     return { totalFob, totalBoxes, totalBunches, totalStems };
   }, [watchItems]);
 
-  const handleAddBox = () => {
+  const handleAddItem = () => {
     append({
       id: uuidv4(),
-      boxType: 'hb',
       boxNumber: fields.length + 1,
+      boxType: 'hb',
+      productoId: '',
+      nombreFlor: '',
+      color: '',
+      variedad: '',
+      length: 70,
+      stemsPerBunch: 25,
+      bunches: 1,
+      purchasePrice: 0,
+      salePrice: 0,
       nci: '',
       ncf: '',
-      bunches: [],
     });
-  }
+  };
 
-  const handleAddBunch = (boxIndex: number) => {
-    const currentItem = form.getValues(`items.${boxIndex}`);
-    const updatedBunches = [...currentItem.bunches, {
-        id: uuidv4(),
-        productoId: '',
-        nombreFlor: '',
-        color: '',
-        variedad: '',
-        length: 70,
-        stemsPerBunch: 25,
-        bunches: 1,
-        purchasePrice: 0,
-        salePrice: 0,
-    }];
-    update(boxIndex, { ...currentItem, bunches: updatedBunches });
-  }
-
-  const handleRemoveBunch = (boxIndex: number, bunchIndex: number) => {
-     const currentItem = form.getValues(`items.${boxIndex}`);
-     const updatedBunches = currentItem.bunches.filter((_, i) => i !== bunchIndex);
-     update(boxIndex, { ...currentItem, bunches: updatedBunches });
-  }
-
-  const handleProductChange = (boxIndex: number, bunchIndex: number, productoId: string) => {
-    const product = productos.find(p => p.id === productoId);
-    if(product) {
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.productoId`, product.id, { shouldValidate: true });
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.color`, product.color, { shouldValidate: true });
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variedad`, product.variedad, { shouldValidate: true });
-        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.salePrice`, product.precio, { shouldValidate: true });
+  const handleProductChange = (itemIndex: number, productoId: string) => {
+    const product = productos.find((p) => p.id === productoId);
+    if (product) {
+      form.setValue(`items.${itemIndex}.productoId`, product.id, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.color`, product.color, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.variedad`, product.variedad, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.salePrice`, product.precio, { shouldValidate: true });
     }
-  }
-  
+  };
+
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
 
@@ -241,12 +214,13 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: values.items.map(item => ({
+      items: values.items.map((item) => ({
         ...item,
+        bunches: [], // This is now a flat structure, bunches array is not needed.
         nci: item.nci || '',
         ncf: item.ncf || '',
       })),
-    }
+    };
 
     try {
       await addInvoice(processedInvoice);
@@ -258,8 +232,8 @@ export function NewInvoiceForm() {
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
       router.push('/invoices');
     } catch (error) {
-      console.error("Error creating invoice:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      console.error('Error creating invoice:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       toast({
         title: t('invoices.new.toast.errorTitle'),
         description: t('invoices.new.toast.errorDescription', { error: errorMessage }),
@@ -270,299 +244,425 @@ export function NewInvoiceForm() {
       setIsSubmitting(false);
     }
   }
-  
+
   if (!isMounted) {
     return null;
   }
-  
+
   return (
     <div className="space-y-6">
-       <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">{t('invoices.new.title')}</h2>
-          <p className="text-muted-foreground">{t('invoices.new.description')}</p>
-        </div>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{t('invoices.new.title')}</h2>
+        <p className="text-muted-foreground">{t('invoices.new.description')}</p>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          
           <Card>
             <CardHeader>
               <CardTitle>{t('invoices.new.detailsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <FormField control={form.control} name="invoiceNumber" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.invoiceNumber')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.invoiceNumberPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="farmDepartureDate" render={({ field }) => (
+              <FormField
+                control={form.control}
+                name="invoiceNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.invoiceNumber')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('invoices.new.invoiceNumberPlaceholder')} {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="farmDepartureDate"
+                render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>{t('invoices.new.farmDepartureDate')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(toDate(field.value), "PPP") : <span>{t('invoices.new.selectDate')}</span>}
+                            {field.value ? format(toDate(field.value), 'PPP') : <span>{t('invoices.new.selectDate')}</span>}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("1900-01-01")} initialFocus />
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date('1900-01-01')} initialFocus />
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
                   </FormItem>
-              )}/>
-               <FormField control={form.control} name="flightDate" render={({ field }) => (
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="flightDate"
+                render={({ field }) => (
                   <FormItem className="flex flex-col">
                     <FormLabel>{t('invoices.new.flightDate')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
-                          <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !field.value && "text-muted-foreground")}>
+                          <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !field.value && 'text-muted-foreground')}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {field.value ? format(toDate(field.value), "PPP") : <span>{t('invoices.new.selectDate')}</span>}
+                            {field.value ? format(toDate(field.value), 'PPP') : <span>{t('invoices.new.selectDate')}</span>}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date("1900-01-01")} initialFocus />
+                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date('1900-01-01')} initialFocus />
                       </PopoverContent>
                     </Popover>
                     <FormMessage />
                   </FormItem>
-              )}/>
-              <FormField control={form.control} name="sellerId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.seller')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.sellerPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{vendedores.map(v => (<SelectItem key={v.id} value={v.id}>{v.nombre}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="customerId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.customer')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.customerPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{customers.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="consignatarioId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.consignee')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedCustomerId || filteredConsignatarios.length === 0}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={!selectedCustomerId ? t('invoices.new.selectCustomerFirst') : t('invoices.new.consigneePlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{filteredConsignatarios.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreConsignatario}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="farmId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.farm')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.farmPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{fincas.map(f => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="carrierId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.carrier')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.carrierPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{cargueras.map(c => (<SelectItem key={c.id} value={c.id}>{c.nombreCarguera}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="countryId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.country')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!!selectedCustomerId}>
-                    <FormControl><SelectTrigger><SelectValue placeholder={t('invoices.new.countryPlaceholder')} /></SelectTrigger></FormControl>
-                    <SelectContent>{paises.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
-                  </Select><FormMessage />
-                </FormItem>
-              )}/>
-               <FormField control={form.control} name="reference" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.reference')}</FormLabel>
-                   <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value ?? ''} 
-                      disabled={!selectedCustomerId || filteredMarcaciones.length === 0}
-                    >
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="sellerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.seller')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue 
-                            placeholder={
-                              !selectedCustomerId 
-                                ? t('invoices.new.selectCustomerFirst')
-                                : filteredMarcaciones.length === 0 
-                                  ? t('invoices.new.noMarkings')
-                                  : t('invoices.new.markingPlaceholder')
-                            } 
-                          />
+                          <SelectValue placeholder={t('invoices.new.sellerPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {filteredMarcaciones.map(m => (
+                        {vendedores.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="customerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.customer')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('invoices.new.customerPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="consignatarioId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.consignee')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedCustomerId || filteredConsignatarios.length === 0}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={!selectedCustomerId ? t('invoices.new.selectCustomerFirst') : t('invoices.new.consigneePlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredConsignatarios.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nombreConsignatario}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="farmId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.farm')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('invoices.new.farmPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {fincas.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="carrierId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.carrier')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('invoices.new.carrierPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {cargueras.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.nombreCarguera}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="countryId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.country')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!!selectedCustomerId}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('invoices.new.countryPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {paises.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="reference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.reference')}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedCustomerId || filteredMarcaciones.length === 0}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={!selectedCustomerId ? t('invoices.new.selectCustomerFirst') : filteredMarcaciones.length === 0 ? t('invoices.new.noMarkings') : t('invoices.new.markingPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredMarcaciones.map((m) => (
                           <SelectItem key={m.id} value={m.numeroMarcacion}>
                             {m.numeroMarcacion}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  <FormMessage />
-                </FormItem>
-              )}/>
-               <FormField control={form.control} name="masterAWB" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.masterAWB')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.masterAWBPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
-                </FormItem>
-              )}/>
-              <FormField control={form.control} name="houseAWB" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.new.houseAWB')}</FormLabel>
-                  <FormControl><Input placeholder={t('invoices.new.houseAWBPlaceholder')} {...field} value={field.value ?? ''} /></FormControl><FormMessage />
-                </FormItem>
-              )}/>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="masterAWB"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.masterAWB')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('invoices.new.masterAWBPlaceholder')} {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="houseAWB"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.new.houseAWB')}</FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('invoices.new.houseAWBPlaceholder')} {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
-                <div className="flex justify-between items-center">
-                    <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddBox}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Box
-                    </Button>
-                </div>
+              <div className="flex justify-between items-center">
+                <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
+                <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Añadir Fila
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>N°</TableHead>
-                            <TableHead>N° de Cajas</TableHead>
-                            <TableHead>Tipo de Caja</TableHead>
-                            <TableHead>Nombre Flor</TableHead>
-                            <TableHead>Color</TableHead>
-                            <TableHead>Variedad</TableHead>
-                            <TableHead>Longitud</TableHead>
-                            <TableHead>N° Tallos</TableHead>
-                            <TableHead>N° Bunches</TableHead>
-                            <TableHead>Total Bunches</TableHead>
-                            <TableHead>Precio Compra</TableHead>
-                            <TableHead>Precio Venta</TableHead>
-                            <TableHead>Total Tallos</TableHead>
-                            <TableHead>Diferencia</TableHead>
-                            <TableHead>Total</TableHead>
-                            <TableHead>Acciones</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {fields.map((field, boxIndex) => {
-                       const boxBunches = watchItems[boxIndex]?.bunches || [];
-                       const totalBunchesInBox = boxBunches.reduce((acc, bunch) => acc + (Number(bunch.bunches) || 0), 0);
-                       
-                       return (
-                        <React.Fragment key={field.id}>
-                            <TableRow className="bg-muted/30">
-                                <TableCell>{boxIndex + 1}</TableCell>
-                                <TableCell>
-                                    <FormField control={form.control} name={`items.${boxIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField control={form.control} name={`items.${boxIndex}.boxType`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="w-24"><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl><SelectContent><SelectItem value="hb">HB</SelectItem><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem></SelectContent></Select>)} />
-                                </TableCell>
-                                <TableCell colSpan={5}>
-                                     <Button type="button" size="sm" variant="ghost" onClick={() => handleAddBunch(boxIndex)}><PlusCircle className="mr-2 h-4 w-4"/> Añadir Bunch</Button>
-                                </TableCell>
-                                <TableCell>{totalBunchesInBox}</TableCell>
-                                <TableCell colSpan={6}></TableCell>
-                                <TableCell>
-                                     <Button type="button" variant="destructive" size="icon" onClick={() => remove(boxIndex)}><Trash2 className="h-4 w-4" /></Button>
-                                </TableCell>
-                            </TableRow>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N°</TableHead>
+                      <TableHead>N° de Cajas</TableHead>
+                      <TableHead>Tipo de Caja</TableHead>
+                      <TableHead>Nombre Flor</TableHead>
+                      <TableHead>Color</TableHead>
+                      <TableHead>Variedad</TableHead>
+                      <TableHead>Longitud</TableHead>
+                      <TableHead>N° Tallos</TableHead>
+                      <TableHead>N° Bunches</TableHead>
+                      <TableHead>Total Bunches</TableHead>
+                      <TableHead>Precio Compra</TableHead>
+                      <TableHead>Precio Venta</TableHead>
+                      <TableHead>Total Tallos</TableHead>
+                      <TableHead>Diferencia</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fields.map((item, index) => {
+                      const currentItem = watchItems[index];
+                      const totalStems = (currentItem.stemsPerBunch || 0) * (currentItem.bunches || 0);
+                      const difference = (currentItem.salePrice || 0) - (currentItem.purchasePrice || 0);
+                      const total = totalStems * (currentItem.salePrice || 0);
+                      const totalBunchesInRow = currentItem.bunches || 0;
 
-                            {boxBunches.map((bunch, bunchIndex) => {
-                                const totalStems = (bunch.stemsPerBunch || 0) * (bunch.bunches || 0);
-                                const difference = (bunch.salePrice || 0) - (bunch.purchasePrice || 0);
-                                const total = totalStems * (bunch.salePrice || 0);
-                                return (
-                                    <TableRow key={bunch.id}>
-                                        <TableCell colSpan={3}></TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.productoId`} render={({ field }) => (
-                                                <Select onValueChange={(value) => handleProductChange(boxIndex, bunchIndex, value)} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Flor" /></SelectTrigger></FormControl>
-                                                    <SelectContent>{productos.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
-                                                </Select>
-                                            )} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.color`} render={({ field }) => <Input {...field} readOnly disabled />} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.variedad`} render={({ field }) => <Input {...field} readOnly disabled />} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                                        </TableCell>
-                                        <TableCell>{/* Total Bunches Placeholder */}</TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                                        </TableCell>
-                                        <TableCell>{totalStems}</TableCell>
-                                        <TableCell>${difference.toFixed(2)}</TableCell>
-                                        <TableCell>${total.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(boxIndex, bunchIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                        </TableCell>
-                                    </TableRow>
-                                )
-                            })}
-                        </React.Fragment>
-                       )
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.boxType`}
+                              render={({ field }) => (
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-24">
+                                      <SelectValue placeholder="Tipo" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="hb">HB</SelectItem>
+                                    <SelectItem value="qb">QB</SelectItem>
+                                    <SelectItem value="eb">EB</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.productoId`}
+                              render={({ field }) => (
+                                <Select onValueChange={(value) => handleProductChange(index, value)} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Flor" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {productos.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.nombre}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.color`} render={({ field }) => <Input {...field} readOnly disabled className="w-24" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.variedad`} render={({ field }) => <Input {...field} readOnly disabled className="w-28" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>{totalBunchesInRow}</TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                          </TableCell>
+                          <TableCell>{totalStems}</TableCell>
+                          <TableCell>${difference.toFixed(2)}</TableCell>
+                          <TableCell>${total.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
                     })}
-                    </TableBody>
-                    <TableFooter>
-                      <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50 text-lg">
-                        <TableCell colSpan={2}>Totales:</TableCell>
-                        <TableCell>Cajas: {totals.totalBoxes}</TableCell>
-                        <TableCell colSpan={6}></TableCell>
-                        <TableCell>Ramos: {totals.totalBunches}</TableCell>
-                        <TableCell colSpan={2}></TableCell>
-                        <TableCell>Tallos: {totals.totalStems}</TableCell>
-                        <TableCell colSpan={2}></TableCell>
-                        <TableCell className="text-right pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
-                      </TableRow>
-                    </TableFooter>
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50 text-lg">
+                      <TableCell colSpan={2}>Totales:</TableCell>
+                      <TableCell>Cajas: {totals.totalBoxes}</TableCell>
+                      <TableCell colSpan={6}></TableCell>
+                      <TableCell>Ramos: {totals.totalBunches}</TableCell>
+                      <TableCell colSpan={2}></TableCell>
+                      <TableCell>Tallos: {totals.totalStems}</TableCell>
+                      <TableCell colSpan={2}></TableCell>
+                      <TableCell className="text-right pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
+                    </TableRow>
+                  </TableFooter>
                 </Table>
               </div>
               <FormMessage>{form.formState.errors.items?.message}</FormMessage>
               <FormMessage>{(form.formState.errors.items as any)?.root?.message}</FormMessage>
-
             </CardContent>
           </Card>
-          
+
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>{t('common.cancel')}</Button>
+            <Button type="button" variant="outline" onClick={() => router.push('/invoices')} disabled={isSubmitting}>
+              {t('common.cancel')}
+            </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? t('invoices.new.saving') : t('invoices.new.save')}
@@ -573,4 +673,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-

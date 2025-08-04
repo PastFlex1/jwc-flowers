@@ -1,6 +1,3 @@
-
-
-
 export interface Customer {
   id: string;
   name: string;
@@ -44,7 +41,15 @@ export interface LineItem {
   boxNumber: number;
   nci?: string;
   ncf?: string;
-  bunches: BunchItem[];
+  bunches: BunchItem[]; // This remains for data structure, but UI is flattened
+  productoId: string;
+  nombreFlor: string;
+  color: string;
+  variedad: string;
+  length: number;
+  stemsPerBunch: number;
+  purchasePrice: number;
+  salePrice: number;
 }
 
 export interface Invoice {
