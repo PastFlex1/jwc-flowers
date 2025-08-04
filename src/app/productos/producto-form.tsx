@@ -56,7 +56,6 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     const dataToSubmit: FormSubmitData = {
       ...values,
-      tipo: values.variedad,
       barras: initialData?.barras || '',
       estado: initialData?.estado || 'Activo',
     };

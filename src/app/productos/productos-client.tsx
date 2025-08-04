@@ -206,7 +206,6 @@ export function ProductosClient() {
                   <TableHead>NOMBRE</TableHead>
                   <TableHead>VARIEDAD</TableHead>
                   <TableHead>COLOR</TableHead>
-                  <TableHead>TIPO</TableHead>
                   <TableHead>BARRAS</TableHead>
                   <TableHead>PRECIO</TableHead>
                   <TableHead>ESTADO</TableHead>
@@ -227,7 +226,6 @@ export function ProductosClient() {
                         <span>{producto.nombreColor}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{producto.tipo}</TableCell>
                     <TableCell>
                        <Input
                         type="text"

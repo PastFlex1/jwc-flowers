@@ -1,3 +1,4 @@
+
 export interface Customer {
   id: string;
   name: string;
@@ -117,7 +118,6 @@ export interface Producto {
   id: string;
   nombre: string;
   variedad: string;
-  tipo: string;
   barras: string;
   color: string;
   nombreColor: string;

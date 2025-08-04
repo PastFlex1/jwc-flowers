@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import type { Producto } from '@/lib/types';
 import {
@@ -19,7 +20,6 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
     id: snapshot.id,
     nombre: data.nombre || '',
     variedad: data.variedad || '',
-    tipo: data.tipo || '',
     barras: data.barras || '',
     color: data.color || '#000000',
     nombreColor: data.nombreColor || '',
@@ -53,3 +53,4 @@ export async function deleteProducto(id: string): Promise<void> {
   const productoDoc = doc(db, 'productos', id);
   await deleteDoc(productoDoc);
 }
+
