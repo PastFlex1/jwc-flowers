@@ -568,6 +568,7 @@ export function NewInvoiceForm() {
                        const totalStems = (stemsPerBunch || 0) * totalBunches;
                        const difference = (salePrice || 0) - (purchasePrice || 0);
                        const total = totalStems * (salePrice || 0);
+                       const itemValues = watchItems[index];
 
                       return (
                         <TableRow key={item.id}>
@@ -630,7 +631,7 @@ export function NewInvoiceForm() {
                               control={form.control}
                               name={`items.${index}.variedad`}
                               render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={!availableVarieties[index]}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={!itemValues?.nombreFlor}>
                                   <FormControl>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Variedad" />
@@ -648,7 +649,7 @@ export function NewInvoiceForm() {
                               control={form.control}
                               name={`items.${index}.color`}
                               render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={!availableColors[index]}>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={!itemValues?.nombreFlor}>
                                   <FormControl>
                                     <SelectTrigger>
                                       <SelectValue placeholder="Color" />
