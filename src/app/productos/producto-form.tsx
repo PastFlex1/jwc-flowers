@@ -32,6 +32,58 @@ type ProductoFormProps = {
   isSubmitting: boolean;
 };
 
+const compressAndResizeImage = (file: File, maxSize = 200, quality = 0.7): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          return reject(new Error('Failed to get canvas context'));
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              return reject(new Error('Canvas to Blob conversion failed'));
+            }
+            const newFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(newFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: ProductoFormProps) {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -60,24 +112,25 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     let imageUrl = initialData?.imageUrl || '';
 
-    if (imageFile && db) { // Ensure db is initialized
+    if (imageFile && db) { 
+        const compressedFile = await compressAndResizeImage(imageFile);
         const storage = getStorage();
-        const storageRef = ref(storage, `products/${Date.now()}_${imageFile.name}`);
-        const snapshot = await uploadBytes(storageRef, imageFile);
+        const storageRef = ref(storage, `products/${Date.now()}_${compressedFile.name}`);
+        const snapshot = await uploadBytes(storageRef, compressedFile);
         imageUrl = await getDownloadURL(snapshot.ref);
     }
     
     const dataToSubmit: FormSubmitData = {
       ...values,
-      id: initialData?.id,
       imageUrl: imageUrl,
       tipo: values.variedad,
       barras: initialData?.barras || '',
       estado: initialData?.estado || 'Activo',
     };
     
-    // Explicitly remove id if it's not an update
-    if (!initialData) {
+    if (initialData?.id) {
+      dataToSubmit.id = initialData.id;
+    } else {
       delete dataToSubmit.id;
     }
 
