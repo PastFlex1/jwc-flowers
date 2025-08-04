@@ -41,19 +41,28 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-
+      
       const pdf = new jsPDF({
         orientation: 'p',
-        unit: "pt",
+        unit: 'pt',
         format: 'a4'
       });
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgHeight * pdfWidth) / imgWidth;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      
+      const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+      
+      const imgWidth = canvasWidth * ratio;
+      const imgHeight = canvasHeight * ratio;
+      
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       
       const fileName = `Estado-de-Cuenta-${data.customer.name.replace(/ /g, '_')}.pdf`;
       pdf.save(fileName);

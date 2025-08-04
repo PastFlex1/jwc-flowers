@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
-import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 import { InvoicePdfDocument } from './invoice-pdf-document';
 
