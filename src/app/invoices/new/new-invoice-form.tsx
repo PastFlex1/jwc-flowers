@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, toDate, parseISO } from 'date-fns';
@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -23,31 +23,25 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, LineItem, BunchItem } from '@/lib/types';
+import type { Invoice, LineItem as LineItemType } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
-const bunchItemSchema = z.object({
+const lineItemSchema = z.object({
   id: z.string(),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   productoId: z.string().min(1, 'Product is required.'),
-  product: z.string(),
-  variety: z.string(),
+  nombreFlor: z.string(),
   color: z.string(),
+  variedad: z.string(),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunches: z.coerce.number().min(1, 'Must be > 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
-
-const lineItemSchema = z.object({
-  id: z.string(),
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
-  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
-  bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
-});
-
 
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1, 'Invoice number is required.'),
@@ -101,7 +95,7 @@ export function NewInvoiceForm() {
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
-    mode: 'onChange',
+    mode: 'onBlur',
     defaultValues: {
       items: [],
     },
@@ -164,32 +158,27 @@ export function NewInvoiceForm() {
       id: uuidv4(),
       boxNumber: fields.length + 1,
       boxType: 'hb',
-      bunches: [
-        {
-          id: uuidv4(),
-          productoId: '',
-          product: '',
-          variety: '',
-          color: '',
-          length: 70,
-          stemsPerBunch: 25,
-          bunches: 1,
-          purchasePrice: 0,
-          salePrice: 0,
-        },
-      ],
+      productoId: '',
+      nombreFlor: '',
+      variedad: '',
+      color: '',
+      length: 70,
+      stemsPerBunch: 25,
+      bunches: 1,
+      purchasePrice: 0,
+      salePrice: 0,
     });
   };
 
-  const handleProductChange = (itemIndex: number, bunchIndex: number, productoId: string) => {
+  const handleProductChange = (index: number, productoId: string) => {
     const product = productos.find((p) => p.id === productoId);
     if (product) {
-      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.productoId`, product.id);
-      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.product`, product.nombre);
-      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.color`, product.color);
-      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.variety`, product.variedad);
-      form.setValue(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`, product.precio);
-      form.trigger(`items.${itemIndex}.bunches.${bunchIndex}`);
+      form.setValue(`items.${index}.productoId`, product.id);
+      form.setValue(`items.${index}.nombreFlor`, product.nombre);
+      form.setValue(`items.${index}.color`, product.color);
+      form.setValue(`items.${index}.variedad`, product.variedad);
+      form.setValue(`items.${index}.salePrice`, product.precio);
+      form.trigger(`items.${index}`);
     }
   };
 
@@ -204,7 +193,21 @@ export function NewInvoiceForm() {
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
       items: values.items.map(item => ({
-        ...item,
+        id: item.id,
+        boxType: item.boxType,
+        boxNumber: item.boxNumber,
+        bunches: [{
+          id: uuidv4(), // generate new id for sub-item
+          productoId: item.productoId,
+          product: item.nombreFlor,
+          color: item.color,
+          variety: item.variedad,
+          length: item.length,
+          stemsPerBunch: item.stemsPerBunch,
+          bunches: item.bunches,
+          purchasePrice: item.purchasePrice,
+          salePrice: item.salePrice,
+        }]
       })),
     };
   
@@ -537,106 +540,110 @@ export function NewInvoiceForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fields.map((item, itemIndex) => (
-                      <React.Fragment key={item.id}>
-                        {item.bunches.map((bunch, bunchIndex) => (
-                           <TableRow key={bunch.id}>
-                            <TableCell>{itemIndex + 1}</TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${itemIndex}.boxNumber`}
-                                render={({ field }) => <Input type="number" {...field} className="w-20" />}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${itemIndex}.boxType`}
-                                render={({ field }) => (
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                      <SelectTrigger className="w-24">
-                                        <SelectValue placeholder="Tipo" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      <SelectItem value="hb">HB</SelectItem>
-                                      <SelectItem value="qb">QB</SelectItem>
-                                      <SelectItem value="eb">EB</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${itemIndex}.bunches.${bunchIndex}.productoId`}
-                                render={({ field }) => (
-                                  <Select
-                                    onValueChange={(value) => {
-                                      field.onChange(value);
-                                      handleProductChange(itemIndex, bunchIndex, value);
-                                    }}
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Flor" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {productos.map((p) => (
-                                        <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.color`} render={({ field }) => <Input {...field} className="w-24" />} />
-                            </TableCell>
-                            <TableCell>
-                                <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.variety`} render={({ field }) => <Input {...field} className="w-28" />} />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
-                            </TableCell>
-                            <TableCell>
-                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)} className="w-20 bg-muted/50" />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                            </TableCell>
-                            <TableCell>
-                               <FormField control={form.control} name={`items.${itemIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
-                            </TableCell>
-                             <TableCell>
-                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`) || 0) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)} className="w-20 bg-muted/50" />
-                            </TableCell>
-                            <TableCell>
-                                <Input type="number" readOnly disabled value={(form.watch(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`) || 0) - (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.purchasePrice`) || 0)} className="w-24 bg-muted/50" />
-                            </TableCell>
-                            <TableCell>
-                                <Input type="number" readOnly disabled value={((form.watch(`items.${itemIndex}.bunches.${bunchIndex}.stemsPerBunch`) || 0) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.bunches`) || 0)) * (form.watch(`items.${itemIndex}.bunches.${bunchIndex}.salePrice`) || 0)} className="w-24 bg-muted/50" />
-                            </TableCell>
-                            <TableCell>
-                              <Button type="button" variant="destructive" size="icon" onClick={() => remove(itemIndex)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </React.Fragment>
-                    ))}
+                    {fields.map((item, index) => {
+                      const itemValues = watchItems[index];
+                      const totalBunches = itemValues?.bunches || 0;
+                      const totalStems = (itemValues?.stemsPerBunch || 0) * totalBunches;
+                      const difference = (itemValues?.salePrice || 0) - (itemValues?.purchasePrice || 0);
+                      const total = totalStems * (itemValues?.salePrice || 0);
+
+                      return (
+                        <TableRow key={item.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.boxNumber`}
+                              render={({ field }) => <Input type="number" {...field} className="w-20" />}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.boxType`}
+                              render={({ field }) => (
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-24">
+                                      <SelectValue placeholder="Tipo" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="hb">HB</SelectItem>
+                                    <SelectItem value="qb">QB</SelectItem>
+                                    <SelectItem value="eb">EB</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.productoId`}
+                              render={({ field }) => (
+                                <Select
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    handleProductChange(index, value);
+                                  }}
+                                  defaultValue={field.value}
+                                >
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Flor" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {productos.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.color`} render={({ field }) => <Input {...field} className="w-24" readOnly disabled />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.variedad`} render={({ field }) => <Input {...field} className="w-28" readOnly disabled />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                          </TableCell>
+                          <TableCell>
+                            <Input type="number" readOnly disabled value={totalBunches} className="w-20 bg-muted/50" />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                          </TableCell>
+                          <TableCell>
+                            <FormField control={form.control} name={`items.${index}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} />
+                          </TableCell>
+                          <TableCell>
+                            <Input type="number" readOnly disabled value={totalStems} className="w-20 bg-muted/50" />
+                          </TableCell>
+                          <TableCell>
+                            <Input type="number" readOnly disabled value={difference} className="w-24 bg-muted/50" />
+                          </TableCell>
+                          <TableCell>
+                            <Input type="number" readOnly disabled value={total} className="w-24 bg-muted/50" />
+                          </TableCell>
+                          <TableCell>
+                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -659,3 +666,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
