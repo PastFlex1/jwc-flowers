@@ -41,8 +41,6 @@ const lineItemSchema = z.object({
   bunches: z.coerce.number().min(1, 'Must be > 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
-  nci: z.string().optional(),
-  ncf: z.string().optional(),
 });
 
 const invoiceSchema = z.object({
@@ -189,20 +187,17 @@ export function NewInvoiceForm() {
       bunches: 1,
       purchasePrice: 0,
       salePrice: 0,
-      nci: '',
-      ncf: '',
     });
   };
 
   const handleProductChange = (itemIndex: number, productoId: string) => {
     const product = productos.find((p) => p.id === productoId);
     if (product) {
-      form.setValue(`items.${itemIndex}.productoId`, product.id);
-      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre);
-      form.setValue(`items.${itemIndex}.color`, product.color);
-      form.setValue(`items.${itemIndex}.variedad`, product.variedad);
-      form.setValue(`items.${itemIndex}.salePrice`, product.precio);
-      form.trigger(`items.${itemIndex}`);
+      form.setValue(`items.${itemIndex}.productoId`, product.id, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.nombreFlor`, product.nombre, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.color`, product.color, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.variedad`, product.variedad, { shouldValidate: true });
+      form.setValue(`items.${itemIndex}.salePrice`, product.precio, { shouldValidate: true });
     }
   };
 
@@ -218,9 +213,7 @@ export function NewInvoiceForm() {
       status: 'Pending',
       items: values.items.map((item) => ({
         ...item,
-        bunches: [],
-        nci: item.nci || '',
-        ncf: item.ncf || '',
+        bunches: [], // This is now a flat structure, but keeping for compatibility if needed elsewhere
       })),
     };
 
@@ -554,11 +547,11 @@ export function NewInvoiceForm() {
                   </TableHeader>
                   <TableBody>
                     {fields.map((field, index) => {
-                      const itemValues = watchItems[index];
-                      const totalStems = (itemValues?.stemsPerBunch || 0) * (itemValues?.bunches || 0);
-                      const difference = (itemValues?.salePrice || 0) - (itemValues?.purchasePrice || 0);
-                      const total = totalStems * (itemValues?.salePrice || 0);
-                      const totalBunchesInRow = itemValues?.bunches || 0;
+                      const currentItem = watchItems[index];
+                      const totalStems = (currentItem?.stemsPerBunch || 0) * (currentItem?.bunches || 0);
+                      const difference = (currentItem?.salePrice || 0) - (currentItem?.purchasePrice || 0);
+                      const total = totalStems * (currentItem?.salePrice || 0);
+                      const totalBunchesInRow = currentItem?.bunches || 0;
 
                       return (
                         <TableRow key={field.id}>
