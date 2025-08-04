@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -40,7 +40,7 @@ type SendInvoiceDialogProps = {
 export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendInvoiceDialogProps) {
   const { toast } = useToast();
   const { t } = useTranslation();
-  const [isSending, setIsSending] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -63,35 +63,33 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
     return null;
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSending(true);
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
     setError(null);
+    startTransition(async () => {
+      const result = await sendInvoiceAction({
+        ...values,
+        invoiceId: invoice.id,
+      });
 
-    const result = await sendInvoiceAction({
-      ...values,
-      invoiceId: invoice.id,
+      if (result.success) {
+        toast({
+          title: t('sendInvoiceDialog.successTitle'),
+          description: t('sendInvoiceDialog.successDescription', { invoiceNumber: invoice.invoiceNumber, email: values.to }),
+        });
+        onClose();
+      } else {
+        setError(result.error);
+        toast({
+          title: "Error al Enviar",
+          description: result.error,
+          variant: "destructive",
+        });
+      }
     });
-
-    if (result.success) {
-      toast({
-        title: t('sendInvoiceDialog.successTitle'),
-        description: t('sendInvoiceDialog.successDescription', { invoiceNumber: invoice.invoiceNumber, email: values.to }),
-      });
-      onClose();
-    } else {
-      setError(result.error);
-      toast({
-        title: "Error al Enviar",
-        description: result.error,
-        variant: "destructive",
-      });
-    }
-
-    setIsSending(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={!isSending ? onClose : () => {}}>
+    <Dialog open={isOpen} onOpenChange={!isPending ? onClose : () => {}}>
       <DialogContent className="sm:max-w-lg">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -152,16 +150,16 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
             </div>
             
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose} disabled={isSending}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
                 {t('sendInvoiceDialog.cancel')}
               </Button>
-              <Button type="submit" disabled={isSending}>
-                {isSending ? (
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {isSending ? t('sendInvoiceDialog.sending') : t('sendInvoiceDialog.send')}
+                {isPending ? t('sendInvoiceDialog.sending') : t('sendInvoiceDialog.send')}
               </Button>
             </DialogFooter>
           </form>
