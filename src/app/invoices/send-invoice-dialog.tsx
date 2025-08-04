@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import type { Invoice, Customer } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
-import { sendInvoiceAction } from './actions';
+import { sendDocumentsAction } from '@/app/account-statement/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
@@ -66,9 +66,9 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setError(null);
     startTransition(async () => {
-      const result = await sendInvoiceAction({
+      const result = await sendDocumentsAction({
         ...values,
-        invoiceId: invoice.id,
+        invoiceIds: [invoice.id],
       });
 
       if (result.success) {

@@ -1,21 +1,14 @@
-import { notFound } from 'next/navigation';
-import { getInvoiceWithDetails } from '@/services/invoices';
 import { InvoiceDetailView } from '@/app/invoices/[id]/invoice-detail-view';
 import { v4 as uuidv4 } from 'uuid';
+import type { InvoiceWithDetails } from '@/services/invoices';
 
 type InvoicePdfProps = {
-  invoiceId: string;
+  invoiceDetails: InvoiceWithDetails;
 };
 
 // This is a React Server Component (RSC)
 // It fetches its own data and can be rendered to HTML on the server.
-export async function InvoicePdf({ invoiceId }: InvoicePdfProps) {
-  const invoiceDetails = await getInvoiceWithDetails(invoiceId);
-
-  if (!invoiceDetails) {
-    notFound();
-  }
-
+export async function InvoicePdf({ invoiceDetails }: InvoicePdfProps) {
   const { invoice, customer, consignatario, carguera, pais } = invoiceDetails;
   
   // Ensure items and bunches have IDs for client-side key props
