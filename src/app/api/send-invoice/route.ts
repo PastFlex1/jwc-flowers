@@ -7,7 +7,7 @@ import { Resend } from 'resend';
 
 import { getInvoiceWithDetails } from '@/services/invoices';
 import { generatePdfFromHtml } from '@/lib/pdf';
-import { InvoiceDetailView } from '@/app/invoices/[id]/invoice-detail-view';
+import { InvoicePdfView } from '@/app/invoices/[id]/invoice-pdf-view';
 import { AccountStatementView } from '@/app/account-statement/account-statement-view';
 import type { Customer, Invoice } from '@/lib/types';
 
@@ -30,7 +30,7 @@ function renderInvoiceToHtml(invoiceData: any): string {
   // Use `renderToStaticMarkup` to render the component to a static HTML string.
   // This is safe to use on the server.
   const html = renderToStaticMarkup(
-    React.createElement(InvoiceDetailView, {
+    React.createElement(InvoicePdfView, {
       invoice: invoiceData.invoice,
       customer: invoiceData.customer,
       consignatario: invoiceData.consignatario,
