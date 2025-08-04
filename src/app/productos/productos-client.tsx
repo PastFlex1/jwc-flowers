@@ -26,7 +26,7 @@ import { ProductoForm } from './producto-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 
-type ProductoFormData = Omit<Producto, 'id' | 'imageUrl'> & { id?: string };
+type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
 
 const ITEMS_PER_PAGE = 10;
 
@@ -224,7 +224,7 @@ export function ProductosClient() {
                           className="h-4 w-4 rounded-full border"
                           style={{ backgroundColor: producto.color }}
                         />
-                        <span>{producto.color}</span>
+                        <span>{producto.nombreColor}</span>
                       </div>
                     </TableCell>
                     <TableCell>{producto.tipo}</TableCell>

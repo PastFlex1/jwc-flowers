@@ -21,7 +21,8 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto 
     variedad: data.variedad || '',
     tipo: data.tipo || '',
     barras: data.barras || '',
-    color: data.color || '',
+    color: data.color || '#000000',
+    nombreColor: data.nombreColor || '',
     precio: data.precio || 0,
     estado: data.estado || 'Activo',
   };

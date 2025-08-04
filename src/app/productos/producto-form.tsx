@@ -14,12 +14,13 @@ import { Loader2 } from 'lucide-react';
 const formSchema = z.object({
   variedad: z.string().min(1, "Variedad es requerida."),
   nombre: z.string().min(1, "Nombre es requerido."),
+  nombreColor: z.string().min(1, "Nombre del color es requerido."),
   color: z.string().min(1, "Color es requerido."),
   precio: z.coerce.number().min(0, "Precio debe ser positivo."),
 });
 
 type ProductoFormData = z.infer<typeof formSchema>;
-type FormSubmitData = Omit<Producto, 'id' | 'imageUrl'> & { id?: string };
+type FormSubmitData = Omit<Producto, 'id'> & { id?: string };
 
 
 type ProductoFormProps = {
@@ -36,6 +37,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     defaultValues: {
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
+      nombreColor: initialData?.nombreColor || '',
       color: initialData?.color || '#000000',
       precio: initialData?.precio || 0,
     },
@@ -45,6 +47,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     form.reset({
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
+      nombreColor: initialData?.nombreColor || '',
       color: initialData?.color || '#000000',
       precio: initialData?.precio || 0,
     });
@@ -94,12 +97,12 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
             </FormItem>
           )}
         />
-         <FormField
+        <FormField
             control={form.control}
             name="color"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Color</FormLabel>
+                <FormLabel>Color (Paleta)</FormLabel>
                 <FormControl>
                     <div className="flex items-center gap-2">
                     <input
@@ -119,7 +122,20 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
                 <FormMessage />
                 </FormItem>
             )}
-            />
+        />
+        <FormField
+          control={form.control}
+          name="nombreColor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nombre del Color</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Rojo Pasión" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
          <FormField
           control={form.control}
           name="precio"

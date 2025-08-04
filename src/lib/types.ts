@@ -120,6 +120,7 @@ export interface Producto {
   tipo: string;
   barras: string;
   color: string;
+  nombreColor: string;
   precio: number;
   estado: 'Activo' | 'Inactivo';
 }
