@@ -53,15 +53,26 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
-      const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+      const ratio = pdfWidth / canvasWidth;
       
       const imgWidth = canvasWidth * ratio;
       const imgHeight = canvasHeight * ratio;
 
-      const x = (pdfWidth - imgWidth) / 2;
-      const y = 0; // Align to top
+      const x = 0;
       
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      let positionY = 0;
+      let remainingHeight = imgHeight;
+
+      pdf.addImage(imgData, 'PNG', x, positionY, imgWidth, imgHeight);
+      remainingHeight -= pdfHeight;
+
+      while (remainingHeight > 0) {
+        positionY -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', x, positionY, imgWidth, imgHeight);
+        remainingHeight -= pdfHeight;
+      }
+      
       const fileName = `Factura-${invoice.invoiceNumber.trim()}.pdf`;
       pdf.save(fileName);
 
