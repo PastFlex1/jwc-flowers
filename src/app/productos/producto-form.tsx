@@ -66,15 +66,21 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         const snapshot = await uploadBytes(storageRef, imageFile);
         imageUrl = await getDownloadURL(snapshot.ref);
     }
-
+    
     const dataToSubmit: FormSubmitData = {
-        ...values,
-        id: initialData?.id,
-        imageUrl,
-        tipo: values.variedad,
-        barras: initialData?.barras || '',
-        estado: initialData?.estado || 'Activo',
+      ...values,
+      id: initialData?.id,
+      imageUrl: imageUrl,
+      tipo: values.variedad,
+      barras: initialData?.barras || '',
+      estado: initialData?.estado || 'Activo',
     };
+    
+    // Explicitly remove id if it's not an update
+    if (!initialData) {
+      delete dataToSubmit.id;
+    }
+
     onSubmit(dataToSubmit);
   }
 
