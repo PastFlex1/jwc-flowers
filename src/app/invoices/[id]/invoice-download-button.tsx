@@ -28,36 +28,19 @@ export default function InvoiceDownloadButton() {
     setIsGenerating(true);
     try {
       const canvas = await html2canvas(noteElement, {
-        scale: 2,
+        scale: 2, // Aumenta la escala para mejor resolución
         useCORS: true,
         logging: false,
-        width: noteElement.clientWidth, // Use clientWidth for accurate rendering width
-        height: noteElement.scrollHeight,
-        windowWidth: document.documentElement.scrollWidth,
-        windowHeight: document.documentElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
+      const pdf = new jsPDF('p', 'pt', 'a4'); // Orientación vertical, unidades en puntos, formato A4
 
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'pt',
-        format: 'a4'
-      });
-      
+      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const newImgWidth = imgWidth * ratio;
-      const newImgHeight = imgHeight * ratio;
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-      const x = (pdfWidth - newImgWidth) / 2;
-      const y = (pdfHeight - newImgHeight) / 2;
-      
-      pdf.addImage(imgData, 'PNG', x, y, newImgWidth, newImgHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       
       const fileName = `Factura-${invoiceNumber?.trim()}.pdf`;
       pdf.save(fileName);
