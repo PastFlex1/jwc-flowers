@@ -35,7 +35,7 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
     setIsGenerating(true);
     try {
       const canvas = await html2canvas(invoiceElement, {
-        scale: 2, 
+        scale: 3, 
         useCORS: true, 
         logging: false,
         width: invoiceElement.scrollWidth,
