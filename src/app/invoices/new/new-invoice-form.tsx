@@ -211,9 +211,19 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: values.items.map((item) => ({
-        ...item,
-        bunches: [], // This is now a flat structure, but keeping for compatibility if needed elsewhere
+       items: values.items.map(item => ({
+        id: item.id,
+        boxType: item.boxType,
+        boxNumber: item.boxNumber,
+        bunches: [], // This is simplified now
+        productoId: item.productoId,
+        nombreFlor: item.nombreFlor,
+        color: item.color,
+        variedad: item.variedad,
+        length: item.length,
+        stemsPerBunch: item.stemsPerBunch,
+        purchasePrice: item.purchasePrice,
+        salePrice: item.salePrice,
       })),
     };
 
@@ -548,11 +558,11 @@ export function NewInvoiceForm() {
                   <TableBody>
                     {fields.map((field, index) => {
                       const item = watchItems[index];
+                      const totalBunchesInRow = item?.bunches || 0;
                       const totalStems = (item?.stemsPerBunch || 0) * (item?.bunches || 0);
                       const difference = (item?.salePrice || 0) - (item?.purchasePrice || 0);
                       const total = totalStems * (item?.salePrice || 0);
-                      const totalBunchesInRow = item?.bunches || 0;
-
+                      
                       return (
                         <TableRow key={field.id}>
                           <TableCell>{index + 1}</TableCell>
