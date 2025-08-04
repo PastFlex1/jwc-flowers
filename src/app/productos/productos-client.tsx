@@ -95,7 +95,8 @@ export function ProductosClient() {
     handleCloseDialog();
     try {
       if (productoData.id) {
-        await updateProducto(productoData.id, productoData as Omit<Producto, 'id'>);
+        const { id, ...dataToUpdate } = productoData;
+        await updateProducto(id, dataToUpdate);
         toast({ title: 'Success', description: 'Product updated successfully.' });
       } else {
         await addProducto(productoData);
