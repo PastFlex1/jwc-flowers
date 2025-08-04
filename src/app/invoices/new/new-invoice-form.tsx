@@ -91,8 +91,9 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
-  const [availableOptions, setAvailableOptions] = useState<Record<number, { varieties: string[], colors: string[] }>>({});
   const [isMounted, setIsMounted] = useState(false);
+
+  const [availableOptions, setAvailableOptions] = useState<Record<number, { varieties: string[], colors: string[] }>>({});
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -176,32 +177,66 @@ export function NewInvoiceForm() {
     }));
   };
 
-  const handleProductChange = useCallback((index: number, productName: string) => {
-    const matchingProducts = productos.filter((p) => p.nombre === productName);
-    
-    if (matchingProducts.length > 0) {
-      const firstProduct = matchingProducts[0];
-      form.setValue(`items.${index}.productoId`, firstProduct.id);
-      form.setValue(`items.${index}.salePrice`, firstProduct.precio);
-      
-      const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
-      const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+  const updatePriceIfNeeded = useCallback((index: number, nombreFlor: string, variedad: string, color: string) => {
+    if (nombreFlor && variedad && color) {
+        const product = productos.find(p => p.nombre === nombreFlor && p.variedad === variedad && p.nombreColor === color);
+        if (product) {
+            form.setValue(`items.${index}.salePrice`, product.precio);
+            form.setValue(`items.${index}.productoId`, product.id);
+        }
+    }
+}, [productos, form]);
 
-      setAvailableOptions(prev => ({
+const handleProductChange = useCallback((index: number, productName: string) => {
+    const matchingProducts = productos.filter(p => p.nombre === productName);
+    const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
+    const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+
+    setAvailableOptions(prev => ({
         ...prev,
         [index]: { varieties: uniqueVarieties, colors: uniqueColors }
-      }));
-      
-      form.setValue(`items.${index}.variedad`, '');
-      form.setValue(`items.${index}.color`, '');
-    } else {
-       setAvailableOptions(prev => ({
+    }));
+
+    form.setValue(`items.${index}.variedad`, '');
+    form.setValue(`items.${index}.color`, '');
+}, [productos]);
+
+const handleVarietyChange = useCallback((index: number, variety: string) => {
+    const productName = form.getValues(`items.${index}.nombreFlor`);
+    const matchingProducts = productos.filter(p => p.nombre === productName && p.variedad === variety);
+    const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+
+    setAvailableOptions(prev => ({
         ...prev,
-        [index]: { varieties: [], colors: [] }
-      }));
+        [index]: { ...prev[index], colors: uniqueColors }
+    }));
+
+    if (uniqueColors.length === 1) {
+        form.setValue(`items.${index}.color`, uniqueColors[0]);
+        updatePriceIfNeeded(index, productName, variety, uniqueColors[0]);
+    } else {
+        form.setValue(`items.${index}.color`, '');
     }
-     form.trigger(`items.${index}`);
-  }, [productos, form]);
+}, [productos, form, updatePriceIfNeeded]);
+
+const handleColorChange = useCallback((index: number, color: string) => {
+    const productName = form.getValues(`items.${index}.nombreFlor`);
+    const matchingProducts = productos.filter(p => p.nombre === productName && p.nombreColor === color);
+    const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
+
+    setAvailableOptions(prev => ({
+        ...prev,
+        [index]: { ...prev[index], varieties: uniqueVarieties }
+    }));
+
+    if (uniqueVarieties.length === 1) {
+        form.setValue(`items.${index}.variedad`, uniqueVarieties[0]);
+        updatePriceIfNeeded(index, productName, uniqueVarieties[0], color);
+    } else {
+        form.setValue(`items.${index}.variedad`, '');
+    }
+}, [productos, form, updatePriceIfNeeded]);
+
   
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
@@ -640,14 +675,21 @@ export function NewInvoiceForm() {
                               control={form.control}
                               name={`items.${index}.variedad`}
                               render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={!watchItems[index]?.nombreFlor}>
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    handleVarietyChange(index, value);
+                                  }}
+                                  value={field.value}
+                                  disabled={!watchItems[index]?.nombreFlor}
+                                >
                                   <FormControl>
                                     <SelectTrigger className="w-36">
                                       <SelectValue placeholder="Variedad" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {(availableOptions[index]?.varieties || []).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                    {availableOptions[index]?.varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -658,14 +700,21 @@ export function NewInvoiceForm() {
                               control={form.control}
                               name={`items.${index}.color`}
                               render={({ field }) => (
-                                <Select onValueChange={field.onChange} value={field.value} disabled={!watchItems[index]?.nombreFlor}>
+                                <Select 
+                                  onValueChange={(value) => {
+                                    field.onChange(value);
+                                    handleColorChange(index, value);
+                                  }}
+                                  value={field.value}
+                                  disabled={!watchItems[index]?.nombreFlor}
+                                >
                                   <FormControl>
                                     <SelectTrigger className="w-36">
                                       <SelectValue placeholder="Color" />
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                     {(availableOptions[index]?.colors || []).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                     {availableOptions[index]?.colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -728,5 +777,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    
