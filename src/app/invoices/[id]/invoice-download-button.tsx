@@ -45,7 +45,7 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
       });
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'pt', 'a4'); 
+      const pdf = new jsPDF('l', 'pt', 'a4'); 
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
