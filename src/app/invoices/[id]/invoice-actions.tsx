@@ -22,16 +22,12 @@ export function InvoiceActions({ invoice, customer, consignatario, carguera, pai
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 no-print">
         <Button variant="outline" onClick={() => router.back()}>
           Back
         </Button>
         <InvoiceDownloadButton
           invoice={invoice}
-          customer={customer}
-          consignatario={consignatario}
-          carguera={carguera}
-          pais={pais}
         />
         <Button onClick={() => setIsSendDialogOpen(true)} variant="outline">
           <Send className="mr-2 h-4 w-4" />
