@@ -31,7 +31,7 @@ export default function InvoiceDownloadButton({ invoice }: InvoiceDownloadButton
 
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        const fileName = `Factura-${invoice.invoiceNumber?.trim()}.pdf`;
+        const fileName = `Factura-${result.invoiceNumber?.trim() || invoice.invoiceNumber?.trim()}.pdf`;
         link.download = fileName;
         document.body.appendChild(link);
         link.click();

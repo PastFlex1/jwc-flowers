@@ -33,9 +33,12 @@ export async function POST(request: Request) {
         });
     }
 
+    // Since this is running on the server in an API route, we can safely use renderToStaticMarkup
     const invoiceComponent = React.createElement(InvoiceDetailView, invoiceDetails);
     const invoiceHtml = renderToStaticMarkup(invoiceComponent);
 
+    // This is a simple trick to inject Tailwind styles into the PDF
+    // In a real-world app, you might read the compiled CSS file instead.
     const fullHtml = `
         <!DOCTYPE html>
         <html lang="en">
@@ -50,6 +53,9 @@ export async function POST(request: Request) {
                 font-family: 'Alegreya', serif;
                 font-size: 12px;
                 background-color: white !important;
+            }
+            .no-print {
+                display: none !important;
             }
             </style>
         </head>
