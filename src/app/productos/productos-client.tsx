@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -27,7 +26,7 @@ import { ProductoForm } from './producto-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 
-type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
+type ProductoFormData = Omit<Producto, 'id' | 'imageUrl'> & { id?: string };
 
 const ITEMS_PER_PAGE = 10;
 
@@ -206,6 +205,7 @@ export function ProductosClient() {
                 <TableRow>
                   <TableHead>NOMBRE</TableHead>
                   <TableHead>VARIEDAD</TableHead>
+                  <TableHead>COLOR</TableHead>
                   <TableHead>TIPO</TableHead>
                   <TableHead>BARRAS</TableHead>
                   <TableHead>PRECIO</TableHead>
@@ -218,6 +218,15 @@ export function ProductosClient() {
                   <TableRow key={producto.id}>
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
                     <TableCell>{producto.variedad}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-4 w-4 rounded-full border"
+                          style={{ backgroundColor: producto.color }}
+                        />
+                        <span>{producto.color}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{producto.tipo}</TableCell>
                     <TableCell>
                        <Input

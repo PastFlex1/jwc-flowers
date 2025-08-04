@@ -19,7 +19,7 @@ const formSchema = z.object({
 });
 
 type ProductoFormData = z.infer<typeof formSchema>;
-type FormSubmitData = Omit<Producto, 'id'> & { id?: string };
+type FormSubmitData = Omit<Producto, 'id' | 'imageUrl'> & { id?: string };
 
 
 type ProductoFormProps = {
@@ -36,7 +36,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     defaultValues: {
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
-      color: initialData?.color || '',
+      color: initialData?.color || '#000000',
       precio: initialData?.precio || 0,
     },
   });
@@ -45,7 +45,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     form.reset({
       variedad: initialData?.variedad || '',
       nombre: initialData?.nombre || '',
-      color: initialData?.color || '',
+      color: initialData?.color || '#000000',
       precio: initialData?.precio || 0,
     });
   }, [initialData, form]);
@@ -95,18 +95,31 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           )}
         />
          <FormField
-          control={form.control}
-          name="color"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Color</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Rosa" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Color</FormLabel>
+                <FormControl>
+                    <div className="flex items-center gap-2">
+                    <input
+                        type="color"
+                        value={field.value}
+                        onChange={field.onChange}
+                        className="p-1 h-10 w-14 block bg-white border border-gray-200 cursor-pointer rounded-lg disabled:opacity-50 disabled:pointer-events-none dark:bg-slate-900 dark:border-gray-700"
+                    />
+                    <Input
+                        placeholder="e.g., #FF0000"
+                        value={field.value}
+                        onChange={field.onChange}
+                        className="w-full"
+                    />
+                    </div>
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
          <FormField
           control={form.control}
           name="precio"
