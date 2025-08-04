@@ -24,7 +24,7 @@ export async function sendEmailWithAttachments({
 
   try {
     const data = await resend.emails.send({
-      from: 'JCW Flowers <onboarding@resend.dev>', // You must verify your domain on Resend to use a custom from address
+      from: 'JCW Flowers <facturacion@puntodeventastore.tienda>',
       to: [to],
       subject: subject,
       html: `<p>${body.replace(/\n/g, '<br>')}</p>`,
