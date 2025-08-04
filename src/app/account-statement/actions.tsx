@@ -1,14 +1,8 @@
 'use server';
 
-import React from 'react';
 import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
-import { renderToStaticMarkup } from 'react-dom/server';
 
-import { generatePdfFromHtml } from '@/lib/pdf';
 import { sendEmailWithAttachments } from '@/services/email';
-import { getInvoiceWithDetails } from '@/services/invoices';
-import { InvoiceDetailView } from '@/app/invoices/[id]/invoice-detail-view';
 
 const formSchema = z.object({
   to: z.string().email(),
@@ -19,52 +13,29 @@ const formSchema = z.object({
 
 type SendDocumentsInput = z.infer<typeof formSchema>;
 
-async function renderInvoiceToHtml(invoiceId: string) {
-  const invoiceDetails = await getInvoiceWithDetails(invoiceId);
-  if (!invoiceDetails) {
-    throw new Error(`Invoice with ID ${invoiceId} not found.`);
+async function generatePdfForInvoice(invoiceId: string): Promise<{ content: string; filename: string }> {
+  // This is a placeholder for the actual domain, in a real app, use environment variables
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
+  
+  const response = await fetch(`${baseUrl}/api/generate-pdf`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ invoiceId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || `Failed to generate PDF for invoice ${invoiceId}`);
   }
 
-  const { invoice } = invoiceDetails;
-
-  // Ensure items and bunches have IDs for client-side key props
-  if (invoice.items && Array.isArray(invoice.items)) {
-    invoice.items.forEach(item => {
-      if (!item.id) item.id = uuidv4();
-      if (item.bunches && Array.isArray(item.bunches)) {
-        item.bunches.forEach(bunch => {
-            if (!bunch.id) bunch.id = uuidv4();
-        });
-      }
-    });
-  }
-
-  const invoiceComponent = React.createElement(InvoiceDetailView, invoiceDetails);
-  const invoiceHtml = renderToStaticMarkup(invoiceComponent);
-
-  const fullHtml = `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8" />
-        <title>Invoice ${invoice.invoiceNumber}</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet" />
-        <style>
-          body { 
-            font-family: 'Alegreya', serif;
-            font-size: 12px;
-          }
-        </style>
-      </head>
-      <body>
-        ${invoiceHtml}
-      </body>
-    </html>
-  `;
-
-  return { html: fullHtml, invoiceNumber: invoiceDetails.invoice.invoiceNumber };
+  const { pdf, invoiceNumber } = await response.json();
+  
+  return {
+    content: pdf,
+    filename: `Factura-${invoiceNumber}.pdf`,
+  };
 }
 
 
@@ -78,15 +49,7 @@ export async function sendDocumentsAction(input: SendDocumentsInput) {
 
   try {
     const attachments = await Promise.all(
-      invoiceIds.map(async (invoiceId) => {
-        const { html: invoiceHtml, invoiceNumber } = await renderInvoiceToHtml(invoiceId);
-        const pdfBase64 = await generatePdfFromHtml(invoiceHtml);
-        
-        return {
-          filename: `Factura-${invoiceNumber}.pdf`,
-          content: pdfBase64,
-        };
-      })
+      invoiceIds.map(invoiceId => generatePdfForInvoice(invoiceId))
     );
 
     await sendEmailWithAttachments({
