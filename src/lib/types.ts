@@ -1,5 +1,6 @@
 
 
+
 export interface Customer {
   id: string;
   name: string;
@@ -26,8 +27,10 @@ export interface InventoryItem {
 
 export interface BunchItem {
   id: string;
-  product: string;
-  variety: string;
+  productoId: string;
+  nombreFlor: string;
+  color: string;
+  variedad: string;
   length: number;
   stemsPerBunch: number;
   bunches: number;

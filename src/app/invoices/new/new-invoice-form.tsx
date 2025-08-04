@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
@@ -22,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, Consignatario, Marcacion, LineItem } from '@/lib/types';
+import type { Invoice, Consignatario, Marcacion, LineItem, BunchItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
@@ -30,8 +31,10 @@ const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
 const bunchItemSchema = z.object({
   id: z.string(),
-  product: z.string().min(1, "Product is required."),
-  variety: z.string().min(1, "Variety is required."),
+  productoId: z.string().min(1, "Product is required."),
+  nombreFlor: z.string(),
+  color: z.string(),
+  variedad: z.string(),
   length: z.coerce.number().positive("Must be > 0"),
   stemsPerBunch: z.coerce.number().positive("Must be > 0"),
   bunches: z.coerce.number().min(1, "Must be > 0"),
@@ -130,21 +133,6 @@ export function NewInvoiceForm() {
     }
   }, [isMounted, form]);
 
-
-  const productTypes = useMemo(() => {
-    if (!productos) return [];
-    const types = productos.map(p => p.tipo);
-    return [...new Set(types)];
-  }, [productos]);
-
-  const getVarietiesForProduct = (productType: string): string[] => {
-      if (!productType || !productos) return [];
-      const varieties = productos
-          .filter(p => p.tipo === productType)
-          .map(p => p.variedad);
-      return [...new Set(varieties)];
-  };
-
   useEffect(() => {
     if (selectedCustomerId) {
       const customer = customers.find(c => c.id === selectedCustomerId);
@@ -212,8 +200,10 @@ export function NewInvoiceForm() {
     const currentItem = form.getValues(`items.${boxIndex}`);
     const updatedBunches = [...currentItem.bunches, {
         id: uuidv4(),
-        product: '',
-        variety: '',
+        productoId: '',
+        nombreFlor: '',
+        color: '',
+        variedad: '',
         length: 70,
         stemsPerBunch: 25,
         bunches: 1,
@@ -227,6 +217,17 @@ export function NewInvoiceForm() {
      const currentItem = form.getValues(`items.${boxIndex}`);
      const updatedBunches = currentItem.bunches.filter((_, i) => i !== bunchIndex);
      update(boxIndex, { ...currentItem, bunches: updatedBunches });
+  }
+
+  const handleProductChange = (boxIndex: number, bunchIndex: number, productoId: string) => {
+    const product = productos.find(p => p.id === productoId);
+    if(product) {
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.productoId`, product.id);
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.nombreFlor`, product.nombre);
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.color`, product.color);
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variedad`, product.variedad);
+        form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.salePrice`, product.precio);
+    }
   }
   
   async function onSubmit(values: InvoiceFormValues) {
@@ -243,11 +244,6 @@ export function NewInvoiceForm() {
         ...item,
         nci: item.nci || '',
         ncf: item.ncf || '',
-        bunches: item.bunches.map(bunch => ({
-            ...bunch,
-            purchasePrice: bunch.purchasePrice || 0,
-            salePrice: bunch.salePrice || 0,
-        }))
       })),
     }
 
@@ -439,77 +435,113 @@ export function NewInvoiceForm() {
           
           <Card>
             <CardHeader>
-              <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
+                <div className="flex justify-between items-center">
+                    <CardTitle>{t('invoices.new.itemsTitle')}</CardTitle>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddBox}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Box
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent>
-              {fields.map((field, boxIndex) => (
-                <div key={field.id} className="p-4 border rounded-lg mb-4 space-y-4 bg-muted/20">
-                  <div className="flex items-end gap-4 flex-wrap">
-                    <FormField control={form.control} name={`items.${boxIndex}.boxNumber`} render={({ field }) => <FormItem><FormLabel>Box #</FormLabel><FormControl><Input type="number" {...field} className="w-24" /></FormControl></FormItem>} />
-                    <FormField control={form.control} name={`items.${boxIndex}.boxType`} render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="w-28"><SelectValue placeholder="Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem><SelectItem value="hb">HB</SelectItem></SelectContent></Select></FormItem>} />
-                    <FormField control={form.control} name={`items.${boxIndex}.nci`} render={({ field }) => <FormItem><FormLabel>NCI</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="w-24" /></FormControl></FormItem>} />
-                    <FormField control={form.control} name={`items.${boxIndex}.ncf`} render={({ field }) => <FormItem><FormLabel>NCF</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="w-24" /></FormControl></FormItem>} />
-                    <div className="ml-auto flex items-center gap-2">
-                        <Button type="button" size="sm" variant="outline" onClick={() => handleAddBunch(boxIndex)}><PlusCircle className="mr-2 h-4 w-4"/> Add Bunch</Button>
-                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(boxIndex)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
-                  
-                  <div className="pl-4 border-l-2 border-primary/50">
-                    <Controller
-                        control={form.control}
-                        name={`items.${boxIndex}.bunches`}
-                        render={({ field }) => (
-                            <useFieldArray
-                                control={form.control}
-                                name={`items.${boxIndex}.bunches`}
-                                render={({ fields: bunchFields, append: appendBunch, remove: removeBunch, update: updateBunch }) => (
-                                    <>
-                                        {bunchFields.map((bunchField, bunchIndex) => {
-                                            const currentProductType = form.watch(`items.${boxIndex}.bunches.${bunchIndex}.product`);
-                                            const varieties = getVarietiesForProduct(currentProductType);
-                                            return (
-                                                <div key={bunchField.id} className="flex items-center gap-2 py-2 border-b border-dashed">
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.product`} render={({ field }) => (<Select onValueChange={(v) => { field.onChange(v); form.setValue(`items.${boxIndex}.bunches.${bunchIndex}.variety`, ''); }} value={field.value}><FormControl><SelectTrigger className="w-32"><SelectValue placeholder="Product" /></SelectTrigger></FormControl><SelectContent>{productTypes.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>)}/>
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.variety`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value} disabled={!currentProductType || varieties.length === 0}><FormControl><SelectTrigger className="w-32"><SelectValue placeholder="Variety" /></SelectTrigger></FormControl><SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select>)} />
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" placeholder="L" {...field} className="w-16" />} />
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" placeholder="Stems" {...field} className="w-20" />} />
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" placeholder="Bunches" {...field} className="w-20" />} />
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" placeholder="Cost" {...field} className="w-20" />} />
-                                                    <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" placeholder="Price" {...field} className="w-20" />} />
-                                                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(boxIndex, bunchIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                                                </div>
-                                            );
-                                        })}
-                                    </>
-                                )}
-                            />
-                        )}
-                    />
-                     <FormMessage>{form.formState.errors.items?.[boxIndex]?.bunches?.message}</FormMessage>
-                  </div>
-                </div>
-              ))}
-              <div className="mt-6 flex justify-end">
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddBox}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Box
-                  </Button>
-              </div>
-              <FormMessage>{form.formState.errors.items?.message}</FormMessage>
-            </CardContent>
-             <CardContent>
+              <div className="overflow-x-auto">
                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>N°</TableHead>
+                            <TableHead>N° de Cajas</TableHead>
+                            <TableHead>Tipo de Caja</TableHead>
+                            <TableHead>Nombre Flor</TableHead>
+                            <TableHead>Color</TableHead>
+                            <TableHead>Variedad</TableHead>
+                            <TableHead>Longitud</TableHead>
+                            <TableHead>N° Tallos</TableHead>
+                            <TableHead>N° Bunches</TableHead>
+                            <TableHead>Total Bunches</TableHead>
+                            <TableHead>Precio Compra</TableHead>
+                            <TableHead>Precio Venta</TableHead>
+                            <TableHead>Total Tallos</TableHead>
+                            <TableHead>Diferencia</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Acciones</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {fields.map((field, boxIndex) => {
+                       const boxBunches = watchItems[boxIndex]?.bunches || [];
+                       const totalBunchesInBox = boxBunches.reduce((acc, bunch) => acc + (Number(bunch.bunches) || 0), 0);
+                       
+                       return (
+                        <React.Fragment key={field.id}>
+                            <TableRow className="bg-muted/30">
+                                <TableCell>{boxIndex + 1}</TableCell>
+                                <TableCell>
+                                    <FormField control={form.control} name={`items.${boxIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="w-20" />} />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField control={form.control} name={`items.${boxIndex}.boxType`} render={({ field }) => (<Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="w-24"><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl><SelectContent><SelectItem value="hb">HB</SelectItem><SelectItem value="qb">QB</SelectItem><SelectItem value="eb">EB</SelectItem></SelectContent></Select>)} />
+                                </TableCell>
+                                <TableCell colSpan={5}>
+                                     <Button type="button" size="sm" variant="ghost" onClick={() => handleAddBunch(boxIndex)}><PlusCircle className="mr-2 h-4 w-4"/> Añadir Bunch</Button>
+                                </TableCell>
+                                <TableCell>{totalBunchesInBox}</TableCell>
+                                <TableCell colSpan={6}></TableCell>
+                                <TableCell>
+                                     <Button type="button" variant="destructive" size="icon" onClick={() => remove(boxIndex)}><Trash2 className="h-4 w-4" /></Button>
+                                </TableCell>
+                            </TableRow>
+
+                            {boxBunches.map((bunch, bunchIndex) => {
+                                const totalStems = (bunch.stemsPerBunch || 0) * (bunch.bunches || 0);
+                                const difference = (bunch.salePrice || 0) - (bunch.purchasePrice || 0);
+                                const total = totalStems * (bunch.salePrice || 0);
+                                return (
+                                    <TableRow key={bunch.id}>
+                                        <TableCell colSpan={3}></TableCell>
+                                        <TableCell>
+                                            <FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.productoId`} render={({ field }) => (
+                                                <Select onValueChange={(value) => handleProductChange(boxIndex, bunchIndex, value)} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Flor" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{productos.map(p => (<SelectItem key={p.id} value={p.id}>{p.nombre}</SelectItem>))}</SelectContent>
+                                                </Select>
+                                            )} />
+                                        </TableCell>
+                                        <TableCell><Input readOnly disabled value={bunch.color || ''} /></TableCell>
+                                        <TableCell><Input readOnly disabled value={bunch.variedad || ''} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.bunches`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
+                                        <TableCell></TableCell> {/* Total Bunches Placeholder */}
+                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
+                                        <TableCell><FormField control={form.control} name={`items.${boxIndex}.bunches.${bunchIndex}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
+                                        <TableCell>{totalStems}</TableCell>
+                                        <TableCell>${difference.toFixed(2)}</TableCell>
+                                        <TableCell>${total.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(boxIndex, bunchIndex)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </React.Fragment>
+                       )
+                    })}
+                    </TableBody>
                     <TableFooter>
-                      <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50">
-                        <TableCell>Boxes: {totals.totalBoxes}</TableCell>
-                        <TableCell>Bunches: {totals.totalBunches}</TableCell>
-                        <TableCell>Stems: {totals.totalStems}</TableCell>
-                        <TableCell className="text-right text-lg">TOTAL FOB</TableCell>
-                        <TableCell className="text-lg text-right font-bold pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
+                      <TableRow className="border-t-2 border-border bg-muted/50 font-bold hover:bg-muted/50 text-lg">
+                        <TableCell colSpan={2}>Totales:</TableCell>
+                        <TableCell>Cajas: {totals.totalBoxes}</TableCell>
+                        <TableCell colSpan={6}></TableCell>
+                        <TableCell>Ramos: {totals.totalBunches}</TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                        <TableCell>Tallos: {totals.totalStems}</TableCell>
+                        <TableCell colSpan={2}></TableCell>
+                        <TableCell className="text-right pr-4">${(totals.totalFob || 0).toFixed(2)}</TableCell>
                       </TableRow>
                     </TableFooter>
                 </Table>
-             </CardContent>
+              </div>
+              <FormMessage>{form.formState.errors.items?.message}</FormMessage>
+            </CardContent>
           </Card>
           
           <div className="flex justify-end gap-2">
