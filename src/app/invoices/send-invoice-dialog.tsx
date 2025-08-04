@@ -21,7 +21,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import type { Invoice, Customer } from '@/lib/types';
 import { useTranslation } from '@/context/i18n-context';
-import { sendInvoiceAction } from './send-invoice-action';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
@@ -66,25 +65,38 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setError(null);
     startTransition(async () => {
-      const result = await sendInvoiceAction({
-        ...values,
-        invoiceId: invoice.id,
-      });
+      try {
+        const response = await fetch('/api/send-invoice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...values,
+                invoiceId: invoice.id,
+            }),
+        });
 
-      if (result.success) {
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to send email.');
+        }
+        
         toast({
           title: t('sendInvoiceDialog.successTitle'),
           description: t('sendInvoiceDialog.successDescription', { invoiceNumber: invoice.invoiceNumber, email: values.to }),
         });
         onClose();
-      } else {
-        const errorMessage = result.error || 'An unknown error occurred.';
-        setError(errorMessage);
-        toast({
-          title: "Error al Enviar",
-          description: errorMessage,
-          variant: "destructive",
-        });
+
+      } catch (e: any) {
+         const errorMessage = e.message || 'An unknown error occurred.';
+         setError(errorMessage);
+         toast({
+           title: "Error al Enviar",
+           description: errorMessage,
+           variant: "destructive",
+         });
       }
     });
   };

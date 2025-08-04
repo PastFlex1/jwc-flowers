@@ -73,23 +73,41 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     setIsSending(true);
     setError(null);
     
-    const result = await sendDocumentsAction(values);
+    try {
+        const response = await fetch('/api/send-invoice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...values,
+                isStatement: true,
+                statementData: { customer, invoices }
+            }),
+        });
 
-    if (result.success) {
-      toast({
-        title: "Correo Enviado",
-        description: `Se han enviado ${values.invoiceIds.length} documentos a ${values.to}.`,
-      });
-      onClose();
-    } else {
-      const errorMessage = result.error || 'An unknown error occurred.';
-      setError(errorMessage);
-      toast({
-        title: "Error al Enviar",
-        description: errorMessage,
-        variant: "destructive",
-      });
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to send email.');
+        }
+
+        toast({
+            title: "Correo Enviado",
+            description: `Se han enviado ${values.invoiceIds.length} documentos a ${values.to}.`,
+        });
+        onClose();
+        
+    } catch (e: any) {
+        const errorMessage = e.message || 'An unknown error occurred.';
+        setError(errorMessage);
+        toast({
+            title: "Error al Enviar",
+            description: errorMessage,
+            variant: "destructive",
+        });
     }
+
 
     setIsSending(false);
   };
