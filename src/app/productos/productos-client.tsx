@@ -232,7 +232,19 @@ export function ProductosClient() {
                     <TableCell className="font-medium">{producto.nombre}</TableCell>
                     <TableCell>{producto.variedad}</TableCell>
                     <TableCell>{producto.tipo}</TableCell>
-                    <TableCell>{producto.barras}</TableCell>
+                    <TableCell>
+                       <Input
+                        type="text"
+                        defaultValue={producto.barras}
+                        onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            (e.target as HTMLInputElement).blur();
+                          }
+                        }}
+                        className="w-28 h-8"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Input
                         type="number"
