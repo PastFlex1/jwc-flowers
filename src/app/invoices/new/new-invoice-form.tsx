@@ -93,7 +93,8 @@ export function NewInvoiceForm() {
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
   const [isMounted, setIsMounted] = useState(false);
 
-  const [availableOptions, setAvailableOptions] = useState<Record<number, { varieties: string[], colors: string[] }>>({});
+  const [availableVarieties, setAvailableVarieties] = useState<Record<number, string[]>>({});
+  const [availableColors, setAvailableColors] = useState<Record<number, string[]>>({});
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -171,71 +172,39 @@ export function NewInvoiceForm() {
       purchasePrice: 0,
       salePrice: 0,
     });
-    setAvailableOptions(prev => ({
-      ...prev,
-      [fields.length]: { varieties: [], colors: [] }
-    }));
+    setAvailableVarieties(prev => ({...prev, [fields.length]: []}));
+    setAvailableColors(prev => ({...prev, [fields.length]: []}));
   };
 
-  const updatePriceIfNeeded = useCallback((index: number, nombreFlor: string, variedad: string, color: string) => {
+ const updatePriceIfNeeded = useCallback((index: number) => {
+    const { nombreFlor, variedad, color } = form.getValues(`items.${index}`);
     if (nombreFlor && variedad && color) {
-        const product = productos.find(p => p.nombre === nombreFlor && p.variedad === variedad && p.nombreColor === color);
-        if (product) {
-            form.setValue(`items.${index}.salePrice`, product.precio);
-            form.setValue(`items.${index}.productoId`, product.id);
-        }
+      const product = productos.find(p => 
+        p.nombre === nombreFlor && 
+        p.variedad === variedad && 
+        p.nombreColor === color
+      );
+      if (product) {
+        form.setValue(`items.${index}.salePrice`, product.precio);
+        form.setValue(`items.${index}.productoId`, product.id);
+      }
     }
-}, [productos, form]);
+  }, [productos, form]);
 
-const handleProductChange = useCallback((index: number, productName: string) => {
+  const handleProductChange = useCallback((index: number, productName: string) => {
     const matchingProducts = productos.filter(p => p.nombre === productName);
     const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
     const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
 
-    setAvailableOptions(prev => ({
-        ...prev,
-        [index]: { varieties: uniqueVarieties, colors: uniqueColors }
-    }));
-
+    setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
+    setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
+    
     form.setValue(`items.${index}.variedad`, '');
     form.setValue(`items.${index}.color`, '');
-}, [productos]);
+    form.setValue(`items.${index}.salePrice`, 0);
 
-const handleVarietyChange = useCallback((index: number, variety: string) => {
-    const productName = form.getValues(`items.${index}.nombreFlor`);
-    const matchingProducts = productos.filter(p => p.nombre === productName && p.variedad === variety);
-    const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+  }, [productos, form]);
 
-    setAvailableOptions(prev => ({
-        ...prev,
-        [index]: { ...prev[index], colors: uniqueColors }
-    }));
-
-    if (uniqueColors.length === 1) {
-        form.setValue(`items.${index}.color`, uniqueColors[0]);
-        updatePriceIfNeeded(index, productName, variety, uniqueColors[0]);
-    } else {
-        form.setValue(`items.${index}.color`, '');
-    }
-}, [productos, form, updatePriceIfNeeded]);
-
-const handleColorChange = useCallback((index: number, color: string) => {
-    const productName = form.getValues(`items.${index}.nombreFlor`);
-    const matchingProducts = productos.filter(p => p.nombre === productName && p.nombreColor === color);
-    const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
-
-    setAvailableOptions(prev => ({
-        ...prev,
-        [index]: { ...prev[index], varieties: uniqueVarieties }
-    }));
-
-    if (uniqueVarieties.length === 1) {
-        form.setValue(`items.${index}.variedad`, uniqueVarieties[0]);
-        updatePriceIfNeeded(index, productName, uniqueVarieties[0], color);
-    } else {
-        form.setValue(`items.${index}.variedad`, '');
-    }
-}, [productos, form, updatePriceIfNeeded]);
 
   
   async function onSubmit(values: InvoiceFormValues) {
@@ -678,7 +647,7 @@ const handleColorChange = useCallback((index: number, color: string) => {
                                 <Select 
                                   onValueChange={(value) => {
                                     field.onChange(value);
-                                    handleVarietyChange(index, value);
+                                    updatePriceIfNeeded(index);
                                   }}
                                   value={field.value}
                                   disabled={!watchItems[index]?.nombreFlor}
@@ -689,7 +658,7 @@ const handleColorChange = useCallback((index: number, color: string) => {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {availableOptions[index]?.varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                    {(availableVarieties[index] || []).map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
@@ -703,7 +672,7 @@ const handleColorChange = useCallback((index: number, color: string) => {
                                 <Select 
                                   onValueChange={(value) => {
                                     field.onChange(value);
-                                    handleColorChange(index, value);
+                                    updatePriceIfNeeded(index);
                                   }}
                                   value={field.value}
                                   disabled={!watchItems[index]?.nombreFlor}
@@ -714,7 +683,7 @@ const handleColorChange = useCallback((index: number, color: string) => {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                     {availableOptions[index]?.colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                     {(availableColors[index] || []).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                                   </SelectContent>
                                 </Select>
                               )}
