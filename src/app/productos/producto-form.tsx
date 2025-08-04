@@ -21,8 +21,9 @@ const formSchema = z.object({
   image: z.any().optional(),
 });
 
-type ProductoFormData = Omit<Producto, 'id' | 'imageUrl' | 'tipo' | 'barras' | 'estado'>;
-type FormSubmitData = Omit<Producto, 'id'>;
+type ProductoFormData = z.infer<typeof formSchema>;
+type FormSubmitData = Omit<Producto, 'id'> & { id?: string };
+
 
 type ProductoFormProps = {
   onSubmit: (data: FormSubmitData) => void;
@@ -67,9 +68,8 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
     }
 
     const dataToSubmit: FormSubmitData = {
-        ...initialData,
         ...values,
-        id: initialData?.id || '',
+        id: initialData?.id, // Ensure id is passed for updates
         imageUrl,
         tipo: initialData?.tipo || values.variedad,
         barras: initialData?.barras || values.codigo,
