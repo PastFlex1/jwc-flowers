@@ -112,6 +112,10 @@ export function NewInvoiceForm() {
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
 
+  const activeProducts = useMemo(() => {
+    return productos.filter(p => p.estado === 'Activo');
+  }, [productos]);
+
   useEffect(() => {
     setIsMounted(true);
     const initialValues = getInitialFormValues();
@@ -179,7 +183,7 @@ export function NewInvoiceForm() {
  const updatePriceIfNeeded = useCallback((index: number) => {
     const { nombreFlor, variedad, color } = form.getValues(`items.${index}`);
     if (nombreFlor && variedad && color) {
-      const product = productos.find(p => 
+      const product = activeProducts.find(p => 
         p.nombre === nombreFlor && 
         p.variedad === variedad && 
         p.nombreColor === color
@@ -189,10 +193,10 @@ export function NewInvoiceForm() {
         form.setValue(`items.${index}.productoId`, product.id);
       }
     }
-  }, [productos, form]);
+  }, [activeProducts, form]);
 
   const handleProductChange = useCallback((index: number, productName: string) => {
-    const matchingProducts = productos.filter(p => p.nombre === productName);
+    const matchingProducts = activeProducts.filter(p => p.nombre === productName);
     const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
     const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
 
@@ -203,7 +207,7 @@ export function NewInvoiceForm() {
     form.setValue(`items.${index}.color`, '');
     form.setValue(`items.${index}.salePrice`, 0);
 
-  }, [productos, form]);
+  }, [activeProducts, form]);
 
 
   
@@ -218,7 +222,7 @@ export function NewInvoiceForm() {
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
       items: values.items.map(item => {
-        const productInfo = productos.find(p => p.nombre === item.nombreFlor && p.variedad === item.variedad && p.nombreColor === item.color);
+        const productInfo = activeProducts.find(p => p.nombre === item.nombreFlor && p.variedad === item.variedad && p.nombreColor === item.color);
         return {
           id: item.id,
           boxType: item.boxType,
@@ -263,8 +267,8 @@ export function NewInvoiceForm() {
   }
 
   const uniqueProductNames = useMemo(() => {
-    return [...new Set(productos.map(p => p.nombre))];
-  }, [productos]);
+    return [...new Set(activeProducts.map(p => p.nombre))];
+  }, [activeProducts]);
 
   if (!isMounted) {
     return null;
