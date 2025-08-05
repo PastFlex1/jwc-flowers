@@ -100,12 +100,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getPayments(),
       ]);
 
+      // Merge default cargueras with DB data, ensuring no duplicates
+      const dbCarguerasNames = new Set(dbCargueras.map(c => c.nombreCarguera.toLowerCase()));
+      const combinedCargueras = [...dbCargueras];
+      defaultCargueras.forEach(dc => {
+        if (!dbCarguerasNames.has(dc.nombreCarguera.toLowerCase())) {
+          combinedCargueras.push(dc);
+        }
+      });
+
       setData({
         paises: paisesData,
         vendedores: vendedoresData,
         customers: customersData,
         fincas: fincasData,
-        cargueras: dbCargueras.length > 0 ? dbCargueras : defaultCargueras,
+        cargueras: combinedCargueras,
         consignatarios: consignatariosData,
         daes: daesData,
         marcaciones: marcacionesData,
