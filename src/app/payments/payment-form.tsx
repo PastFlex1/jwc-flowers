@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
+import type { Payment, Invoice, CreditNote, DebitNote, BunchItem, Customer } from '@/lib/types';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
 
 const formSchema = z.object({
+  customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
   invoiceId: z.string().min(1, { message: "Por favor seleccione una factura." }),
   amount: z.coerce.number().positive({ message: "El monto debe ser un número positivo." }),
   paymentDate: z.date({ required_error: "La fecha es requerida." }),
@@ -30,8 +31,8 @@ type FormSubmitData = Omit<Payment, 'id'>;
 
 type PaymentFormProps = {
   onSubmit: (data: FormSubmitData) => void;
-  onClose: () => void;
   isSubmitting: boolean;
+  customers: Customer[];
   invoices: Invoice[];
   creditNotes: CreditNote[];
   debitNotes: DebitNote[];
@@ -41,8 +42,8 @@ type PaymentFormProps = {
 
 export function PaymentForm({ 
     onSubmit, 
-    onClose, 
     isSubmitting, 
+    customers,
     invoices, 
     creditNotes, 
     debitNotes, 
@@ -50,12 +51,14 @@ export function PaymentForm({
     initialData 
 }: PaymentFormProps) {
   const [selectedInvoiceBalance, setSelectedInvoiceBalance] = useState<number | null>(null);
+  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(formSchema.refine(
         (data) => {
             if (selectedInvoiceBalance === null) return true;
-            return data.amount <= selectedInvoiceBalance;
+            const tolerance = 0.01;
+            return data.amount <= selectedInvoiceBalance + tolerance;
         },
         {
             message: "El monto del pago no puede exceder el saldo pendiente.",
@@ -64,6 +67,7 @@ export function PaymentForm({
     )),
     mode: 'onChange',
     defaultValues: initialData || {
+      customerId: '',
       invoiceId: '',
       amount: 0,
       paymentDate: new Date(),
@@ -73,7 +77,22 @@ export function PaymentForm({
     },
   });
 
+  const selectedCustomerId = form.watch('customerId');
   const selectedInvoiceId = form.watch('invoiceId');
+
+  useEffect(() => {
+    if (selectedCustomerId) {
+        const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && inv.status !== 'Paid');
+        setFilteredInvoices(customerInvoices);
+        form.setValue('invoiceId', '');
+        setSelectedInvoiceBalance(null);
+    } else {
+        setFilteredInvoices([]);
+        form.setValue('invoiceId', '');
+        setSelectedInvoiceBalance(null);
+    }
+  }, [selectedCustomerId, invoices, form]);
+
 
   useEffect(() => {
     if (selectedInvoiceId) {
@@ -104,13 +123,23 @@ export function PaymentForm({
   }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form]);
 
   function handleSubmit(values: PaymentFormData) {
-    const dataToSubmit: FormSubmitData = {
-        ...values,
+    const { customerId, ...dataToSubmit } = values;
+    const finalData: FormSubmitData = {
+        ...dataToSubmit,
         paymentDate: values.paymentDate.toISOString(),
     };
-    onSubmit(dataToSubmit);
-    form.reset();
+    onSubmit(finalData);
+    form.reset({
+      customerId: '',
+      invoiceId: '',
+      amount: 0,
+      paymentDate: new Date(),
+      paymentMethod: 'Transferencia',
+      reference: '',
+      notes: '',
+    });
     setSelectedInvoiceBalance(null);
+    setFilteredInvoices([]);
   }
 
   return (
@@ -118,20 +147,42 @@ export function PaymentForm({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
+          name="customerId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cliente</FormLabel>
+               <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un cliente" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {customers.map(customer => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="invoiceId"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Factura a Pagar</FormLabel>
-               <Select onValueChange={field.onChange} defaultValue={field.value}>
+               <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCustomerId}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una factura" />
+                      <SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione una factura"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {invoices
-                      .filter(inv => inv.status !== 'Paid')
-                      .map(invoice => (
+                    {filteredInvoices.map(invoice => (
                         <SelectItem key={invoice.id} value={invoice.id}>
                           {invoice.invoiceNumber}
                         </SelectItem>
@@ -242,10 +293,7 @@ export function PaymentForm({
         />
         
         <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-                Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !selectedInvoiceId}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Guardando...' : 'Registrar Pago'}
             </Button>
