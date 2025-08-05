@@ -99,6 +99,7 @@ export function PaymentForm({
         const invoice = invoices.find(inv => inv.id === selectedInvoiceId);
         if (invoice) {
             const subtotal = invoice.items.reduce((acc, item) => {
+              if (!item.bunches) return acc;
               return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
                   const stems = bunch.stemsPerBunch * bunch.bunches;
                   return bunchAcc + (stems * bunch.salePrice);
