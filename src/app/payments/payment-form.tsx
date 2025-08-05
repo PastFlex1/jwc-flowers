@@ -131,7 +131,7 @@ export function PaymentForm({
     };
     onSubmit(finalData);
     form.reset({
-      customerId: '',
+      customerId: values.customerId, // Keep customer selected
       invoiceId: '',
       amount: 0,
       paymentDate: new Date(),

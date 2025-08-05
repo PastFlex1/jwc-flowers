@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import type { Payment, Customer } from '@/lib/types';
+import type { Payment, Customer, Invoice } from '@/lib/types';
 import { addPayment } from '@/services/payments';
 import { PaymentReceipt } from './payment-receipt';
 import jsPDF from 'jspdf';
@@ -83,8 +83,17 @@ export function PaymentClient() {
         setIsGeneratingPdf(false);
     }
   };
+  
+  const receiptInvoice = useMemo(() => {
+    if (!lastPayment) return null;
+    return invoices.find(inv => inv.id === lastPayment.invoiceId);
+  }, [lastPayment, invoices]);
 
-  const selectedCustomerForReceipt = lastPayment ? customers.find(c => invoices.find(i => i.id === lastPayment?.invoiceId)?.customerId === c.id) : null;
+  const receiptCustomer = useMemo(() => {
+    if (!receiptInvoice) return null;
+    return customerMap[receiptInvoice.customerId] || null;
+  }, [receiptInvoice, customerMap]);
+
   
   return (
     <div className="space-y-6">
@@ -112,7 +121,7 @@ export function PaymentClient() {
           </CardContent>
         </Card>
         
-        {lastPayment && selectedCustomerForReceipt && (
+        {lastPayment && receiptCustomer && receiptInvoice && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -127,8 +136,8 @@ export function PaymentClient() {
             <CardContent>
               <PaymentReceipt
                   payment={lastPayment}
-                  customer={selectedCustomerForReceipt}
-                  invoice={invoices.find(inv => inv.id === lastPayment.invoiceId)!}
+                  customer={receiptCustomer}
+                  invoice={receiptInvoice}
               />
             </CardContent>
           </Card>
