@@ -31,7 +31,7 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
     setIsGenerating(true);
     try {
       const canvas = await html2canvas(statementElement, {
-        scale: 2,
+        scale: 3, // High scale for better quality
         useCORS: true,
         logging: false,
         width: statementElement.scrollWidth,
@@ -43,7 +43,7 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
       const imgData = canvas.toDataURL('image/png');
       
       const pdf = new jsPDF({
-        orientation: 'p',
+        orientation: 'p', // p for portrait (vertical)
         unit: 'pt',
         format: 'a4'
       });
@@ -54,15 +54,23 @@ export default function AccountStatementDownloadButton({ data }: AccountStatemen
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
       
-      const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
-      
-      const imgWidth = canvasWidth * ratio;
+      const ratio = pdfWidth / canvasWidth;
       const imgHeight = canvasHeight * ratio;
       
-      const x = (pdfWidth - imgWidth) / 2;
-      const y = 0; // Align to top
+      const x = (pdfWidth - (canvasWidth * ratio)) / 2;
 
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      let position = 0;
+      let remainingHeight = imgHeight;
+
+      pdf.addImage(imgData, 'PNG', x, position, canvasWidth * ratio, imgHeight);
+      remainingHeight -= pdfHeight;
+
+      while (remainingHeight > 0) {
+        position -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', x, position, canvasWidth * ratio, imgHeight);
+        remainingHeight -= pdfHeight;
+      }
       
       const fileName = `Estado-de-Cuenta-${data.customer.name.replace(/ /g, '_')}.pdf`;
       pdf.save(fileName);

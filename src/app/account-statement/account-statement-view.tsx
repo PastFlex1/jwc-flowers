@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import type { StatementData } from './account-statement-client';
@@ -26,7 +25,8 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
       <CardContent className="p-0 text-sm leading-tight">
         <header className="flex justify-between items-start mb-6">
           <div className="w-1/2">
-            <Image src="/logo.png" alt="JCW Flowers Logo" width={200} height={60} className="mb-4" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="JCW Flowers Logo" width={200} height={60} className="mb-4" />
             <div className="text-xs">
               <p>El Quinche, Pasaje F y Calle Quito</p>
               <p>Quito</p>
