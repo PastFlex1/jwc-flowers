@@ -15,6 +15,7 @@ type PaymentReceiptProps = {
 export function PaymentReceipt({ payment, customer, invoice }: PaymentReceiptProps) {
   
   const invoiceTotal = invoice.items.reduce((acc, item) => {
+    if (!item.bunches) return acc;
     return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
       const stems = bunch.stemsPerBunch * bunch.bunches;
       return bunchAcc + (stems * bunch.salePrice);
