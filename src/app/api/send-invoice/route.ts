@@ -17,13 +17,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing required fields in request.' }, { status: 400 });
     }
 
-    // NOTE: For Resend sandbox, emails can only be sent TO the verified email address.
-    // Hardcoding to the user's verified email for now.
-    const recipient = 'jcwflowers70@gmail.com';
-
     await resend.emails.send({
-      from: 'JCW Flowers <onboarding@resend.dev>',
-      to: [recipient],
+      from: 'JCW Flowers <facturacion@puntodeventastore.store>',
+      to: [to],
       subject: subject,
       html: `<p>${emailBody.replace(/\n/g, '<br>')}</p>`,
       attachments: attachments.map(att => ({
