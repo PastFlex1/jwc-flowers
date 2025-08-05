@@ -25,8 +25,20 @@ import { useTranslation } from '@/context/i18n-context';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z.object({
-  to: z.string().email('Invalid email address.'),
+  to: z.string()
+    .min(1, 'Se requiere al menos un correo electrónico.')
+    .refine(
+      (value) => {
+        const emails = value.split(',').map(email => email.trim()).filter(Boolean);
+        if (emails.length === 0) return false;
+        return emails.every(email => z.string().email().safeParse(email).success);
+      },
+      {
+        message: 'Proporcione una lista válida de direcciones de correo electrónico separadas por comas.',
+      }
+    ),
 });
+
 
 type SendInvoiceDialogProps = {
   invoice: Invoice | null;
@@ -62,8 +74,8 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     setError(null);
     startTransition(async () => {
-      const subject = t('sendInvoiceDialog.defaultSubject', { invoiceNumber: invoice.invoiceNumber });
-      const body = t('sendInvoiceDialog.defaultBody', { customerName: customer.name });
+      const subject = `Factura ${invoice.invoiceNumber} de JCW Flowers`;
+      const body = `Estimado/a ${customer.name},\n\nAdjunto encontrará su factura.\n\nGracias por su compra.\n\nSaludos cordiales,\nEl equipo de JCW Flowers`;
       
       const invoiceElement = document.getElementById('invoice-to-print');
       if (!invoiceElement) {
@@ -150,9 +162,9 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{t('sendInvoiceDialog.title')}</DialogTitle>
+              <DialogTitle>Enviar Factura por Correo</DialogTitle>
               <DialogDescription>
-                {t('sendInvoiceDialog.description', { invoiceNumber: invoice.invoiceNumber, customerName: customer.name })}
+                La factura {invoice.invoiceNumber} será enviada a {customer.name}. Puede añadir múltiples correos separados por comas.
               </DialogDescription>
             </DialogHeader>
 
@@ -169,7 +181,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                 name="to"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('sendInvoiceDialog.to')}</FormLabel>
+                    <FormLabel>Para</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -181,7 +193,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
             
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
-                {t('common.cancel')}
+                Cancelar
               </Button>
               <Button type="submit" disabled={isPending}>
                 {isPending ? (
@@ -189,7 +201,7 @@ export function SendInvoiceDialog({ invoice, customer, isOpen, onClose }: SendIn
                 ) : (
                   <Send className="mr-2 h-4 w-4" />
                 )}
-                {isPending ? t('sendInvoiceDialog.sending') : t('sendInvoiceDialog.send')}
+                {isPending ? 'Enviando...' : 'Enviar Correo'}
               </Button>
             </DialogFooter>
           </form>

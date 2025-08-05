@@ -15,19 +15,26 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import type { Customer, Invoice } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const formSchema = z.object({
-  to: z.string().email('Invalid email address.'),
-  invoiceIds: z.array(z.string()),
+  to: z.string()
+    .min(1, 'Se requiere al menos un correo electrónico.')
+    .refine(
+      (value) => {
+        const emails = value.split(',').map(email => email.trim()).filter(Boolean);
+        if (emails.length === 0) return false;
+        return emails.every(email => z.string().email().safeParse(email).success);
+      },
+      {
+        message: 'Proporcione una lista válida de direcciones de correo electrónico separadas por comas.',
+      }
+    ),
 });
 
 type SendDocumentsDialogProps = {
@@ -37,7 +44,6 @@ type SendDocumentsDialogProps = {
   onClose: () => void;
 };
 
-// Helper function to generate PDF on the client-side
 async function generatePdfForElement(elementId: string): Promise<string | null> {
     const element = document.getElementById(elementId);
     if (!element) return null;
@@ -69,7 +75,7 @@ async function generatePdfForElement(elementId: string): Promise<string | null> 
             remainingHeight -= pdfHeight;
         }
 
-        return pdf.output('datauristring').split(',')[1]; // Return base64 content
+        return pdf.output('datauristring').split(',')[1];
     } catch (error) {
         console.error("Error generating PDF:", error);
         return null;
@@ -87,17 +93,14 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     mode: 'onChange',
   });
   
-  const allInvoiceIds = invoices.map(inv => inv.id);
-
   useEffect(() => {
     if (customer && isOpen) {
       form.reset({
         to: customer.email,
-        invoiceIds: allInvoiceIds,
       });
       setError(null);
     }
-  }, [customer, isOpen, form, allInvoiceIds]);
+  }, [customer, isOpen, form]);
   
   if (!customer) {
     return null;
@@ -111,7 +114,6 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
     const body = `Estimado/a ${customer.name},\n\nAdjunto encontrará los documentos solicitados.\n\nGracias,\nEl equipo de JCW Flowers`;
     
     try {
-        // Generate statement PDF on the client
         const statementPdfBase64 = await generatePdfForElement('statement-to-print');
         if (!statementPdfBase64) {
           throw new Error("Failed to generate the account statement PDF.");
@@ -169,7 +171,7 @@ export default function SendDocumentsDialog({ customer, invoices, isOpen, onClos
             <DialogHeader>
               <DialogTitle>Enviar Estado de Cuenta</DialogTitle>
               <DialogDescription>
-                Se enviará el estado de cuenta por correo a {customer.name}.
+                Se enviará el estado de cuenta por correo a {customer.name}. Puede añadir múltiples correos separados por comas.
               </DialogDescription>
             </DialogHeader>
 
