@@ -30,7 +30,7 @@ type PaymentFormData = z.infer<typeof formSchema>;
 type FormSubmitData = Omit<Payment, 'id'>;
 
 type PaymentFormProps = {
-  onSubmit: (data: FormSubmitData) => void;
+  onSubmit: (data: FormSubmitData, customer: Customer, invoice: Invoice) => void;
   isSubmitting: boolean;
   customers: Customer[];
   invoices: Invoice[];
@@ -124,14 +124,26 @@ export function PaymentForm({
   }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form]);
 
   function handleSubmit(values: PaymentFormData) {
+    const customer = customers.find(c => c.id === values.customerId);
+    const invoice = invoices.find(i => i.id === values.invoiceId);
+
+    if (!customer || !invoice) {
+      // Should not happen if form is properly validated
+      console.error("Customer or Invoice not found for payment submission.");
+      return;
+    }
+
     const { customerId, ...dataToSubmit } = values;
     const finalData: FormSubmitData = {
         ...dataToSubmit,
         paymentDate: values.paymentDate.toISOString(),
     };
-    onSubmit(finalData);
+    
+    onSubmit(finalData, customer, invoice);
+
     form.reset({
-      customerId: values.customerId, // Keep customer selected
+      ...initialData,
+      customerId: '',
       invoiceId: '',
       amount: 0,
       paymentDate: new Date(),

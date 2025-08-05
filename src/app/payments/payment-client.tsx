@@ -23,6 +23,8 @@ export function PaymentClient() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastPayment, setLastPayment] = useState<Payment | null>(null);
+  const [lastCustomer, setLastCustomer] = useState<Customer | null>(null);
+  const [lastInvoice, setLastInvoice] = useState<Invoice | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const customerMap = useMemo(() => {
@@ -32,13 +34,17 @@ export function PaymentClient() {
     }, {} as Record<string, Customer>);
   }, [customers]);
   
-  const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
+  const handleAddPayment = async (data: Omit<Payment, 'id'>, customer: Customer, invoice: Invoice) => {
     setIsSubmitting(true);
     setLastPayment(null);
+    setLastCustomer(null);
+    setLastInvoice(null);
     try {
       const paymentId = await addPayment(data); 
       const newPayment = { ...data, id: paymentId };
       setLastPayment(newPayment);
+      setLastCustomer(customer);
+      setLastInvoice(invoice);
 
       toast({
         title: "Éxito",
@@ -84,17 +90,6 @@ export function PaymentClient() {
     }
   };
   
-  const receiptInvoice = useMemo(() => {
-    if (!lastPayment) return null;
-    return invoices.find(inv => inv.id === lastPayment.invoiceId);
-  }, [lastPayment, invoices]);
-
-  const receiptCustomer = useMemo(() => {
-    if (!receiptInvoice) return null;
-    return customerMap[receiptInvoice.customerId] || null;
-  }, [receiptInvoice, customerMap]);
-
-  
   return (
     <div className="space-y-6">
       <div>
@@ -121,7 +116,7 @@ export function PaymentClient() {
           </CardContent>
         </Card>
         
-        {lastPayment && receiptCustomer && receiptInvoice && (
+        {lastPayment && lastCustomer && lastInvoice && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
@@ -136,8 +131,8 @@ export function PaymentClient() {
             <CardContent>
               <PaymentReceipt
                   payment={lastPayment}
-                  customer={receiptCustomer}
-                  invoice={receiptInvoice}
+                  customer={lastCustomer}
+                  invoice={lastInvoice}
               />
             </CardContent>
           </Card>
