@@ -5,7 +5,6 @@
     "subtitle": "For Florists",
     "invoices": "Invoices",
     "customers": "Customers",
-    "inventory": "Inventory",
     "devMode": "Development Mode",
     "dbAccess": "Direct DB Access"
   },
@@ -222,11 +221,6 @@
         "deleteError": "Could not delete the debit note: {error}."
     },
     "confirmDeleteDescription": "This action cannot be undone. This will permanently delete the debit note."
-  },
-  "inventory": {
-    "title": "Inventory",
-    "description": "Manage your products and services.",
-    "newItem": "New Item"
   },
   "sendInvoiceDialog": {
     "title": "Send Invoice via Email",

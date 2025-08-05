@@ -5,7 +5,6 @@
     "subtitle": "Para Floristas",
     "invoices": "Facturas",
     "customers": "Clientes",
-    "inventory": "Inventario",
     "devMode": "Modo Desarrollo",
     "dbAccess": "Acceso Directo a DB"
   },
@@ -222,11 +221,6 @@
         "deleteError": "No se pudo eliminar la nota de débito: {error}."
     },
     "confirmDeleteDescription": "Esta acción no se puede deshacer. Esto eliminará permanentemente la nota de débito."
-  },
-  "inventory": {
-    "title": "Inventario",
-    "description": "Administra tus productos y servicios.",
-    "newItem": "Nuevo Ítem"
   },
   "sendInvoiceDialog": {
     "title": "Enviar Factura por Correo",

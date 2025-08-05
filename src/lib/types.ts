@@ -15,14 +15,6 @@ export interface Customer {
   daeId?: string;
 }
 
-export interface InventoryItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  cost: number;
-}
-
 export interface BunchItem {
   id: string;
   productoId: string;

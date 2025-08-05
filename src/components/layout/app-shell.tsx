@@ -62,7 +62,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: '/invoices', label: t('sidebar.invoices'), icon: FileText },
     { href: '/customers', label: t('sidebar.customers'), icon: Users },
-    { href: '/inventory', label: t('sidebar.inventory'), icon: Leaf },
   ];
 
   return (
