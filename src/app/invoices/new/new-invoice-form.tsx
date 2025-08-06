@@ -111,14 +111,11 @@ export function NewInvoiceForm() {
 
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
-
-  const activeProducts = useMemo(() => {
-    return productos.filter(p => p.estado === 'Activo');
-  }, [productos]);
   
   const uniqueProductNames = useMemo(() => {
+    const activeProducts = productos.filter(p => p.estado === 'Activo');
     return [...new Set(activeProducts.map(p => p.nombre))];
-  }, [activeProducts]);
+  }, [productos]);
 
 
   useEffect(() => {
@@ -201,6 +198,7 @@ export function NewInvoiceForm() {
   }, [productos, form]);
 
   const handleProductChange = useCallback((index: number, productName: string) => {
+    const activeProducts = productos.filter(p => p.estado === 'Activo');
     const matchingProducts = activeProducts.filter(p => p.nombre === productName);
     const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
     const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
@@ -213,7 +211,7 @@ export function NewInvoiceForm() {
     form.setValue(`items.${index}.color`, '');
     form.setValue(`items.${index}.salePrice`, 0);
 
-  }, [activeProducts, form]);
+  }, [productos, form]);
 
 
   
