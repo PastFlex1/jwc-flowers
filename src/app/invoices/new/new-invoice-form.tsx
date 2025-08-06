@@ -54,7 +54,7 @@ const lineItemSchema = z.object({
     return totalBunchesInBox === data.numberOfBunches;
 }, {
     message: "La suma de 'Ramos/Caja' debe ser igual al total de # Ramos.",
-    path: ['bunches'],
+    path: ['root'],
 });
 
 const invoiceSchema = z.object({
@@ -598,11 +598,8 @@ export function NewInvoiceForm() {
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
-
-                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
-                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
                                         
-                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
+                                        const totalStems = stemsPerBunch * bunchesPerBox;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -680,17 +677,21 @@ export function NewInvoiceForm() {
                                             </TableRow>
                                         );
                                     })}
+                                    <TableRow>
+                                       <TableCell colSpan={15} className="p-0">
+                                            {form.formState.errors.items?.[lineItemIndex]?.root && (
+                                                <div className="text-sm font-medium text-destructive px-2 py-1">
+                                                    {form.formState.errors.items[lineItemIndex]?.root?.message}
+                                                </div>
+                                            )}
+                                       </TableCell>
+                                    </TableRow>
                                 </React.Fragment>
                             ))}
                         </TableBody>
                     </Table>
                 </div>
                 <FormMessage>{form.formState.errors.items?.message}</FormMessage>
-                {(form.formState.errors.items as any)?.root?.message && (
-                    <p className="text-sm font-medium text-destructive">
-                        {(form.formState.errors.items as any)?.root?.message}
-                    </p>
-                )}
             </CardContent>
           </Card>
 
