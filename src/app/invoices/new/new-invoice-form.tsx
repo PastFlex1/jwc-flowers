@@ -1,7 +1,9 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, 'use aclient';
+
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -114,7 +116,7 @@ export function NewInvoiceForm() {
   
   const { control } = form;
 
-  const uniqueProducts = React.useMemo(() => {
+  const uniqueProducts = useMemo(() => {
     const unique = new Map<string, { id: string; price: number }>();
     productos.filter(p => p.estado === 'Activo').forEach(p => {
         if (!unique.has(p.nombre)) {
@@ -563,20 +565,20 @@ export function NewInvoiceForm() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[50px]">Nº Caja</TableHead>
+                                <TableHead className="w-[80px]">Nº Caja</TableHead>
                                 <TableHead className="w-[120px]">Tipo Caja</TableHead>
                                 <TableHead>Producto</TableHead>
                                 <TableHead>Variedad</TableHead>
                                 <TableHead>Color</TableHead>
-                                <TableHead className="w-[80px]">Longitud</TableHead>
-                                <TableHead className="w-[100px]">Tallos/Ramo</TableHead>
-                                <TableHead className="w-[80px]"># Ramos</TableHead>
-                                <TableHead className="w-[100px]">P. Compra</TableHead>
-                                <TableHead className="w-[100px]">P. Venta</TableHead>
-                                <TableHead className="w-[100px]">Total Tallos</TableHead>
+                                <TableHead className="w-[100px]">Longitud</TableHead>
+                                <TableHead className="w-[120px]">Tallos/Ramo</TableHead>
+                                <TableHead className="w-[100px]"># Ramos</TableHead>
+                                <TableHead className="w-[120px]">P. Compra</TableHead>
+                                <TableHead className="w-[120px]">P. Venta</TableHead>
+                                <TableHead className="w-[120px]">Total Tallos</TableHead>
                                 <TableHead className="w-[120px]">Total</TableHead>
-                                <TableHead className="w-[120px]">Diferencia (%)</TableHead>
-                                <TableHead className="w-[80px]">Acciones</TableHead>
+                                <TableHead className="w-[140px]">Diferencia (%)</TableHead>
+                                <TableHead className="w-[120px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -607,7 +609,7 @@ export function NewInvoiceForm() {
                                         return (
                                             <TableRow key={bunch.id}>
                                                 <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
-                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} />} />}
+                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="px-5" />} />}
                                                 </TableCell>
                                                 <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
                                                      {bunchIndex === 0 && (
@@ -641,11 +643,11 @@ export function NewInvoiceForm() {
                                                         <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.bunches`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.bunches`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5" />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5" />}/></TableCell>
                                                 <TableCell><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
                                                 <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
                                                 <TableCell><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
