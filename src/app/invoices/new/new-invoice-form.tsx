@@ -562,7 +562,7 @@ export function NewInvoiceForm() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="min-w-[80px]">Nº Caja</TableHead>
+                                <TableHead className="min-w-[120px]">Nº Caja</TableHead>
                                 <TableHead className="min-w-[120px]">Tipo Caja</TableHead>
                                 <TableHead className="min-w-[150px]">Producto</TableHead>
                                 <TableHead className="min-w-[150px]">Variedad</TableHead>
@@ -605,7 +605,7 @@ export function NewInvoiceForm() {
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className={cn("min-w-[80px]", bunchIndex > 0 ? "border-t-0" : "")}>
+                                                <TableCell className={cn("min-w-[120px]", bunchIndex > 0 ? "border-t-0" : "")}>
                                                     {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} />} />}
                                                 </TableCell>
                                                 <TableCell className={cn("min-w-[120px]", bunchIndex > 0 ? "border-t-0" : "")}>
@@ -685,5 +685,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    
