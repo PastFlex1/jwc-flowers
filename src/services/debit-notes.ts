@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import type { DebitNote } from '@/lib/types';
 import {
@@ -11,6 +12,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): DebitNote => {
@@ -48,13 +50,33 @@ export async function getDebitNotesForInvoice(invoiceId: string): Promise<DebitN
 
 export async function addDebitNote(debitNoteData: Omit<DebitNote, 'id'>): Promise<string> {
    if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-   const debitNotesCollection = collection(db, 'debitNotes');
-   const dataWithDate = {
-    ...debitNoteData,
-    date: new Date(debitNoteData.date),
-  };
-  const docRef = await addDoc(debitNotesCollection, dataWithDate);
-  return docRef.id;
+
+   let debitNoteId = '';
+
+   await runTransaction(db, async (transaction) => {
+    // 1. Create the new debit note
+    const newDebitNoteRef = doc(collection(db, 'debitNotes'));
+    const dataWithDate = {
+      ...debitNoteData,
+      date: new Date(debitNoteData.date),
+    };
+    transaction.set(newDebitNoteRef, dataWithDate);
+    debitNoteId = newDebitNoteRef.id;
+
+    // 2. Update the related invoice's status if it's 'Paid'
+    const invoiceRef = doc(db, 'invoices', debitNoteData.invoiceId);
+    const invoiceDoc = await transaction.get(invoiceRef);
+
+    if (invoiceDoc.exists() && invoiceDoc.data().status === 'Paid') {
+      transaction.update(invoiceRef, { status: 'Pending' });
+    }
+   });
+
+   if (!debitNoteId) {
+    throw new Error("Failed to create debit note document.");
+   }
+
+   return debitNoteId;
 }
 
 export async function deleteDebitNote(id: string): Promise<void> {
