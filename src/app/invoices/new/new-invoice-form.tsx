@@ -562,20 +562,20 @@ export function NewInvoiceForm() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[80px]">Nº Caja</TableHead>
-                                <TableHead className="w-[120px]">Tipo Caja</TableHead>
-                                <TableHead>Producto</TableHead>
-                                <TableHead>Variedad</TableHead>
-                                <TableHead>Color</TableHead>
-                                <TableHead className="w-[100px]">Longitud</TableHead>
-                                <TableHead className="w-[120px]">Tallos/Ramo</TableHead>
-                                <TableHead className="w-[100px]"># Ramos</TableHead>
-                                <TableHead className="w-[120px]">P. Compra</TableHead>
-                                <TableHead className="w-[120px]">P. Venta</TableHead>
-                                <TableHead className="w-[120px]">Total Tallos</TableHead>
-                                <TableHead className="w-[120px]">Total</TableHead>
-                                <TableHead className="w-[140px]">Diferencia (%)</TableHead>
-                                <TableHead className="w-[120px]">Acciones</TableHead>
+                                <TableHead className="min-w-[80px]">Nº Caja</TableHead>
+                                <TableHead className="min-w-[120px]">Tipo Caja</TableHead>
+                                <TableHead className="min-w-[150px]">Producto</TableHead>
+                                <TableHead className="min-w-[150px]">Variedad</TableHead>
+                                <TableHead className="min-w-[150px]">Color</TableHead>
+                                <TableHead className="min-w-[120px]">Longitud</TableHead>
+                                <TableHead className="min-w-[120px]">Tallos/Ramo</TableHead>
+                                <TableHead className="min-w-[120px]"># Ramos</TableHead>
+                                <TableHead className="min-w-[120px]">P. Compra</TableHead>
+                                <TableHead className="min-w-[120px]">P. Venta</TableHead>
+                                <TableHead className="min-w-[120px]">Total Tallos</TableHead>
+                                <TableHead className="min-w-[120px]">Total</TableHead>
+                                <TableHead className="min-w-[140px]">Diferencia (%)</TableHead>
+                                <TableHead className="min-w-[120px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -605,10 +605,10 @@ export function NewInvoiceForm() {
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
-                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="px-5" />} />}
+                                                <TableCell className={cn("min-w-[80px]", bunchIndex > 0 ? "border-t-0" : "")}>
+                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} />} />}
                                                 </TableCell>
-                                                <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
+                                                <TableCell className={cn("min-w-[120px]", bunchIndex > 0 ? "border-t-0" : "")}>
                                                      {bunchIndex === 0 && (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -622,33 +622,33 @@ export function NewInvoiceForm() {
                                                             )} />
                                                         )}
                                                 </TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
                                                      <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProduct}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
                                                      <Select onValueChange={field.onChange} value={field.value} disabled={!selectedVariety}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
                                                         <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.bunches`} render={({ field }) => <Input type="number" {...field} className="px-5" />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5" />}/></TableCell>
-                                                <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5" />}/></TableCell>
-                                                <TableCell><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
-                                                <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
-                                                <TableCell><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
-                                                <TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.bunches`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="min-w-[120px]"><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="min-w-[140px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="min-w-[120px]">
                                                     <div className="flex items-center gap-1">
                                                         <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
                                                             <PlusCircle className="h-4 w-4" />
@@ -685,3 +685,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
