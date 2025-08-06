@@ -569,7 +569,7 @@ export function NewInvoiceForm() {
                                 <TableHead className="min-w-[150px]">Color</TableHead>
                                 <TableHead className="min-w-[120px]">Longitud</TableHead>
                                 <TableHead className="min-w-[120px]">Tallos/Ramo</TableHead>
-                                <TableHead className="min-w-[120px]">Ramos/Caja</TableHead>
+                                <TableHead className="min-w-[120px]"># Ramos</TableHead>
                                 <TableHead className="min-w-[120px]">P. Compra</TableHead>
                                 <TableHead className="min-w-[120px]">P. Venta</TableHead>
                                 <TableHead className="min-w-[120px]">Total Tallos</TableHead>
