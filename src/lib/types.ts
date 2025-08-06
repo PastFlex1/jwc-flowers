@@ -25,6 +25,7 @@ export interface BunchItem {
   length: number;
   stemsPerBunch: number;
   bunchesPerBox: number;
+  numberOfBunches: number;
   purchasePrice: number;
   salePrice: number;
 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -36,7 +37,8 @@ const bunchItemSchema = z.object({
   color: z.string().min(1, 'Color is required.'),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
-  bunchesPerBox: z.coerce.number().min(1, 'Must be > 0'),
+  bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
+  numberOfBunches: z.coerce.number().min(1, 'Must be > 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
@@ -196,6 +198,7 @@ export function NewInvoiceForm() {
             length: 70,
             stemsPerBunch: 25,
             bunchesPerBox: 10,
+            numberOfBunches: 1,
             purchasePrice: 0,
             salePrice: 0,
         }]
@@ -213,6 +216,7 @@ export function NewInvoiceForm() {
         length: 70,
         stemsPerBunch: 25,
         bunchesPerBox: 1,
+        numberOfBunches: 1,
         purchasePrice: 0,
         salePrice: 0,
     }];
@@ -569,6 +573,7 @@ export function NewInvoiceForm() {
                                 <TableHead className="min-w-[150px]">Color</TableHead>
                                 <TableHead className="min-w-[120px]">Longitud</TableHead>
                                 <TableHead className="min-w-[120px]">Tallos/Ramo</TableHead>
+                                <TableHead className="min-w-[120px]">Ramos/Caja</TableHead>
                                 <TableHead className="min-w-[120px]"># Ramos</TableHead>
                                 <TableHead className="min-w-[120px]">P. Compra</TableHead>
                                 <TableHead className="min-w-[120px]">P. Venta</TableHead>
@@ -586,9 +591,9 @@ export function NewInvoiceForm() {
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
+                                        const numberOfBunches = form.watch(`${bunchPath}.numberOfBunches`) || 0;
                                         
-                                        const totalStems = stemsPerBunch * bunchesPerBox;
+                                        const totalStems = stemsPerBunch * numberOfBunches;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -643,6 +648,7 @@ export function NewInvoiceForm() {
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.numberOfBunches`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><Input readOnly disabled value={totalStems} className="bg-muted/50 px-5" /></TableCell>
