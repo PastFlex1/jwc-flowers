@@ -115,6 +115,11 @@ export function NewInvoiceForm() {
   const activeProducts = useMemo(() => {
     return productos.filter(p => p.estado === 'Activo');
   }, [productos]);
+  
+  const uniqueProductNames = useMemo(() => {
+    return [...new Set(activeProducts.map(p => p.nombre))];
+  }, [activeProducts]);
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -183,7 +188,7 @@ export function NewInvoiceForm() {
  const updatePriceIfNeeded = useCallback((index: number) => {
     const { nombreFlor, variedad, color } = form.getValues(`items.${index}`);
     if (nombreFlor && variedad && color) {
-      const product = activeProducts.find(p => 
+      const product = productos.find(p => 
         p.nombre === nombreFlor && 
         p.variedad === variedad && 
         p.nombreColor === color
@@ -193,7 +198,7 @@ export function NewInvoiceForm() {
         form.setValue(`items.${index}.productoId`, product.id);
       }
     }
-  }, [activeProducts, form]);
+  }, [productos, form]);
 
   const handleProductChange = useCallback((index: number, productName: string) => {
     const matchingProducts = activeProducts.filter(p => p.nombre === productName);
@@ -223,7 +228,7 @@ export function NewInvoiceForm() {
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
       items: values.items.map(item => {
-        const productInfo = activeProducts.find(p => p.nombre === item.nombreFlor && p.variedad === item.variedad && p.nombreColor === item.color);
+        const productInfo = productos.find(p => p.nombre === item.nombreFlor && p.variedad === item.variedad && p.nombreColor === item.color);
         return {
           id: item.id,
           boxType: item.boxType,
@@ -267,9 +272,6 @@ export function NewInvoiceForm() {
     }
   }
 
-  const uniqueProductNames = useMemo(() => {
-    return [...new Set(activeProducts.map(p => p.nombre))];
-  }, [activeProducts]);
 
   if (!isMounted) {
     return null;
@@ -624,7 +626,10 @@ export function NewInvoiceForm() {
                                 name={`items.${index}.nombreFlor`}
                                 render={({ field }) => (
                                     <Select
-                                      onValueChange={(value) => handleProductChange(index, value)}
+                                      onValueChange={(value) => {
+                                        field.onChange(value);
+                                        handleProductChange(index, value);
+                                      }}
                                       value={field.value}
                                     >
                                       <FormControl>
