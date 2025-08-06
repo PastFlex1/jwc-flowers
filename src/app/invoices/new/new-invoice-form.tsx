@@ -112,11 +112,15 @@ export function NewInvoiceForm() {
   });
 
   const selectedCustomerId = form.watch('customerId');
-  const watchItems = form.watch('items');
 
   const activeProducts = useMemo(() => productos.filter(p => p.estado === 'Activo'), [productos]);
-  const uniqueProductNames = useMemo(() => [...new Set(activeProducts.map(p => p.nombre))], [activeProducts]);
   
+  const uniqueProductNames = useMemo(() => {
+    const activeProductNames = activeProducts.map(p => p.nombre);
+    return [...new Set(activeProductNames)];
+  }, [activeProducts]);
+
+
   useEffect(() => {
     setIsMounted(true);
     const initialValues = getInitialFormValues();
@@ -555,7 +559,7 @@ export function NewInvoiceForm() {
                   <TableBody>
                     {lineItems.map((lineItem, lineItemIndex) => (
                         <React.Fragment key={lineItem.id}>
-                            {lineItem.bunches.map((bunch, bunchIndex) => {
+                            {Array.isArray(lineItem.bunches) && lineItem.bunches.map((bunch, bunchIndex) => {
                                 const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
                                 const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                 const stems = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
