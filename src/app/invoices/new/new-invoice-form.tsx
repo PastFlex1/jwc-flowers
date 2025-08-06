@@ -1,9 +1,7 @@
 
 'use client';
 
-import React, 'use aclient';
-
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -109,7 +107,7 @@ export function NewInvoiceForm() {
     },
   });
 
-  const { fields: lineItems, append: appendLineItem, remove: removeLineItem } = useFieldArray({
+  const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -125,16 +123,17 @@ export function NewInvoiceForm() {
     });
     return Array.from(unique.entries()).map(([name, data]) => ({ name, ...data }));
   }, [productos]);
+  
 
-  const getVarietiesForProduct = (productName: string) => {
+  const getVarietiesForProduct = useCallback((productName: string) => {
     if (!productName) return [];
     return [...new Set(productos.filter(p => p.nombre === productName && p.estado === 'Activo').map(p => p.variedad))];
-  };
+  }, [productos]);
 
-  const getColorsForVariety = (productName: string, variety: string) => {
+  const getColorsForVariety = useCallback((productName: string, variety: string) => {
     if (!productName || !variety) return [];
     return [...new Set(productos.filter(p => p.nombre === productName && p.variedad === variety && p.estado === 'Activo').map(p => p.nombreColor))];
-  };
+  }, [productos]);
 
 
   useEffect(() => {
@@ -202,12 +201,10 @@ export function NewInvoiceForm() {
         }]
     })
   }
-  
-  const { update } = useFieldArray({ control, name: "items" });
 
   const handleAddBunch = (lineItemIndex: number) => {
     const lineItem = form.getValues(`items.${lineItemIndex}`);
-    const newBunches = [...lineItem.bunches, {
+    const newBunches = [...(lineItem.bunches || []), {
         id: uuidv4(),
         productoId: '',
         product: '',
