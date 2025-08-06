@@ -24,7 +24,7 @@ export interface BunchItem {
   variety: string; 
   length: number;
   stemsPerBunch: number;
-  bunches: number; // Corresponde a #ramos o bon_box
+  bunchesPerBox: number;
   purchasePrice: number;
   salePrice: number;
 }

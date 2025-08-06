@@ -6,7 +6,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
-import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem } from '@/lib/types';
+import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from '@/lib/types';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -27,7 +27,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     invoice?.items?.forEach(item => {
       if (item.bunches && Array.isArray(item.bunches)) {
         item.bunches.forEach(bunch => {
-          const bunchesCount = Number(bunch.bunches) || 0;
+          const bunchesCount = Number(bunch.bunchesPerBox) || 0;
           const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
           const salePrice = Number(bunch.salePrice) || 0;
 
@@ -47,8 +47,9 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     return (
        <React.Fragment key={item.id || index}>
         {item.bunches.map((bunch, bunchIndex) => {
-            const totalPrice = (bunch.stemsPerBunch * bunch.bunches) * bunch.salePrice;
-            const stemsPerBox = bunch.stemsPerBunch * bunch.bunches;
+            const totalStemsForBunch = bunch.stemsPerBunch * bunch.bunchesPerBox;
+            const totalPrice = totalStemsForBunch * bunch.salePrice;
+            
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-[10px] leading-tight">
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunchIndex === 0 ? item.boxNumber : ''}</div>
@@ -57,8 +58,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.variety}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.color}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.length}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-center">{stemsPerBox}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.bunches}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-center">{totalStemsForBunch}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.bunchesPerBox}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-right">{bunch.salePrice.toFixed(3)}</div>
                     <div className="border-b border-r border-l border-gray-400 p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
                 </div>
