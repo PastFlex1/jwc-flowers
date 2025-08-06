@@ -23,7 +23,7 @@ import html2canvas from 'html2canvas';
 const formSchema = z.object({
   customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
   invoiceId: z.string().min(1, { message: "Por favor seleccione una factura." }),
-  amount: z.coerce.number().positive({ message: "El monto debe ser un número positivo." }),
+  amount: z.coerce.number().gt(0, { message: "El monto debe ser mayor que cero." }),
   paymentDate: z.date({ required_error: "La fecha es requerida." }),
   paymentMethod: z.enum(['Efectivo', 'Transferencia', 'Cheque', 'Tarjeta de Crédito', 'Tarjeta de Débito']),
   reference: z.string().optional(),
@@ -152,7 +152,7 @@ export function PaymentForm({
         setLastPayment(newPayment);
         form.reset({
             ...initialData,
-            customerId: '',
+            customerId: values.customerId,
             invoiceId: '',
             amount: 0,
             paymentDate: new Date(),
