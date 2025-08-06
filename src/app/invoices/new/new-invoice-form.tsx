@@ -592,8 +592,9 @@ export function NewInvoiceForm() {
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const numberOfBunches = form.watch(`${bunchPath}.numberOfBunches`) || 0;
+                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
                                         
-                                        const totalStems = stemsPerBunch * numberOfBunches;
+                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -611,10 +612,10 @@ export function NewInvoiceForm() {
                                         return (
                                             <TableRow key={bunch.id}>
                                                 <TableCell className="min-w-[120px]">
-                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="px-5"/>} />}
+                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="px-5"/>} /> : null}
                                                 </TableCell>
                                                 <TableCell className="min-w-[120px]">
-                                                     {bunchIndex === 0 && (
+                                                     {bunchIndex === 0 ? (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                                     <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
@@ -625,7 +626,7 @@ export function NewInvoiceForm() {
                                                                     </SelectContent>
                                                                 </Select>
                                                             )} />
-                                                        )}
+                                                        ) : null}
                                                 </TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value}>
