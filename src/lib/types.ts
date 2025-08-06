@@ -25,7 +25,6 @@ export interface BunchItem {
   length: number;
   stemsPerBunch: number;
   bunchesPerBox: number;
-  numberOfBunches: number;
   purchasePrice: number;
   salePrice: number;
 }
@@ -34,6 +33,7 @@ export interface LineItem {
   id: string;
   boxNumber: number;
   boxType: 'qb' | 'eb' | 'hb';
+  numberOfBunches: number;
   bunches: BunchItem[];
 }
 

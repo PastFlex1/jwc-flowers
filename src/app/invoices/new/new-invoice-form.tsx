@@ -38,7 +38,6 @@ const bunchItemSchema = z.object({
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
-  numberOfBunches: z.coerce.number().min(1, 'Must be > 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
@@ -48,6 +47,7 @@ const lineItemSchema = z.object({
   id: z.string(),
   boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  numberOfBunches: z.coerce.number().min(1, 'Must be > 0'),
   bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
 });
 
@@ -189,6 +189,7 @@ export function NewInvoiceForm() {
         id: uuidv4(),
         boxNumber: (lineItems.length > 0 ? Math.max(...lineItems.map(item => item.boxNumber)) : 0) + 1,
         boxType: 'hb',
+        numberOfBunches: 1,
         bunches: [{
             id: uuidv4(),
             productoId: '',
@@ -197,8 +198,7 @@ export function NewInvoiceForm() {
             color: '',
             length: 70,
             stemsPerBunch: 25,
-            bunchesPerBox: 10,
-            numberOfBunches: 1,
+            bunchesPerBox: 1,
             purchasePrice: 0,
             salePrice: 0,
         }]
@@ -216,7 +216,6 @@ export function NewInvoiceForm() {
         length: 70,
         stemsPerBunch: 25,
         bunchesPerBox: 1,
-        numberOfBunches: 1,
         purchasePrice: 0,
         salePrice: 0,
     }];
@@ -591,8 +590,10 @@ export function NewInvoiceForm() {
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const numberOfBunches = form.watch(`${bunchPath}.numberOfBunches`) || 0;
+                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
+                                        
                                         const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
+                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
                                         
                                         const totalStems = boxCount * stemsPerBunch * numberOfBunches;
                                         const totalValue = totalStems * salePrice;
@@ -649,7 +650,9 @@ export function NewInvoiceForm() {
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
-                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.numberOfBunches`} render={({ field }) => <Input type="number" {...field} className="px-5"/>}/></TableCell>
+                                                <TableCell className="min-w-[120px]">
+                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.numberOfBunches`} render={({ field }) => <Input type="number" {...field} className="px-5"/>} /> : null}
+                                                </TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="px-5"/>}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><Input readOnly disabled value={totalStems} className="bg-muted/50 px-5" /></TableCell>
