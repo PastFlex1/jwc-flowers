@@ -111,10 +111,11 @@ export function NewInvoiceForm() {
 
   const uniqueProductNames = useMemo(() => {
     const productNames = productos
-        .filter(p => p.estado === 'Activo')
-        .map(p => p.nombre);
+      .filter(p => p.estado === 'Activo')
+      .map(p => p.nombre);
     return [...new Set(productNames)];
   }, [productos]);
+  
 
   useEffect(() => {
     setIsMounted(true);
@@ -190,20 +191,7 @@ export function NewInvoiceForm() {
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
-
-    const processedItems: BunchItem[] = values.items.map(item => ({
-        id: item.id,
-        productoId: item.productoId,
-        product: item.product,
-        color: item.color,
-        variety: item.variety,
-        length: item.length,
-        stemsPerBunch: item.stemsPerBunch,
-        bunches: item.bunchesPerBox * item.boxCount, // This seems to be what was intended before
-        purchasePrice: item.purchasePrice,
-        salePrice: item.salePrice,
-    }));
-
+    
     // This is a guess at how to structure LineItem from the old flat structure
     const newItems: LineItem[] = values.items.map(item => ({
         id: item.id,
@@ -574,9 +562,8 @@ export function NewInvoiceForm() {
                       const totalValue = totalStems * salePrice;
                       
                       const selectedProduct = form.watch(`${itemPath}.product`);
-                      const activeProducts = productos.filter(p => p.estado === 'Activo');
-                      const varieties = selectedProduct ? [...new Set(activeProducts.filter(p => p.nombre === selectedProduct).map(p => p.variedad))] : [];
-                      const colors = selectedProduct ? [...new Set(activeProducts.filter(p => p.nombre === selectedProduct).map(p => p.nombreColor))] : [];
+                      const varieties = selectedProduct ? [...new Set(productos.filter(p => p.nombre === selectedProduct && p.estado === 'Activo').map(p => p.variedad))] : [];
+                      const colors = selectedProduct ? [...new Set(productos.filter(p => p.nombre === selectedProduct && p.estado === 'Activo').map(p => p.nombreColor))] : [];
 
                       return (
                         <TableRow key={lineItem.id}>
