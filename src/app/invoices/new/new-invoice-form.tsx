@@ -113,13 +113,11 @@ export function NewInvoiceForm() {
 
   const selectedCustomerId = form.watch('customerId');
 
-  const activeProducts = useMemo(() => productos.filter(p => p.estado === 'Activo'), [productos]);
-  
   const uniqueProductNames = useMemo(() => {
-    const activeProductNames = activeProducts.map(p => p.nombre);
-    return [...new Set(activeProductNames)];
-  }, [activeProducts]);
-
+    const activeProducts = productos.filter(p => p.estado === 'Activo');
+    const productNames = activeProducts.map(p => p.nombre);
+    return [...new Set(productNames)];
+  }, [productos]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -557,7 +555,10 @@ export function NewInvoiceForm() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {lineItems.map((lineItem, lineItemIndex) => (
+                    {lineItems.map((lineItem, lineItemIndex) => {
+                      const activeProducts = productos.filter(p => p.estado === 'Activo');
+                      
+                      return (
                         <React.Fragment key={lineItem.id}>
                             {Array.isArray(lineItem.bunches) && lineItem.bunches.map((bunch, bunchIndex) => {
                                 const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
@@ -693,7 +694,8 @@ export function NewInvoiceForm() {
                                 )
                             })}
                         </React.Fragment>
-                    ))}
+                      )}
+                    )}
                   </TableBody>
                 </Table>
               </div>
