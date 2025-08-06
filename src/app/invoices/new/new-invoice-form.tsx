@@ -112,10 +112,7 @@ export function NewInvoiceForm() {
   const selectedCustomerId = form.watch('customerId');
   const watchItems = form.watch('items');
   
-  const uniqueProductNames = useMemo(() => {
-    return [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.nombre))];
-  }, [productos]);
-
+  const uniqueProductNames = [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.nombre))];
 
   useEffect(() => {
     setIsMounted(true);
