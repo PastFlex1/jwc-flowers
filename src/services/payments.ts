@@ -1,4 +1,5 @@
 
+
 import { db } from '@/lib/firebase';
 import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import {
@@ -65,12 +66,13 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
     const invoiceData = invoiceDoc.data() as Omit<Invoice, 'id'>;
 
     const subtotal = invoiceData.items.reduce((acc, item) => {
-        if (!item.bunches) return acc;
-        return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
-            const stems = bunch.stemsPerBunch * bunch.bunches;
-            return bunchAcc + (stems * bunch.salePrice);
-        }, 0);
+      if (!item.bunches) return acc;
+      return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+        const stems = bunch.stemsPerBunch * bunch.bunches;
+        return bunchAcc + (stems * bunch.salePrice);
+      }, 0);
     }, 0);
+
 
     const creditNotesRef = collection(db, 'creditNotes');
     const creditQuery = query(creditNotesRef, where("invoiceId", "==", paymentData.invoiceId));

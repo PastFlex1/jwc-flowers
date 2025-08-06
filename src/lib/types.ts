@@ -1,4 +1,5 @@
 
+
 export interface Customer {
   id: string;
   name: string;
@@ -23,15 +24,15 @@ export interface BunchItem {
   variety: string; 
   length: number;
   stemsPerBunch: number;
-  bunches: number;
+  bunches: number; // Corresponde a #ramos o bon_box
   purchasePrice: number;
   salePrice: number;
 }
 
 export interface LineItem {
   id: string;
-  boxType: 'qb' | 'eb' | 'hb';
   boxNumber: number;
+  boxType: 'qb' | 'eb' | 'hb';
   bunches: BunchItem[];
 }
 

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,25 +23,30 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, LineItem } from '@/lib/types';
+import type { Invoice, BunchItem, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
-
-const lineItemSchema = z.object({
+const bunchItemSchema = z.object({
   id: z.string(),
   productoId: z.string().min(1, 'Product is required.'),
   product: z.string().min(1, 'Product name is required'),
   variety: z.string().min(1, 'Variety is required.'),
   color: z.string().min(1, 'Color is required.'),
-  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
-  boxCount: z.coerce.number().min(1, 'Must be > 0'),
-  bunchesPerBox: z.coerce.number().positive('Must be > 0'),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
+  bunches: z.coerce.number().min(1, 'Must be > 0'), // # Ramos / bon_box
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
+});
+
+
+const lineItemSchema = z.object({
+  id: z.string(),
+  boxNumber: z.coerce.number().min(1, 'Must be > 0'),
+  boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
 });
 
 const invoiceSchema = z.object({
@@ -106,16 +111,29 @@ export function NewInvoiceForm() {
     control: form.control,
     name: 'items',
   });
+  
+  const { control } = form;
 
-  const selectedCustomerId = form.watch('customerId');
-  
-  const uniqueProductNames = useMemo(() => {
-    const productNames = productos
-      .filter(p => p.estado === 'Activo')
-      .map(p => p.nombre);
-    return [...new Set(productNames)];
+  const uniqueProducts = React.useMemo(() => {
+    const unique = new Map<string, { id: string; price: number }>();
+    productos.filter(p => p.estado === 'Activo').forEach(p => {
+        if (!unique.has(p.nombre)) {
+            unique.set(p.nombre, { id: p.id, price: p.precio });
+        }
+    });
+    return Array.from(unique.entries()).map(([name, data]) => ({ name, ...data }));
   }, [productos]);
-  
+
+  const getVarietiesForProduct = (productName: string) => {
+    if (!productName) return [];
+    return [...new Set(productos.filter(p => p.nombre === productName && p.estado === 'Activo').map(p => p.variedad))];
+  };
+
+  const getColorsForVariety = (productName: string, variety: string) => {
+    if (!productName || !variety) return [];
+    return [...new Set(productos.filter(p => p.nombre === productName && p.variedad === variety && p.estado === 'Activo').map(p => p.nombreColor))];
+  };
+
 
   useEffect(() => {
     setIsMounted(true);
@@ -132,6 +150,7 @@ export function NewInvoiceForm() {
     }
   }, [isMounted, form]);
 
+  const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
     if (selectedCustomerId) {
       const customer = customers.find((c) => c.id === selectedCustomerId);
@@ -165,29 +184,62 @@ export function NewInvoiceForm() {
   const handleAddLineItem = () => {
     appendLineItem({
         id: uuidv4(),
+        boxNumber: (lineItems.length > 0 ? Math.max(...lineItems.map(item => item.boxNumber)) : 0) + 1,
+        boxType: 'hb',
+        bunches: [{
+            id: uuidv4(),
+            productoId: '',
+            product: '',
+            variety: '',
+            color: '',
+            length: 70,
+            stemsPerBunch: 25,
+            bunches: 10,
+            purchasePrice: 0,
+            salePrice: 0,
+        }]
+    })
+  }
+  
+  const { update } = useFieldArray({ control, name: "items" });
+
+  const handleAddBunch = (lineItemIndex: number) => {
+    const lineItem = form.getValues(`items.${lineItemIndex}`);
+    const newBunches = [...lineItem.bunches, {
+        id: uuidv4(),
         productoId: '',
         product: '',
         variety: '',
         color: '',
-        boxType: 'hb',
-        boxCount: 1,
-        bunchesPerBox: 1,
         length: 70,
         stemsPerBunch: 25,
+        bunches: 1,
         purchasePrice: 0,
         salePrice: 0,
-    })
-  }
+    }];
+    update(lineItemIndex, { ...lineItem, bunches: newBunches });
+  };
 
-  const handleProductChange = (index: number, productName: string) => {
-    const productDetails = productos.find(p => p.nombre === productName);
+  const handleRemoveBunch = (lineItemIndex: number, bunchIndex: number) => {
+      const lineItem = form.getValues(`items.${lineItemIndex}`);
+      if (lineItem.bunches.length <= 1) {
+          removeLineItem(lineItemIndex);
+      } else {
+          const newBunches = lineItem.bunches.filter((_, i) => i !== bunchIndex);
+          update(lineItemIndex, { ...lineItem, bunches: newBunches });
+      }
+  };
+
+  const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
+    const productDetails = uniqueProducts.find(p => p.name === productName);
     if (productDetails) {
-        form.setValue(`items.${index}.salePrice`, productDetails.precio);
-        form.setValue(`items.${index}.productoId`, productDetails.id);
-        form.setValue(`items.${index}.variety`, '');
-        form.setValue(`items.${index}.color`, '');
+        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, productDetails.id);
+        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.salePrice`, productDetails.price);
+        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
+        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
     }
   };
+
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
@@ -241,7 +293,7 @@ export function NewInvoiceForm() {
               <CardTitle>{t('invoices.new.detailsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <FormField
+               <FormField
                 control={form.control}
                 name="invoiceNumber"
                 render={({ field }) => (
@@ -507,156 +559,116 @@ export function NewInvoiceForm() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('invoices.new.items.no')}</TableHead>
-                      <TableHead>{t('invoices.new.items.product')}</TableHead>
-                      <TableHead>{t('invoices.new.items.variety')}</TableHead>
-                      <TableHead>Color</TableHead>
-                      <TableHead>{t('invoices.new.items.boxType')}</TableHead>
-                      <TableHead>{t('invoices.new.items.boxCount')}</TableHead>
-                      <TableHead>{t('invoices.new.items.bunchesPerBox')}</TableHead>
-                      <TableHead>{t('invoices.new.items.length')}</TableHead>
-                      <TableHead>{t('invoices.new.items.stemsPerBunch')}</TableHead>
-                      <TableHead>{t('invoices.new.items.purchasePrice')}</TableHead>
-                      <TableHead>{t('invoices.new.items.salePrice')}</TableHead>
-                      <TableHead>Total Tallos</TableHead>
-                      <TableHead>{t('invoices.new.items.total')}</TableHead>
-                      <TableHead>Diferencia (%)</TableHead>
-                      <TableHead>{t('invoices.new.items.actions')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lineItems.map((lineItem, index) => {
-                      const itemPath = `items.${index}` as const;
-                      const boxCount = form.watch(`${itemPath}.boxCount`) || 0;
-                      const stemsPerBunch = form.watch(`${itemPath}.stemsPerBunch`) || 0;
-                      const bunchesPerBox = form.watch(`${itemPath}.bunchesPerBox`) || 0;
-                      const purchasePrice = form.watch(`${itemPath}.purchasePrice`) || 0;
-                      const salePrice = form.watch(`${itemPath}.salePrice`) || 0;
+                <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]">Nº Caja</TableHead>
+                                <TableHead className="w-[120px]">Tipo Caja</TableHead>
+                                <TableHead>Producto</TableHead>
+                                <TableHead>Variedad</TableHead>
+                                <TableHead>Color</TableHead>
+                                <TableHead className="w-[80px]">Longitud</TableHead>
+                                <TableHead className="w-[100px]">Tallos/Ramo</TableHead>
+                                <TableHead className="w-[80px]"># Ramos</TableHead>
+                                <TableHead className="w-[100px]">P. Compra</TableHead>
+                                <TableHead className="w-[100px]">P. Venta</TableHead>
+                                <TableHead className="w-[100px]">Total Tallos</TableHead>
+                                <TableHead className="w-[120px]">Total</TableHead>
+                                <TableHead className="w-[120px]">Diferencia (%)</TableHead>
+                                <TableHead className="w-[80px]">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {lineItems.map((lineItem, lineItemIndex) => (
+                                <React.Fragment key={lineItem.id}>
+                                    {Array.isArray(lineItem.bunches) && lineItem.bunches.map((bunch, bunchIndex) => {
+                                        const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
+                                        const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
+                                        const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
+                                        const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
+                                        const bunches = form.watch(`${bunchPath}.bunches`) || 0;
 
-                      const totalStems = stemsPerBunch * bunchesPerBox * boxCount;
-                      const totalValue = totalStems * salePrice;
+                                        const totalStems = stemsPerBunch * bunches;
+                                        const totalValue = totalStems * salePrice;
+                                        
+                                        let differencePercent = '0 %';
+                                        if (purchasePrice > 0) {
+                                            differencePercent = (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(2) + ' %';
+                                        } else if (salePrice > 0) {
+                                            differencePercent = '∞ %';
+                                        }
 
-                      let differencePercent;
-                      if (purchasePrice > 0) {
-                          differencePercent = (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(2) + ' %';
-                      } else if (salePrice > 0) {
-                          differencePercent = '∞ %';
-                      } else {
-                          differencePercent = '0 %';
-                      }
-                      
-                      const selectedProduct = form.watch(`${itemPath}.product`);
-                      const varieties = selectedProduct ? [...new Set(productos.filter(p => p.nombre === selectedProduct && p.estado === 'Activo').map(p => p.variedad))] : [];
-                      const colors = selectedProduct ? [...new Set(productos.filter(p => p.nombre === selectedProduct && p.estado === 'Activo').map(p => p.nombreColor))] : [];
+                                        const selectedProduct = form.watch(`${bunchPath}.product`);
+                                        const selectedVariety = form.watch(`${bunchPath}.variety`);
+                                        const varieties = getVarietiesForProduct(selectedProduct);
+                                        const colors = getColorsForVariety(selectedProduct, selectedVariety);
 
-                      return (
-                        <TableRow key={lineItem.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`${itemPath}.product`}
-                                render={({ field }) => (
-                                    <Select onValueChange={(value) => {
-                                        field.onChange(value);
-                                        handleProductChange(index, value);
-                                    }} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger className="w-36">
-                                            <SelectValue placeholder={t('invoices.new.items.productPlaceholder')} />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {uniqueProductNames.map((name) => (
-                                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`${itemPath}.variety`}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProduct}>
-                                        <FormControl>
-                                            <SelectTrigger className="w-36">
-                                            <SelectValue placeholder={t('invoices.new.items.varietyPlaceholder')} />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`${itemPath}.color`}
-                                render={({ field }) => (
-                                     <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProduct}>
-                                        <FormControl>
-                                            <SelectTrigger className="w-36">
-                                            <SelectValue placeholder="Color" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                                />
-                          </TableCell>
-                          <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`${itemPath}.boxType`}
-                                render={({ field }) => (
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger className="w-24">
-                                        <SelectValue placeholder={t('invoices.new.items.typePlaceholder')} />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="hb">HB</SelectItem>
-                                        <SelectItem value="qb">QB</SelectItem>
-                                        <SelectItem value="eb">EB</SelectItem>
-                                    </SelectContent>
-                                    </Select>
-                                )}
-                                />
-                          </TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.boxCount`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} className="w-24" />} /></TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.length`} render={({ field }) => <Input type="number" {...field} className="w-20" />} /></TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} className="w-24" />} /></TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
-                           <TableCell><FormField control={form.control} name={`${itemPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
-                           <TableCell><Input readOnly disabled value={totalStems} className="w-24 bg-muted/50" /></TableCell>
-                           <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="w-24 bg-muted/50" /></TableCell>
-                           <TableCell><Input readOnly disabled value={differencePercent} className="w-24 bg-muted/50" /></TableCell>
-                          <TableCell>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(index)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <FormMessage>{form.formState.errors.items?.message}</FormMessage>
-              <FormMessage>{(form.formState.errors.items as any)?.root?.message}</FormMessage>
+                                        return (
+                                            <TableRow key={bunch.id}>
+                                                <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
+                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} />} />}
+                                                </TableCell>
+                                                <TableCell className={bunchIndex > 0 ? "border-t-0" : ""}>
+                                                     {bunchIndex === 0 && (
+                                                        <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
+                                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                                    <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="hb">HB</SelectItem>
+                                                                        <SelectItem value="qb">QB</SelectItem>
+                                                                        <SelectItem value="eb">EB</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )} />
+                                                        )}
+                                                </TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
+                                                    <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                )} /></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
+                                                     <Select onValueChange={field.onChange} value={field.value} disabled={!selectedProduct}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                )}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
+                                                     <Select onValueChange={field.onChange} value={field.value} disabled={!selectedVariety}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                )}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.bunches`} render={({ field }) => <Input type="number" {...field} />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} />}/></TableCell>
+                                                <TableCell><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
+                                                <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
+                                                <TableCell><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-1">
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
+                                                            <PlusCircle className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(lineItemIndex, bunchIndex)}>
+                                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                <FormMessage>{form.formState.errors.items?.message}</FormMessage>
+                <FormMessage>{(form.formState.errors.items as any)?.root?.message}</FormMessage>
             </CardContent>
           </Card>
 
