@@ -607,10 +607,10 @@ export function NewInvoiceForm() {
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className={cn("min-w-[120px]", bunchIndex > 0 ? "border-t-0" : "")}>
+                                                <TableCell className="min-w-[120px]">
                                                     {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} className="px-5"/>} />}
                                                 </TableCell>
-                                                <TableCell className={cn("min-w-[120px]", bunchIndex > 0 ? "border-t-0" : "")}>
+                                                <TableCell className="min-w-[120px]">
                                                      {bunchIndex === 0 && (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
