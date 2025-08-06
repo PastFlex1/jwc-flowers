@@ -113,8 +113,7 @@ export function NewInvoiceForm() {
   const watchItems = form.watch('items');
   
   const uniqueProductNames = useMemo(() => {
-    const activeProducts = productos.filter(p => p.estado === 'Activo');
-    return [...new Set(activeProducts.map(p => p.nombre))];
+    return [...new Set(productos.filter(p => p.estado === 'Activo').map(p => p.nombre))];
   }, [productos]);
 
 
@@ -198,15 +197,13 @@ export function NewInvoiceForm() {
   }, [productos, form]);
 
   const handleProductChange = useCallback((index: number, productName: string) => {
-    const activeProducts = productos.filter(p => p.estado === 'Activo');
-    const matchingProducts = activeProducts.filter(p => p.nombre === productName);
-    const uniqueVarieties = [...new Set(matchingProducts.map(p => p.variedad))];
-    const uniqueColors = [...new Set(matchingProducts.map(p => p.nombreColor))];
+    const activeProducts = productos.filter(p => p.estado === 'Activo' && p.nombre === productName);
+    const uniqueVarieties = [...new Set(activeProducts.map(p => p.variedad))];
+    const uniqueColors = [...new Set(activeProducts.map(p => p.nombreColor))];
 
     setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
     setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
     
-    form.setValue(`items.${index}.nombreFlor`, productName);
     form.setValue(`items.${index}.variedad`, '');
     form.setValue(`items.${index}.color`, '');
     form.setValue(`items.${index}.salePrice`, 0);
