@@ -590,7 +590,6 @@ export function NewInvoiceForm() {
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
                                         
                                         const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
                                         const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
@@ -660,9 +659,11 @@ export function NewInvoiceForm() {
                                                 <TableCell className="min-w-[140px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50 px-5" /></TableCell>
                                                 <TableCell className="min-w-[120px]">
                                                     <div className="flex items-center gap-1">
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
-                                                            <PlusCircle className="h-4 w-4" />
-                                                        </Button>
+                                                        {bunchIndex === 0 && (
+                                                            <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
+                                                                <PlusCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
                                                         <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(lineItemIndex, bunchIndex)}>
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
