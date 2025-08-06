@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
 import { addInvoice } from '@/services/invoices';
-import type { Invoice, LineItem, Producto, BunchItem } from '@/lib/types';
+import type { Invoice, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
@@ -108,7 +108,7 @@ export function NewInvoiceForm() {
   });
 
   const selectedCustomerId = form.watch('customerId');
-
+  
   const uniqueProductNames = useMemo(() => {
     const productNames = productos
       .filter(p => p.estado === 'Activo')
@@ -191,28 +191,6 @@ export function NewInvoiceForm() {
 
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
-    
-    // This is a guess at how to structure LineItem from the old flat structure
-    const newItems: LineItem[] = values.items.map(item => ({
-        id: item.id,
-        boxType: item.boxType,
-        boxNumber: item.boxCount,
-        bunches: [
-            {
-                id: uuidv4(),
-                productoId: item.productoId,
-                product: item.product,
-                color: item.color,
-                variety: item.variety,
-                length: item.length,
-                stemsPerBunch: item.stemsPerBunch,
-                bunches: item.bunchesPerBox,
-                purchasePrice: item.purchasePrice,
-                salePrice: item.salePrice
-            }
-        ]
-    }));
-
   
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
@@ -221,7 +199,6 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: newItems,
     };
   
     try {
@@ -547,6 +524,7 @@ export function NewInvoiceForm() {
                       <TableHead>{t('invoices.new.items.salePrice')}</TableHead>
                       <TableHead>Total Tallos</TableHead>
                       <TableHead>{t('invoices.new.items.total')}</TableHead>
+                      <TableHead>Diferencia (%)</TableHead>
                       <TableHead>{t('invoices.new.items.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -556,10 +534,20 @@ export function NewInvoiceForm() {
                       const boxCount = form.watch(`${itemPath}.boxCount`) || 0;
                       const stemsPerBunch = form.watch(`${itemPath}.stemsPerBunch`) || 0;
                       const bunchesPerBox = form.watch(`${itemPath}.bunchesPerBox`) || 0;
+                      const purchasePrice = form.watch(`${itemPath}.purchasePrice`) || 0;
                       const salePrice = form.watch(`${itemPath}.salePrice`) || 0;
 
                       const totalStems = stemsPerBunch * bunchesPerBox * boxCount;
                       const totalValue = totalStems * salePrice;
+
+                      let differencePercent;
+                      if (purchasePrice > 0) {
+                          differencePercent = (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(2) + ' %';
+                      } else if (salePrice > 0) {
+                          differencePercent = '∞ %';
+                      } else {
+                          differencePercent = '0 %';
+                      }
                       
                       const selectedProduct = form.watch(`${itemPath}.product`);
                       const varieties = selectedProduct ? [...new Set(productos.filter(p => p.nombre === selectedProduct && p.estado === 'Activo').map(p => p.variedad))] : [];
@@ -655,6 +643,7 @@ export function NewInvoiceForm() {
                            <TableCell><FormField control={form.control} name={`${itemPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} className="w-24" />} /></TableCell>
                            <TableCell><Input readOnly disabled value={totalStems} className="w-24 bg-muted/50" /></TableCell>
                            <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="w-24 bg-muted/50" /></TableCell>
+                           <TableCell><Input readOnly disabled value={differencePercent} className="w-24 bg-muted/50" /></TableCell>
                           <TableCell>
                             <Button type="button" variant="ghost" size="icon" onClick={() => removeLineItem(index)}>
                               <Trash2 className="h-4 w-4 text-destructive" />
