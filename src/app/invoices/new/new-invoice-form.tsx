@@ -203,6 +203,7 @@ export function NewInvoiceForm() {
     setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
     setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
     
+    form.setValue(`items.${index}.nombreFlor`, productName);
     form.setValue(`items.${index}.variedad`, '');
     form.setValue(`items.${index}.color`, '');
     form.setValue(`items.${index}.salePrice`, 0);
@@ -623,10 +624,7 @@ export function NewInvoiceForm() {
                                 name={`items.${index}.nombreFlor`}
                                 render={({ field }) => (
                                     <Select
-                                      onValueChange={(value) => {
-                                          field.onChange(value);
-                                          handleProductChange(index, value);
-                                      }}
+                                      onValueChange={(value) => handleProductChange(index, value)}
                                       value={field.value}
                                     >
                                       <FormControl>
