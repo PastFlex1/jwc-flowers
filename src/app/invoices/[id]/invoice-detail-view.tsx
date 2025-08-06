@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -49,8 +50,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             const stemsPerBox = bunch.stemsPerBunch * bunch.bunches;
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-[10px] leading-tight">
-                    <div className="border-b border-l border-gray-400 p-1 text-center">{item.boxNumber}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-center">{item.boxType.toUpperCase()}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunchIndex === 0 ? item.boxNumber : ''}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunchIndex === 0 ? item.boxType.toUpperCase() : ''}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.product}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.variety}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.color}</div>
