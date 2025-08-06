@@ -197,9 +197,9 @@ export function NewInvoiceForm() {
   }, [productos, form]);
 
   const handleProductChange = useCallback((index: number, productName: string) => {
-    const activeProducts = productos.filter(p => p.estado === 'Activo' && p.nombre === productName);
-    const uniqueVarieties = [...new Set(activeProducts.map(p => p.variedad))];
-    const uniqueColors = [...new Set(activeProducts.map(p => p.nombreColor))];
+    const activeProductsForName = productos.filter(p => p.estado === 'Activo' && p.nombre === productName);
+    const uniqueVarieties = [...new Set(activeProductsForName.map(p => p.variedad))];
+    const uniqueColors = [...new Set(activeProductsForName.map(p => p.nombreColor))];
 
     setAvailableVarieties(prev => ({ ...prev, [index]: uniqueVarieties }));
     setAvailableColors(prev => ({ ...prev, [index]: uniqueColors }));
