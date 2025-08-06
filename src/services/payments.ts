@@ -11,6 +11,7 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot,
   Timestamp,
+  getDoc,
 } from 'firebase/firestore';
 
 const paymentFromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Payment => {
@@ -91,9 +92,11 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
     const newTotalPaid = totalPaidAmount + paymentData.amount;
     const newBalance = totalCharge - newTotalPaid;
     
-    let newStatus: 'Paid' | 'Pending' | 'Overdue' = invoiceData.status;
+    let newStatus: 'Paid' | 'Pending' | 'Overdue';
     if (newBalance <= 0.01) {
         newStatus = 'Paid';
+    } else {
+        newStatus = 'Pending';
     }
 
     const newPaymentRef = doc(collection(db, 'payments'));
