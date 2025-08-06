@@ -598,6 +598,7 @@ export function NewInvoiceForm() {
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
+                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
                                         
                                         const totalStems = stemsPerBunch * bunchesPerBox;
                                         const totalValue = totalStems * salePrice;
@@ -617,10 +618,10 @@ export function NewInvoiceForm() {
                                         return (
                                             <TableRow key={bunch.id}>
                                                 <TableCell className="min-w-[120px]">
-                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} /> : null}
+                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} />}
                                                 </TableCell>
                                                 <TableCell className="min-w-[120px]">
-                                                     {bunchIndex === 0 ? (
+                                                     {bunchIndex === 0 && (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                                                                     <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
@@ -631,10 +632,23 @@ export function NewInvoiceForm() {
                                                                     </SelectContent>
                                                                 </Select>
                                                             )} />
-                                                        ) : null}
+                                                        )}
                                                 </TableCell>
                                                 <TableCell className="min-w-[120px]">
-                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.numberOfBunches`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} /> : null}
+                                                    {bunchIndex === 0 && (
+                                                      <FormField 
+                                                        control={form.control} 
+                                                        name={`items.${lineItemIndex}.numberOfBunches`} 
+                                                        render={({ field }) => (
+                                                          <FormItem>
+                                                            <FormControl>
+                                                              <Input type="number" {...field} value={field.value ?? 0} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                          </FormItem>
+                                                        )} 
+                                                      />
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
@@ -677,15 +691,6 @@ export function NewInvoiceForm() {
                                             </TableRow>
                                         );
                                     })}
-                                    <TableRow>
-                                       <TableCell colSpan={15} className="p-0">
-                                           <div className="text-sm font-medium text-destructive px-2 py-1">
-                                                <FormMessage>
-                                                    {form.formState.errors.items?.[lineItemIndex]?.numberOfBunches?.message}
-                                                </FormMessage>
-                                            </div>
-                                       </TableCell>
-                                    </TableRow>
                                 </React.Fragment>
                             ))}
                         </TableBody>
