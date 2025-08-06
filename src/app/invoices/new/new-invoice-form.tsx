@@ -54,7 +54,7 @@ const lineItemSchema = z.object({
     return totalBunchesInBox === data.numberOfBunches;
 }, {
     message: "La suma de 'Ramos/Caja' debe ser igual al total de # Ramos.",
-    path: ['root'],
+    path: ['numberOfBunches'],
 });
 
 const invoiceSchema = z.object({
@@ -679,11 +679,11 @@ export function NewInvoiceForm() {
                                     })}
                                     <TableRow>
                                        <TableCell colSpan={15} className="p-0">
-                                            {form.formState.errors.items?.[lineItemIndex]?.root && (
-                                                <div className="text-sm font-medium text-destructive px-2 py-1">
-                                                    {form.formState.errors.items[lineItemIndex]?.root?.message}
-                                                </div>
-                                            )}
+                                           <div className="text-sm font-medium text-destructive px-2 py-1">
+                                                <FormMessage>
+                                                    {form.formState.errors.items?.[lineItemIndex]?.numberOfBunches?.message}
+                                                </FormMessage>
+                                            </div>
                                        </TableCell>
                                     </TableRow>
                                 </React.Fragment>
