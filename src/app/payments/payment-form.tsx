@@ -45,6 +45,8 @@ type PaymentFormProps = {
   payments: Payment[];
   initialData?: PaymentFormData;
   paymentType: 'sale' | 'purchase';
+  lastPayment: Payment | null;
+  setLastPayment: (payment: Payment | null) => void;
 };
 
 export function PaymentForm({ 
@@ -58,11 +60,12 @@ export function PaymentForm({
     payments, 
     initialData,
     paymentType,
+    lastPayment,
+    setLastPayment,
 }: PaymentFormProps) {
   const [selectedInvoiceBalance, setSelectedInvoiceBalance] = useState<number | null>(null);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const { toast } = useToast();
-  const [lastPayment, setLastPayment] = useState<Payment | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const form = useForm<PaymentFormData>({
@@ -151,15 +154,18 @@ export function PaymentForm({
 
   async function handleSubmit(values: PaymentFormData) {
     const invoice = invoices.find(i => i.id === values.invoiceId);
+    const entity = paymentType === 'purchase'
+        ? fincas.find(f => f.id === values.entityId)
+        : customers.find(c => c.id === values.entityId);
     
     // For the receipt, we always need the final customer of the invoice.
     const customer = invoice ? customers.find(c => c.id === invoice.customerId) : null;
     
     setLastPayment(null);
 
-    if (!customer || !invoice) {
-      console.error("Customer or Invoice not found for payment submission.");
-      toast({ title: "Error", description: "Cliente o Factura no encontrados.", variant: "destructive" });
+    if (!entity || !invoice || !customer) {
+      console.error("Entity, Customer or Invoice not found for payment submission.");
+      toast({ title: "Error", description: "Entidad, Cliente o Factura no encontrados.", variant: "destructive" });
       return;
     }
 

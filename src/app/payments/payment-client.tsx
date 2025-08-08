@@ -13,20 +13,14 @@ export function PaymentClient() {
   const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastReceiptData, setLastReceiptData] = useState<{ payment: Payment; customer: Customer; invoice: Invoice} | null>(null);
+  const [lastPayment, setLastPayment] = useState<Payment | null>(null);
 
   const handleAddPayment = async (data: Omit<Payment, 'id'>, customer: Customer, invoice: Invoice) => {
     setIsSubmitting(true);
-    setLastReceiptData(null);
+    setLastPayment(null);
     try {
       const paymentId = await addPayment(data); 
       const newPayment = { ...data, id: paymentId };
-
-      setLastReceiptData({
-          payment: newPayment,
-          customer: customer,
-          invoice: invoice
-      });
 
       toast({
         title: "Éxito",
@@ -71,6 +65,8 @@ export function PaymentClient() {
               onSubmit={handleAddPayment}
               isSubmitting={isSubmitting}
               paymentType="sale"
+              lastPayment={lastPayment}
+              setLastPayment={setLastPayment}
             />
           </CardContent>
         </Card>
