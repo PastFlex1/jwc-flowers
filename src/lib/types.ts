@@ -39,6 +39,7 @@ export interface LineItem {
 
 export interface Invoice {
   id: string;
+  type: 'sale' | 'purchase'; // Added to distinguish between sales and purchases
   invoiceNumber: string;
   farmDepartureDate: string;
   flightDate: string;

@@ -44,7 +44,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const ITEMS_PER_PAGE = 10;
 
-export function InvoicesClient() {
+export function AccountsPayableClient() {
   const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
@@ -90,8 +90,8 @@ export function InvoicesClient() {
   }, [invoices, creditNotes, debitNotes, payments]);
 
   useEffect(() => {
-    const saleInvoices = invoices.filter(inv => inv.type === 'sale' || !inv.type);
-    const filtered = saleInvoices.filter(invoice => {
+    const purchaseInvoices = invoices.filter(inv => inv.type === 'purchase');
+    const filtered = purchaseInvoices.filter(invoice => {
         const customerName = customerMap[invoice.customerId]?.name || '';
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         
@@ -128,12 +128,13 @@ export function InvoicesClient() {
         if (!item.bunches) return acc;
         return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
             const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
-            return bunchAcc + (stems * bunch.salePrice);
+            return bunchAcc + (stems * bunch.purchasePrice); // Use purchase price for payables
         }, 0);
     }, 0);
 
     const { credits, debits, payments: totalPayments } = notesAndPaymentsByInvoiceId[invoice.id] || { credits: 0, debits: 0, payments: 0 };
     
+    // For payables, credits decrease what you owe, debits increase it.
     return subtotal + debits - credits - totalPayments;
   };
 
@@ -149,7 +150,7 @@ export function InvoicesClient() {
 
     try {
       await deleteInvoice(invoiceToDelete.id);
-      toast({ title: t('common.success'), description: t('invoices.toast.deleted') });
+      toast({ title: t('common.success'), description: "La factura de compra ha sido eliminada." });
       await refreshData();
     } catch (error) {
       setLocalInvoices(originalInvoices);
@@ -157,7 +158,7 @@ export function InvoicesClient() {
       const errorMessage = error instanceof Error ? error.message : t('common.unknownError');
       toast({
         title: t('common.errorDeleting'),
-        description: t('invoices.toast.deleteError', { error: errorMessage }),
+        description: `No se pudo eliminar la factura de compra: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -171,21 +172,21 @@ export function InvoicesClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">{t('invoices.title')}</h2>
-            <p className="text-muted-foreground">{t('invoices.description')}</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">Cuentas por Pagar</h2>
+            <p className="text-muted-foreground">Gestiona tus facturas de compra y pagos a proveedores.</p>
           </div>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('invoices.history')}</CardTitle>
-            <CardDescription>{t('invoices.historyDescription')}</CardDescription>
+            <CardTitle>Historial de Compras</CardTitle>
+            <CardDescription>Una lista de todas tus facturas de compra.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="mb-4 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={t('invoices.searchPlaceholder')}
+                placeholder="Buscar por N°, proveedor o estado..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -194,12 +195,12 @@ export function InvoicesClient() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('invoices.invoiceNumber')}</TableHead>
-                  <TableHead>{t('invoices.customer')}</TableHead>
-                  <TableHead>{t('invoices.flightDate')}</TableHead>
-                  <TableHead>{t('invoices.amount')}</TableHead>
-                  <TableHead>{t('invoices.status')}</TableHead>
-                  <TableHead className="text-right">{t('invoices.actions')}</TableHead>
+                  <TableHead>Factura #</TableHead>
+                  <TableHead>Proveedor</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Monto Pendiente</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -212,7 +213,7 @@ export function InvoicesClient() {
                           {invoice.invoiceNumber}
                         </Link>
                       </TableCell>
-                      <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
+                      <TableCell>{getCustomer(invoice.customerId)?.name || 'Desconocido'}</TableCell>
                       <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
                       <TableCell>${balance.toFixed(2)}</TableCell>
                       <TableCell>
@@ -229,20 +230,20 @@ export function InvoicesClient() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link href={`/invoices/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title={t('invoices.editTooltip')}>
+                            <Button variant="ghost" size="icon" title="Ver/Editar Factura">
                               <Edit className="h-4 w-4" />
-                              <span className="sr-only">{t('invoices.editTooltip')}</span>
+                              <span className="sr-only">Ver/Editar Factura</span>
                             </Button>
                           </Link>
                           <Link href={`/invoices/duplicate/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Duplicate Invoice">
+                            <Button variant="ghost" size="icon" title="Duplicar Factura">
                               <Copy className="h-4 w-4" />
-                              <span className="sr-only">Duplicate Invoice</span>
+                              <span className="sr-only">Duplicar Factura</span>
                             </Button>
                           </Link>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
+                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title="Eliminar Factura">
                             <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">{t('invoices.deleteTooltip')}</span>
+                            <span className="sr-only">Eliminar Factura</span>
                           </Button>
                         </div>
                       </TableCell>
@@ -255,7 +256,7 @@ export function InvoicesClient() {
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                {t('common.page', { currentPage: currentPage, totalPages: totalPages })}
+                Página {currentPage} de {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -264,7 +265,7 @@ export function InvoicesClient() {
                   onClick={handlePrevPage}
                   disabled={currentPage === 1}
                 >
-                  {t('common.previous')}
+                  Anterior
                 </Button>
                 <Button
                   variant="outline"
@@ -272,7 +273,7 @@ export function InvoicesClient() {
                   onClick={handleNextPage}
                   disabled={currentPage >= totalPages}
                 >
-                  {t('common.next')}
+                  Siguiente
                 </Button>
               </div>
             </CardFooter>
@@ -285,7 +286,7 @@ export function InvoicesClient() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common.confirmDeleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('invoices.confirmDeleteDescription')}
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la factura de compra.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

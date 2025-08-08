@@ -3,6 +3,7 @@
   "sidebar": {
     "title": "JCW FLOWERS",
     "subtitle": "Para Floristas",
+    "accountsPayable": "Cuentas por Pagar",
     "invoices": "Facturas",
     "customers": "Clientes",
     "devMode": "Modo Desarrollo",
@@ -16,7 +17,8 @@
     "documents": "Documentos",
     "creditNotes": "Notas de crédito",
     "debitNotes": "Notas de débito",
-    "changeLanguage": "Cambiar idioma"
+    "changeLanguage": "Cambiar idioma",
+    "accountsPayable": "Cuentas por Pagar"
   },
   "invoices": {
     "title": "Facturas",

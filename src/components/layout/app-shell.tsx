@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -28,6 +29,7 @@ import {
   LogOut,
   UserCircle,
   ShoppingCart,
+  Receipt,
 } from 'lucide-react';
 import {
   Menubar,
@@ -61,6 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   const navItems = [
+    { href: '/accounts-payable', label: t('sidebar.accountsPayable'), icon: Receipt },
     { href: '/invoices', label: t('sidebar.invoices'), icon: FileText },
     { href: '/customers', label: t('sidebar.customers'), icon: Users },
   ];
@@ -151,6 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <MenubarItem onClick={() => router.push('/debit-notes')}>Notas de Débito</MenubarItem>
                     <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta</MenubarItem>
                     <MenubarItem onClick={() => router.push('/payments')}>Registrar Pago</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/record-purchase-payment')}>Cuentas por Pagar</MenubarItem>
                   </MenubarContent>
                 </MenubarMenu>
               </Menubar>

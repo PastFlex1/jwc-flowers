@@ -1,9 +1,10 @@
 
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -99,6 +100,7 @@ const getInitialFormValues = (initialData?: Partial<InvoiceFormValues>): Partial
 
 export function NewInvoiceForm({ initialData } : { initialData?: Partial<InvoiceFormValues>}) {
   const router = useRouter();
+  const pathname = usePathname();
   const { toast } = useToast();
   const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, refreshData } = useAppData();
   const { t } = useTranslation();
@@ -256,16 +258,19 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
     setIsSubmitting(true);
   
     const cleanedItems = values.items.map(item => {
-      const { id, ...restOfItem } = item;
+      const { id, ...restOfItem } = item; // eslint-disable-line @typescript-eslint/no-unused-vars
       const cleanedBunches = item.bunches.map(bunch => {
-        const { id, ...restOfBunch } = bunch;
+        const { id, ...restOfBunch } = bunch; // eslint-disable-line @typescript-eslint/no-unused-vars
         return restOfBunch;
       });
       return { ...restOfItem, bunches: cleanedBunches };
     });
   
+    const invoiceType = pathname.includes('/purchases') ? 'purchase' : 'sale';
+
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
+      type: invoiceType,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -282,7 +287,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
         description: t('invoices.new.toast.successDescription'),
       });
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      router.push('/invoices');
+      const destination = invoiceType === 'purchase' ? '/accounts-payable' : '/invoices';
+      router.push(destination);
     } catch (error) {
       console.error('Error creating invoice:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
@@ -611,11 +617,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
-                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
-                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
 
-
-                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
+                                        const totalStems = stemsPerBunch * bunchesPerBox;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
