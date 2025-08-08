@@ -94,7 +94,20 @@ export function PaymentForm({
 
   useEffect(() => {
     if (selectedEntityId) {
-        const entityInvoices = invoices.filter(inv => inv.customerId === selectedEntityId && inv.type === paymentType && inv.status !== 'Paid');
+        const entityInvoices = invoices.filter(inv => {
+          const isCorrectType = inv.type === paymentType;
+          const isNotPaid = inv.status !== 'Paid';
+          let isCorrectEntity = false;
+
+          if (paymentType === 'purchase') {
+            isCorrectEntity = inv.farmId === selectedEntityId;
+          } else {
+            isCorrectEntity = inv.customerId === selectedEntityId;
+          }
+          
+          return isCorrectEntity && isCorrectType && isNotPaid;
+        });
+
         setFilteredInvoices(entityInvoices);
         form.setValue('invoiceId', '');
         setSelectedInvoiceBalance(null);
