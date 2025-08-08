@@ -611,8 +611,11 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
-                                        
-                                        const totalStems = stemsPerBunch * bunchesPerBox;
+                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
+                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
+
+
+                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -682,7 +685,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                 )}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} onBlur={() => form.trigger(`items.${lineItemIndex}.numberOfBunches`)} value={field.value ?? 0} />}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
                                                 <TableCell className="min-w-[120px]"><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
@@ -690,11 +693,11 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                 <TableCell className="min-w-[140px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
                                                 <TableCell className="min-w-[120px]">
                                                     <div className="flex items-center gap-1">
-                                                        {bunchIndex === 0 ? (
+                                                        {bunchIndex === 0 && (
                                                             <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
                                                                 <PlusCircle className="h-4 w-4" />
                                                             </Button>
-                                                        ) : null}
+                                                        )}
                                                         <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(lineItemIndex, bunchIndex)}>
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
