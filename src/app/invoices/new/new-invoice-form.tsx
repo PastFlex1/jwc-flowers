@@ -38,6 +38,7 @@ const bunchItemSchema = z.object({
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
+  numberOfBunches: z.coerce.number().min(0, '# Ramos must be >= 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
@@ -47,14 +48,15 @@ const lineItemSchema = z.object({
   id: z.string(),
   boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
-  numberOfBunches: z.coerce.number().min(1, 'Must be > 0'),
   bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
 }).refine(data => {
     const totalBunchesInBox = data.bunches.reduce((acc, bunch) => acc + (bunch.bunchesPerBox || 0), 0);
-    return totalBunchesInBox === data.numberOfBunches;
+    const mainBunch = data.bunches[0];
+    if (!mainBunch) return true;
+    return totalBunchesInBox === mainBunch.numberOfBunches;
 }, {
     message: "La suma de 'Ramos/Caja' debe ser igual al total de # Ramos.",
-    path: ['numberOfBunches'],
+    path: ['bunches', '0', 'numberOfBunches'],
 });
 
 const invoiceSchema = z.object({
@@ -73,9 +75,10 @@ const invoiceSchema = z.object({
   items: z.array(lineItemSchema).min(1, 'At least one item is required.'),
 });
 
-type InvoiceFormValues = z.infer<typeof invoiceSchema>;
+export type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-const getInitialFormValues = (): Partial<InvoiceFormValues> => {
+const getInitialFormValues = (initialData?: Partial<InvoiceFormValues>): Partial<InvoiceFormValues> => {
+  if (initialData) return initialData;
   if (typeof window === 'undefined') return { items: [] };
   const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
   if (savedData) {
@@ -96,7 +99,7 @@ const getInitialFormValues = (): Partial<InvoiceFormValues> => {
   return { items: [] };
 };
 
-export function NewInvoiceForm() {
+export function NewInvoiceForm({ initialData } : { initialData?: Partial<InvoiceFormValues>}) {
   const router = useRouter();
   const { toast } = useToast();
   const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, refreshData } = useAppData();
@@ -110,9 +113,7 @@ export function NewInvoiceForm() {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
-    defaultValues: {
-      items: [],
-    },
+    defaultValues: getInitialFormValues(initialData),
   });
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
@@ -146,18 +147,17 @@ export function NewInvoiceForm() {
 
   useEffect(() => {
     setIsMounted(true);
-    const initialValues = getInitialFormValues();
-    form.reset(initialValues);
-  }, [form]);
+    form.reset(getInitialFormValues(initialData));
+  }, [form, initialData]);
 
   useEffect(() => {
-    if (isMounted) {
+    if (isMounted && !initialData) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
     }
-  }, [isMounted, form]);
+  }, [isMounted, form, initialData]);
 
   const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
@@ -175,12 +175,17 @@ export function NewInvoiceForm() {
 
       const relatedMarcaciones = marcaciones.filter((m) => m.cliente === selectedCustomerId);
       setFilteredMarcaciones(relatedMarcaciones);
-
-      const initialValues = getInitialFormValues();
-      if (initialValues.customerId !== selectedCustomerId) {
-        form.setValue('consignatarioId', '');
+      
+      const currentConsignatario = form.getValues('consignatarioId');
+      if (!relatedConsignatarios.some(c => c.id === currentConsignatario)) {
+          form.setValue('consignatarioId', '');
+      }
+      
+      const currentMarcacion = form.getValues('reference');
+      if (!relatedMarcaciones.some(m => m.numeroMarcacion === currentMarcacion)) {
         form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
       }
+
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
@@ -195,7 +200,6 @@ export function NewInvoiceForm() {
         id: uuidv4(),
         boxNumber: (lineItems.length > 0 ? Math.max(...lineItems.map(item => item.boxNumber)) : 0) + 1,
         boxType: 'hb',
-        numberOfBunches: 1,
         bunches: [{
             id: uuidv4(),
             productoId: '',
@@ -205,6 +209,7 @@ export function NewInvoiceForm() {
             length: 70,
             stemsPerBunch: 25,
             bunchesPerBox: 1,
+            numberOfBunches: 1,
             purchasePrice: 0,
             salePrice: 0,
         }]
@@ -213,6 +218,7 @@ export function NewInvoiceForm() {
 
   const handleAddBunch = (lineItemIndex: number) => {
     const lineItem = form.getValues(`items.${lineItemIndex}`);
+    const mainBunch = lineItem.bunches[0];
     const newBunches = [...(lineItem.bunches || []), {
         id: uuidv4(),
         productoId: '',
@@ -221,7 +227,8 @@ export function NewInvoiceForm() {
         color: '',
         length: 70,
         stemsPerBunch: 25,
-        bunchesPerBox: 0, // Default new sub-rows to 0
+        bunchesPerBox: 0,
+        numberOfBunches: mainBunch.numberOfBunches,
         purchasePrice: 0,
         salePrice: 0,
     }];
@@ -259,6 +266,11 @@ export function NewInvoiceForm() {
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
+      items: values.items.map(item => ({
+        ...item,
+        // @ts-ignore
+        numberOfBunches: item.bunches[0]?.numberOfBunches || 0
+      }))
     };
   
     try {
@@ -291,8 +303,8 @@ export function NewInvoiceForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{t('invoices.new.title')}</h2>
-        <p className="text-muted-foreground">{t('invoices.new.description')}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{initialData ? "Duplicar Factura" : t('invoices.new.title')}</h2>
+        <p className="text-muted-foreground">{initialData ? "Edite los detalles y guarde para crear una nueva factura." : t('invoices.new.description')}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -599,8 +611,9 @@ export function NewInvoiceForm() {
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
                                         const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
+                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.bunches.0.numberOfBunches`) || 0;
                                         
-                                        const totalStems = stemsPerBunch * bunchesPerBox;
+                                        const totalStems = stemsPerBunch * numberOfBunches * boxCount;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -618,10 +631,10 @@ export function NewInvoiceForm() {
                                         return (
                                             <TableRow key={bunch.id}>
                                                 <TableCell className="min-w-[120px]">
-                                                    {bunchIndex === 0 && <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} />}
+                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} /> : null}
                                                 </TableCell>
                                                 <TableCell className="min-w-[120px]">
-                                                     {bunchIndex === 0 && (
+                                                     {bunchIndex === 0 ? (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
                                                                     <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
@@ -632,23 +645,30 @@ export function NewInvoiceForm() {
                                                                     </SelectContent>
                                                                 </Select>
                                                             )} />
-                                                        )}
+                                                        ) : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[120px]">
-                                                    {bunchIndex === 0 && (
-                                                      <FormField 
-                                                        control={form.control} 
-                                                        name={`items.${lineItemIndex}.numberOfBunches`} 
-                                                        render={({ field }) => (
-                                                          <FormItem>
-                                                            <FormControl>
-                                                              <Input type="number" {...field} value={field.value ?? 0} />
-                                                            </FormControl>
-                                                            <FormMessage />
-                                                          </FormItem>
-                                                        )} 
-                                                      />
-                                                    )}
+                                                <TableCell className="min-w-[120px] align-top">
+                                                    {bunchIndex === 0 ? (
+                                                        <FormField 
+                                                            control={form.control} 
+                                                            name={`items.${lineItemIndex}.bunches.0.numberOfBunches`} 
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormControl>
+                                                                        <Input type="number" {...field} value={field.value ?? 0} onChange={(e) => {
+                                                                            const val = parseInt(e.target.value, 10) || 0;
+                                                                            field.onChange(val);
+                                                                            const bunches = form.getValues(`items.${lineItemIndex}.bunches`);
+                                                                            bunches.forEach((_, bIdx) => {
+                                                                                form.setValue(`items.${lineItemIndex}.bunches.${bIdx}.numberOfBunches`, val);
+                                                                            });
+                                                                        }} />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    ) : null}
                                                 </TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
@@ -678,11 +698,11 @@ export function NewInvoiceForm() {
                                                 <TableCell className="min-w-[140px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
                                                 <TableCell className="min-w-[120px]">
                                                     <div className="flex items-center gap-1">
-                                                        {bunchIndex === 0 && (
+                                                        {bunchIndex === 0 ? (
                                                             <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
                                                                 <PlusCircle className="h-4 w-4" />
                                                             </Button>
-                                                        )}
+                                                        ) : null}
                                                         <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(lineItemIndex, bunchIndex)}>
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
