@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useAppData } from '@/context/app-data-context';
 import { PaymentForm } from '@/app/payments/payment-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Payment } from '@/lib/types';
 import { addPayment } from '@/services/payments';
 
@@ -17,7 +16,7 @@ export function RecordPurchasePaymentClient() {
   const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
     setIsSubmitting(true);
     try {
-      await addPayment(data); 
+      await addPayment(data);
       toast({
         title: "Éxito",
         description: "El pago de la compra ha sido registrado y la factura actualizada.",
