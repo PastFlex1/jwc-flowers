@@ -4,6 +4,9 @@ import { getCustomerById } from '@/services/customers';
 import { getConsignatarioById } from '@/services/consignatarios';
 import { getCargueraById } from '@/services/cargueras';
 import { getPaisById } from '@/services/paises';
+import { getPaymentsForInvoice } from '@/services/payments';
+import { getCreditNotesForInvoice } from '@/services/credit-notes';
+import { getDebitNotesForInvoice } from '@/services/debit-notes';
 import { InvoiceDetailView } from './invoice-detail-view';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -33,12 +36,25 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
   }
 
 
-  const customer = await getCustomerById(invoice.customerId);
-  const consignatario = invoice.consignatarioId 
-    ? await getConsignatarioById(invoice.consignatarioId) 
-    : null;
-  const carguera = invoice.carrierId ? await getCargueraById(invoice.carrierId) : null;
-  const pais = invoice.countryId ? await getPaisById(invoice.countryId) : null;
+  const [
+    customer, 
+    consignatario, 
+    carguera, 
+    pais, 
+    payments,
+    creditNotes,
+    debitNotes,
+  ] = await Promise.all([
+      getCustomerById(invoice.customerId),
+      invoice.consignatarioId ? getConsignatarioById(invoice.consignatarioId) : null,
+      invoice.carrierId ? getCargueraById(invoice.carrierId) : null,
+      invoice.countryId ? getPaisById(invoice.countryId) : null,
+      getPaymentsForInvoice(invoice.id),
+      getCreditNotesForInvoice(invoice.id),
+      getDebitNotesForInvoice(invoice.id)
+  ]);
+  
+  const financials = { payments, creditNotes, debitNotes };
 
 
   return <InvoiceDetailView 
@@ -47,5 +63,6 @@ export default async function InvoiceDetailPage({ params }: InvoiceDetailPagePro
     consignatario={consignatario}
     carguera={carguera}
     pais={pais}
+    financials={financials}
   />;
 }

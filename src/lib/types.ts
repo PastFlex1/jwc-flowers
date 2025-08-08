@@ -1,5 +1,6 @@
 
 
+
 export interface Customer {
   id: string;
   name: string;
@@ -148,3 +149,9 @@ export interface Payment {
   reference?: string;
   notes?: string;
 }
+
+export type Financials = {
+    payments: Payment[];
+    creditNotes: CreditNote[];
+    debitNotes: DebitNote[];
+};

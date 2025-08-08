@@ -1,12 +1,13 @@
 
 
+
 'use client';
 
 import React, { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { InvoiceActions } from './invoice-actions';
-import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem } from '@/lib/types';
+import type { Invoice, Customer, Consignatario, Carguera, Pais, LineItem, BunchItem, Financials } from '@/lib/types';
 
 type InvoiceDetailViewProps = {
   invoice: Invoice;
@@ -14,9 +15,10 @@ type InvoiceDetailViewProps = {
   consignatario: Consignatario | null;
   carguera: Carguera | null;
   pais: Pais | null;
+  financials: Financials;
 };
 
-export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais }: InvoiceDetailViewProps) {
+export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais, financials }: InvoiceDetailViewProps) {
   
   const totals = useMemo(() => {
     let totalBoxes = invoice?.items?.length || 0;
@@ -29,18 +31,25 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
         item.bunches.forEach(bunch => {
           const bunchesCount = Number(bunch.bunchesPerBox) || 0;
           const stemsPerBunch = Number(bunch.stemsPerBunch) || 0;
-          const salePrice = Number(bunch.salePrice) || 0;
+          const price = invoice.type === 'purchase' ? (Number(bunch.purchasePrice) || 0) : (Number(bunch.salePrice) || 0);
 
           totalBunches += bunchesCount;
           const stemsInBunch = bunchesCount * stemsPerBunch;
           totalStems += stemsInBunch;
-          totalFob += stemsInBunch * salePrice;
+          totalFob += stemsInBunch * price;
         });
       }
     });
 
-    return { totalBoxes, totalBunches, totalStems, totalFob };
-  }, [invoice?.items]);
+    const totalPayments = financials.payments.reduce((acc, p) => acc + p.amount, 0);
+    const totalCredits = financials.creditNotes.reduce((acc, cn) => acc + cn.amount, 0);
+    const totalDebits = financials.debitNotes.reduce((acc, dn) => acc + dn.amount, 0);
+
+    const balance = totalFob - totalCredits + totalDebits - totalPayments;
+
+
+    return { totalBoxes, totalBunches, totalStems, totalFob, totalPayments, totalCredits, totalDebits, balance };
+  }, [invoice, financials]);
 
 
   const renderItemRow = (item: LineItem, index: number) => {
@@ -165,15 +174,31 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
             </section>
 
             {/* Footer */}
-            <footer className="mt-4 flex justify-between items-end">
+            <footer className="mt-4 flex justify-between items-start">
                 <p className="text-[8px] max-w-[450px]">
                     All prices are FOB Quito. Please remember that you have 10 days after the date on the invoice to
                     make a claim and that we do not accept credits for freight or handling charges in any case.
                 </p>
-                <div className="text-sm">
-                    <div className="flex border border-gray-400 w-56">
-                         <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
-                         <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                <div className="text-sm space-y-px w-56">
+                    <div className="flex border border-gray-400">
+                        <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
+                        <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                    </div>
+                    <div className="flex border-b border-l border-r border-gray-400">
+                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Créditos</div>
+                        <div className="p-1 text-right w-1/2">${totals.totalCredits.toFixed(2)}</div>
+                    </div>
+                    <div className="flex border-b border-l border-r border-gray-400">
+                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Débitos</div>
+                        <div className="p-1 text-right w-1/2">${totals.totalDebits.toFixed(2)}</div>
+                    </div>
+                    <div className="flex border-b border-l border-r border-gray-400">
+                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Pagos</div>
+                        <div className="p-1 text-right w-1/2">${totals.totalPayments.toFixed(2)}</div>
+                    </div>
+                    <div className="flex border border-gray-400 bg-gray-100">
+                        <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">SALDO</div>
+                        <div className="p-1 text-right w-1/2 font-bold text-red-600">${totals.balance.toFixed(2)}</div>
                     </div>
                 </div>
             </footer>
