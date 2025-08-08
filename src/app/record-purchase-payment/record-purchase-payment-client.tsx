@@ -6,30 +6,24 @@ import { PaymentForm } from '@/app/payments/payment-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import type { Payment, Customer, Invoice } from '@/lib/types';
+import type { Payment } from '@/lib/types';
 import { addPayment } from '@/services/payments';
 
 export function RecordPurchasePaymentClient() {
   const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastPayment, setLastPayment] = useState<Payment | null>(null);
 
-  const purchaseInvoices = useMemo(() => invoices.filter(inv => inv.type === 'purchase'), [invoices]);
-
-  const handleAddPayment = async (data: Omit<Payment, 'id'>, customer: Customer, invoice: Invoice) => {
+  const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
     setIsSubmitting(true);
-    setLastPayment(null);
     try {
-      const paymentId = await addPayment(data); 
-      const newPayment = { ...data, id: paymentId };
-
+      await addPayment(data); 
       toast({
         title: "Éxito",
         description: "El pago de la compra ha sido registrado y la factura actualizada.",
       });
       await refreshData();
-      return newPayment;
+      return true;
     } catch (error) {
       console.error("Error registering purchase payment:", error);
       toast({
@@ -37,7 +31,7 @@ export function RecordPurchasePaymentClient() {
         description: "No se pudo registrar el pago de la compra.",
         variant: "destructive",
       });
-      return null;
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -67,8 +61,6 @@ export function RecordPurchasePaymentClient() {
               onSubmit={handleAddPayment}
               isSubmitting={isSubmitting}
               paymentType="purchase"
-              lastPayment={lastPayment}
-              setLastPayment={setLastPayment}
             />
           </CardContent>
         </Card>

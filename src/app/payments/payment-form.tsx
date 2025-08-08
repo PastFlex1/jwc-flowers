@@ -13,13 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
 import type { Payment, Invoice, CreditNote, DebitNote, BunchItem, Customer, Finca } from '@/lib/types';
-import { Loader2, CalendarIcon, Download } from 'lucide-react';
+import { Loader2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { PaymentReceipt } from './payment-receipt';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 const formSchema = z.object({
   entityId: z.string().min(1, { message: "Por favor seleccione una entidad." }),
@@ -35,7 +31,7 @@ type PaymentFormData = z.infer<typeof formSchema>;
 type FormSubmitData = Omit<Payment, 'id'>;
 
 type PaymentFormProps = {
-  onSubmit: (data: FormSubmitData, customer: Customer, invoice: Invoice) => Promise<Payment | null>;
+  onSubmit: (data: FormSubmitData) => Promise<boolean>;
   isSubmitting: boolean;
   customers: Customer[];
   fincas: Finca[];
@@ -45,8 +41,6 @@ type PaymentFormProps = {
   payments: Payment[];
   initialData?: PaymentFormData;
   paymentType: 'sale' | 'purchase';
-  lastPayment: Payment | null;
-  setLastPayment: (payment: Payment | null) => void;
 };
 
 export function PaymentForm({ 
@@ -60,13 +54,9 @@ export function PaymentForm({
     payments, 
     initialData,
     paymentType,
-    lastPayment,
-    setLastPayment,
 }: PaymentFormProps) {
   const [selectedInvoiceBalance, setSelectedInvoiceBalance] = useState<number | null>(null);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
-  const { toast } = useToast();
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(formSchema.refine(
@@ -153,32 +143,15 @@ export function PaymentForm({
   }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form, paymentType]);
 
   async function handleSubmit(values: PaymentFormData) {
-    const invoice = invoices.find(i => i.id === values.invoiceId);
-    const entity = paymentType === 'purchase'
-        ? fincas.find(f => f.id === values.entityId)
-        : customers.find(c => c.id === values.entityId);
-    
-    // For the receipt, we always need the final customer of the invoice.
-    const customer = invoice ? customers.find(c => c.id === invoice.customerId) : null;
-    
-    setLastPayment(null);
-
-    if (!entity || !invoice || !customer) {
-      console.error("Entity, Customer or Invoice not found for payment submission.");
-      toast({ title: "Error", description: "Entidad, Cliente o Factura no encontrados.", variant: "destructive" });
-      return;
-    }
-
     const { entityId, ...dataToSubmit } = values;
     const finalData: FormSubmitData = {
         ...dataToSubmit,
         paymentDate: values.paymentDate.toISOString(),
     };
     
-    const newPayment = await onSubmit(finalData, customer, invoice);
+    const success = await onSubmit(finalData);
 
-    if (newPayment) {
-        setLastPayment(newPayment);
+    if (success) {
         form.reset({
             ...initialData,
             entityId: values.entityId,
@@ -193,45 +166,10 @@ export function PaymentForm({
     }
   }
 
-  const handleDownloadPdf = async () => {
-    if (!lastPayment) {
-        toast({ title: "Error", description: "No hay un pago reciente para generar un comprobante.", variant: "destructive" });
-        return;
-    }
-    const receiptElement = document.getElementById('receipt-to-print');
-    if (!receiptElement) {
-        toast({ title: "Error", description: "No se pudo encontrar el comprobante para generar el PDF.", variant: "destructive" });
-        return;
-    }
-
-    setIsGeneratingPdf(true);
-    try {
-        const canvas = await html2canvas(receiptElement, { scale: 3, useCORS: true, logging: false });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'pt', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-        const imgWidth = canvas.width * ratio;
-        const imgHeight = canvas.height * ratio;
-        pdf.addImage(imgData, 'PNG', (pdfWidth - imgWidth) / 2, 0, imgWidth, imgHeight);
-        pdf.save(`Comprobante-Ingreso-${lastPayment?.invoiceId}.pdf`);
-    } catch (error) {
-        console.error("Error generating PDF:", error);
-        toast({ title: "Error", description: "Ocurrió un error al generar el PDF.", variant: "destructive" });
-    } finally {
-        setIsGeneratingPdf(false);
-    }
-  };
-  
   const entities = paymentType === 'purchase' ? fincas : customers;
   const entityLabel = paymentType === 'purchase' ? 'Proveedor (Finca)' : 'Cliente';
   const entityPlaceholder = paymentType === 'purchase' ? 'Seleccione un proveedor' : 'Seleccione un cliente';
   const selectEntityFirstMessage = paymentType === 'purchase' ? 'Seleccione un proveedor primero' : 'Seleccione un cliente primero';
-
-  const customerForReceipt = lastPayment ? customers.find(c => c.id === invoices.find(i => i.id === lastPayment.invoiceId)?.customerId) : null;
-  const invoiceForReceipt = lastPayment ? invoices.find(i => i.id === lastPayment.invoiceId) : null;
-
 
   return (
     <>
@@ -389,22 +327,9 @@ export function PaymentForm({
                   {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isSubmitting ? 'Guardando...' : 'Registrar Pago'}
               </Button>
-              <Button type="button" onClick={handleDownloadPdf} disabled={!lastPayment || isGeneratingPdf}>
-                  {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                  Generar Comprobante
-              </Button>
           </div>
         </form>
       </Form>
-      <div className="hidden">
-        {lastPayment && customerForReceipt && invoiceForReceipt && (
-          <PaymentReceipt
-            payment={lastPayment}
-            customer={customerForReceipt}
-            invoice={invoiceForReceipt}
-          />
-        )}
-      </div>
     </>
   );
 }

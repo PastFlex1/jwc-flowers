@@ -13,21 +13,17 @@ export function PaymentClient() {
   const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastPayment, setLastPayment] = useState<Payment | null>(null);
 
-  const handleAddPayment = async (data: Omit<Payment, 'id'>, customer: Customer, invoice: Invoice) => {
+  const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
     setIsSubmitting(true);
-    setLastPayment(null);
     try {
-      const paymentId = await addPayment(data); 
-      const newPayment = { ...data, id: paymentId };
-
+      await addPayment(data); 
       toast({
         title: "Éxito",
         description: "El pago ha sido registrado y la factura actualizada.",
       });
       await refreshData();
-      return newPayment;
+      return true;
     } catch (error) {
       console.error("Error registering payment:", error);
       toast({
@@ -35,7 +31,7 @@ export function PaymentClient() {
         description: "No se pudo registrar el pago.",
         variant: "destructive",
       });
-      return null;
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -65,8 +61,6 @@ export function PaymentClient() {
               onSubmit={handleAddPayment}
               isSubmitting={isSubmitting}
               paymentType="sale"
-              lastPayment={lastPayment}
-              setLastPayment={setLastPayment}
             />
           </CardContent>
         </Card>
