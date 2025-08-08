@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -22,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { Invoice, Customer, CreditNote, DebitNote, Payment, BunchItem } from '@/lib/types';
+import type { Invoice, Finca, CreditNote, DebitNote, Payment, BunchItem } from '@/lib/types';
 import { format, parseISO } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +44,7 @@ function useDebounce<T>(value: T, delay: number): T {
 const ITEMS_PER_PAGE = 10;
 
 export function AccountsPayableClient() {
-  const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
+  const { invoices, fincas, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,12 +53,12 @@ export function AccountsPayableClient() {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const customerMap = useMemo(() => {
-    return customers.reduce((acc, customer) => {
-      acc[customer.id] = customer;
+  const fincaMap = useMemo(() => {
+    return fincas.reduce((acc, finca) => {
+      acc[finca.id] = finca;
       return acc;
-    }, {} as Record<string, Customer>);
-  }, [customers]);
+    }, {} as Record<string, Finca>);
+  }, [fincas]);
 
   const notesAndPaymentsByInvoiceId = useMemo(() => {
     const result: Record<string, { credits: number; debits: number; payments: number }> = {};
@@ -92,12 +91,12 @@ export function AccountsPayableClient() {
   useEffect(() => {
     const purchaseInvoices = invoices.filter(inv => inv.type === 'purchase');
     const filtered = purchaseInvoices.filter(invoice => {
-        const customerName = customerMap[invoice.customerId]?.name || '';
+        const farmName = fincaMap[invoice.farmId]?.name || '';
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         
         const searchFields = [
             invoice.invoiceNumber,
-            customerName,
+            farmName,
             invoice.status,
             format(parseISO(invoice.flightDate), 'PPP')
         ];
@@ -106,7 +105,7 @@ export function AccountsPayableClient() {
     });
     setLocalInvoices(filtered);
     setCurrentPage(1);
-  }, [invoices, debouncedSearchTerm, customerMap]);
+  }, [invoices, debouncedSearchTerm, fincaMap]);
 
   const totalPages = Math.ceil(localInvoices.length / ITEMS_PER_PAGE);
 
@@ -119,8 +118,8 @@ export function AccountsPayableClient() {
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
 
-  const getCustomer = (customerId: string): Customer | null => {
-    return customerMap[customerId] || null;
+  const getFinca = (farmId: string): Finca | null => {
+    return fincaMap[farmId] || null;
   };
 
   const getInvoiceBalance = (invoice: Invoice) => {
@@ -213,7 +212,7 @@ export function AccountsPayableClient() {
                           {invoice.invoiceNumber}
                         </Link>
                       </TableCell>
-                      <TableCell>{getCustomer(invoice.customerId)?.name || 'Desconocido'}</TableCell>
+                      <TableCell>{getFinca(invoice.farmId)?.name || 'Desconocido'}</TableCell>
                       <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
                       <TableCell>${balance.toFixed(2)}</TableCell>
                       <TableCell>
