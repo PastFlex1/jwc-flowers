@@ -255,6 +255,15 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
   
+    const cleanedItems = values.items.map(item => {
+      const { id, ...restOfItem } = item;
+      const cleanedBunches = item.bunches.map(bunch => {
+        const { id, ...restOfBunch } = bunch;
+        return restOfBunch;
+      });
+      return { ...restOfItem, bunches: cleanedBunches };
+    });
+  
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
       consignatarioId: values.consignatarioId || '',
@@ -262,10 +271,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: values.items.map(item => ({
-        ...item,
-        numberOfBunches: item.numberOfBunches || 0
-      }))
+      items: cleanedItems as LineItem[],
     };
   
     try {
@@ -604,10 +610,9 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
-                                        const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
+                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
                                         
-                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
+                                        const totalStems = stemsPerBunch * bunchesPerBox;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
