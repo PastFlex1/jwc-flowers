@@ -47,8 +47,12 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
     return (
        <React.Fragment key={item.id || index}>
         {(item.bunches || []).map((bunch, bunchIndex) => {
-            const totalStemsForBunch = bunch.stemsPerBunch * bunch.bunchesPerBox;
-            const totalPrice = totalStemsForBunch * bunch.salePrice;
+            const stemsPerBunch = bunch.stemsPerBunch || 0;
+            const bunchesPerBox = bunch.bunchesPerBox || 0;
+            const salePrice = bunch.salePrice || 0;
+
+            const totalStemsForBunch = stemsPerBunch * bunchesPerBox;
+            const totalPrice = totalStemsForBunch * salePrice;
             
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-[10px] leading-tight">
@@ -59,8 +63,8 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.color}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.length}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{totalStemsForBunch}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.bunchesPerBox}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-right">{bunch.salePrice.toFixed(3)}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-center">{bunchesPerBox}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-right">{salePrice.toFixed(3)}</div>
                     <div className="border-b border-r border-l border-gray-400 p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
                 </div>
             )
