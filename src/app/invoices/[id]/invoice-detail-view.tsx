@@ -46,7 +46,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
   const renderItemRow = (item: LineItem, index: number) => {
     return (
        <React.Fragment key={item.id || index}>
-        {item.bunches.map((bunch, bunchIndex) => {
+        {(item.bunches || []).map((bunch, bunchIndex) => {
             const totalStemsForBunch = bunch.stemsPerBunch * bunch.bunchesPerBox;
             const totalPrice = totalStemsForBunch * bunch.salePrice;
             
