@@ -97,8 +97,8 @@ export function PaymentForm({
         const entityInvoices = invoices.filter(inv => {
           const isCorrectType = inv.type === paymentType;
           const isNotPaid = inv.status !== 'Paid';
+          
           let isCorrectEntity = false;
-
           if (paymentType === 'purchase') {
             isCorrectEntity = inv.farmId === selectedEntityId;
           } else {
@@ -150,8 +150,11 @@ export function PaymentForm({
   }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form, paymentType]);
 
   async function handleSubmit(values: PaymentFormData) {
-    const customer = customers.find(c => c.id === values.entityId);
     const invoice = invoices.find(i => i.id === values.invoiceId);
+    
+    // For the receipt, we always need the final customer of the invoice.
+    const customer = invoice ? customers.find(c => c.id === invoice.customerId) : null;
+    
     setLastPayment(null);
 
     if (!customer || !invoice) {
