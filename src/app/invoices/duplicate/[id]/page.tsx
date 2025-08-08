@@ -1,7 +1,8 @@
 
+
 import { notFound } from 'next/navigation';
 import { getInvoiceById } from '@/services/invoices';
-import { NewInvoiceForm, type InvoiceFormValues } from '../new/new-invoice-form';
+import { NewInvoiceForm, type InvoiceFormValues } from '@/app/invoices/new/new-invoice-form';
 import { v4 as uuidv4 } from 'uuid';
 import { parseISO } from 'date-fns';
 
@@ -26,10 +27,10 @@ export default async function DuplicateInvoicePage({ params }: DuplicateInvoiceP
     items: invoiceToDuplicate.items.map(item => ({
       ...item,
       id: uuidv4(),
+      numberOfBunches: item.numberOfBunches,
       bunches: item.bunches.map(bunch => ({
         ...bunch,
         id: uuidv4(),
-        numberOfBunches: item.numberOfBunches,
       })),
     })),
   };
