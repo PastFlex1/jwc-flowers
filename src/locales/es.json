@@ -10,6 +10,7 @@
   },
   "header": {
     "newSale": "Nueva Venta",
+    "newPurchase": "Nueva Compra",
     "maintenance": "Mantenimiento",
     "masterTables": "Tablas Maestras",
     "documents": "Documentos",

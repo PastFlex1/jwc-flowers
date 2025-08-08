@@ -27,6 +27,7 @@ import {
   Languages,
   LogOut,
   UserCircle,
+  ShoppingCart,
 } from 'lucide-react';
 import {
   Menubar,
@@ -117,6 +118,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newSale')}</span>
+              </Button>
+              <Button onClick={() => router.push('/purchases/new')} variant="outline">
+                <ShoppingCart className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{t('header.newPurchase')}</span>
               </Button>
               <Menubar className="p-0 bg-transparent border-none">
                 <MenubarMenu>
