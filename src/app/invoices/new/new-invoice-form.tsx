@@ -38,7 +38,6 @@ const bunchItemSchema = z.object({
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
-  numberOfBunches: z.coerce.number().min(0, '# Ramos must be >= 0'),
   purchasePrice: z.coerce.number().min(0, 'Must be >= 0'),
   salePrice: z.coerce.number().min(0, 'Must be >= 0'),
 });
@@ -48,15 +47,14 @@ const lineItemSchema = z.object({
   id: z.string(),
   boxNumber: z.coerce.number().min(1, 'Must be > 0'),
   boxType: z.enum(['qb', 'eb', 'hb'], { required_error: 'Select a type.' }),
+  numberOfBunches: z.coerce.number().min(0, '# Ramos must be >= 0'),
   bunches: z.array(bunchItemSchema).min(1, 'At least one bunch is required.'),
 }).refine(data => {
     const totalBunchesInBox = data.bunches.reduce((acc, bunch) => acc + (bunch.bunchesPerBox || 0), 0);
-    const mainBunch = data.bunches[0];
-    if (!mainBunch) return true;
-    return totalBunchesInBox === mainBunch.numberOfBunches;
+    return totalBunchesInBox === data.numberOfBunches;
 }, {
     message: "La suma de 'Ramos/Caja' debe ser igual al total de # Ramos.",
-    path: ['bunches', '0', 'numberOfBunches'],
+    path: ['numberOfBunches'],
 });
 
 const invoiceSchema = z.object({
@@ -200,6 +198,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
         id: uuidv4(),
         boxNumber: (lineItems.length > 0 ? Math.max(...lineItems.map(item => item.boxNumber)) : 0) + 1,
         boxType: 'hb',
+        numberOfBunches: 1,
         bunches: [{
             id: uuidv4(),
             productoId: '',
@@ -209,7 +208,6 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
             length: 70,
             stemsPerBunch: 25,
             bunchesPerBox: 1,
-            numberOfBunches: 1,
             purchasePrice: 0,
             salePrice: 0,
         }]
@@ -218,7 +216,6 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
 
   const handleAddBunch = (lineItemIndex: number) => {
     const lineItem = form.getValues(`items.${lineItemIndex}`);
-    const mainBunch = lineItem.bunches[0];
     const newBunches = [...(lineItem.bunches || []), {
         id: uuidv4(),
         productoId: '',
@@ -228,7 +225,6 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
         length: 70,
         stemsPerBunch: 25,
         bunchesPerBox: 0,
-        numberOfBunches: mainBunch.numberOfBunches,
         purchasePrice: 0,
         salePrice: 0,
     }];
@@ -268,8 +264,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
       status: 'Pending',
       items: values.items.map(item => ({
         ...item,
-        // @ts-ignore
-        numberOfBunches: item.bunches[0]?.numberOfBunches || 0
+        numberOfBunches: item.numberOfBunches || 0
       }))
     };
   
@@ -609,11 +604,10 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
+                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.numberOfBunches`) || 0;
                                         const boxCount = form.watch(`items.${lineItemIndex}.boxNumber`) || 0;
-                                        const numberOfBunches = form.watch(`items.${lineItemIndex}.bunches.0.numberOfBunches`) || 0;
                                         
-                                        const totalStems = stemsPerBunch * numberOfBunches * boxCount;
+                                        const totalStems = boxCount * stemsPerBunch * numberOfBunches;
                                         const totalValue = totalStems * salePrice;
                                         
                                         let differencePercent = '0 %';
@@ -630,10 +624,10 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className="min-w-[120px]">
+                                                <TableCell className="min-w-[120px] align-top pt-2">
                                                     {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} /> : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[120px]">
+                                                <TableCell className="min-w-[120px] align-top pt-2">
                                                      {bunchIndex === 0 ? (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
@@ -647,22 +641,15 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                             )} />
                                                         ) : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[120px] align-top">
+                                                <TableCell className="min-w-[120px] align-top pt-2">
                                                     {bunchIndex === 0 ? (
                                                         <FormField 
                                                             control={form.control} 
-                                                            name={`items.${lineItemIndex}.bunches.0.numberOfBunches`} 
+                                                            name={`items.${lineItemIndex}.numberOfBunches`} 
                                                             render={({ field }) => (
                                                                 <FormItem>
                                                                     <FormControl>
-                                                                        <Input type="number" {...field} value={field.value ?? 0} onChange={(e) => {
-                                                                            const val = parseInt(e.target.value, 10) || 0;
-                                                                            field.onChange(val);
-                                                                            const bunches = form.getValues(`items.${lineItemIndex}.bunches`);
-                                                                            bunches.forEach((_, bIdx) => {
-                                                                                form.setValue(`items.${lineItemIndex}.bunches.${bIdx}.numberOfBunches`, val);
-                                                                            });
-                                                                        }} />
+                                                                        <Input type="number" {...field} value={field.value ?? 0} />
                                                                     </FormControl>
                                                                     <FormMessage />
                                                                 </FormItem>
@@ -716,7 +703,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                         </TableBody>
                     </Table>
                 </div>
-                <FormMessage>{form.formState.errors.items?.message}</FormMessage>
+                <FormMessage>{form.formState.errors.items?.message || form.formState.errors.items?.root?.message}</FormMessage>
             </CardContent>
           </Card>
 
