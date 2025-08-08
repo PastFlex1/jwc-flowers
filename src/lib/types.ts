@@ -43,7 +43,7 @@ export interface Invoice {
   invoiceNumber: string;
   farmDepartureDate: string;
   flightDate: string;
-  sellerId: string;
+  sellerId?: string;
   customerId: string;
   consignatarioId: string;
   farmId: string;
@@ -148,5 +148,3 @@ export interface Payment {
   reference?: string;
   notes?: string;
 }
-
-    

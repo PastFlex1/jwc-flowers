@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import type { Payment, Invoice, CreditNote, DebitNote, BunchItem, Customer } from '@/lib/types';
+import type { Payment, Invoice, CreditNote, DebitNote, BunchItem, Customer, Finca } from '@/lib/types';
 import { Loader2, CalendarIcon, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, toDate } from 'date-fns';
@@ -23,7 +22,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 const formSchema = z.object({
-  customerId: z.string().min(1, { message: "Por favor seleccione un cliente." }),
+  entityId: z.string().min(1, { message: "Por favor seleccione una entidad." }),
   invoiceId: z.string().min(1, { message: "Por favor seleccione una factura." }),
   amount: z.coerce.number().gt(0, { message: "El monto debe ser mayor que cero." }),
   paymentDate: z.date({ required_error: "La fecha es requerida." }),
@@ -39,22 +38,26 @@ type PaymentFormProps = {
   onSubmit: (data: FormSubmitData, customer: Customer, invoice: Invoice) => Promise<Payment | null>;
   isSubmitting: boolean;
   customers: Customer[];
+  fincas: Finca[];
   invoices: Invoice[];
   creditNotes: CreditNote[];
   debitNotes: DebitNote[];
   payments: Payment[];
   initialData?: PaymentFormData;
+  paymentType: 'sale' | 'purchase';
 };
 
 export function PaymentForm({ 
     onSubmit, 
     isSubmitting, 
     customers,
+    fincas,
     invoices, 
     creditNotes, 
     debitNotes, 
     payments, 
-    initialData 
+    initialData,
+    paymentType,
 }: PaymentFormProps) {
   const [selectedInvoiceBalance, setSelectedInvoiceBalance] = useState<number | null>(null);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
@@ -76,7 +79,7 @@ export function PaymentForm({
     )),
     mode: 'onChange',
     defaultValues: initialData || {
-      customerId: '',
+      entityId: '',
       invoiceId: '',
       amount: 0,
       paymentDate: new Date(),
@@ -86,13 +89,13 @@ export function PaymentForm({
     },
   });
 
-  const selectedCustomerId = form.watch('customerId');
+  const selectedEntityId = form.watch('entityId');
   const selectedInvoiceId = form.watch('invoiceId');
 
   useEffect(() => {
-    if (selectedCustomerId) {
-        const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && inv.status !== 'Paid');
-        setFilteredInvoices(customerInvoices);
+    if (selectedEntityId) {
+        const entityInvoices = invoices.filter(inv => inv.customerId === selectedEntityId && inv.type === paymentType && inv.status !== 'Paid');
+        setFilteredInvoices(entityInvoices);
         form.setValue('invoiceId', '');
         setSelectedInvoiceBalance(null);
     } else {
@@ -100,7 +103,7 @@ export function PaymentForm({
         form.setValue('invoiceId', '');
         setSelectedInvoiceBalance(null);
     }
-  }, [selectedCustomerId, invoices, form]);
+  }, [selectedEntityId, invoices, form, paymentType]);
 
 
   useEffect(() => {
@@ -111,7 +114,8 @@ export function PaymentForm({
               if (!item.bunches) return acc;
               return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
                   const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
-                  return bunchAcc + (stems * bunch.salePrice);
+                  const price = paymentType === 'purchase' ? bunch.purchasePrice : bunch.salePrice;
+                  return bunchAcc + (stems * price);
               }, 0);
             }, 0);
 
@@ -130,19 +134,20 @@ export function PaymentForm({
     } else {
         setSelectedInvoiceBalance(null);
     }
-  }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form]);
+  }, [selectedInvoiceId, invoices, creditNotes, debitNotes, payments, form, paymentType]);
 
   async function handleSubmit(values: PaymentFormData) {
-    const customer = customers.find(c => c.id === values.customerId);
+    const customer = customers.find(c => c.id === values.entityId);
     const invoice = invoices.find(i => i.id === values.invoiceId);
     setLastPayment(null);
 
     if (!customer || !invoice) {
       console.error("Customer or Invoice not found for payment submission.");
+      toast({ title: "Error", description: "Cliente o Factura no encontrados.", variant: "destructive" });
       return;
     }
 
-    const { customerId, ...dataToSubmit } = values;
+    const { entityId, ...dataToSubmit } = values;
     const finalData: FormSubmitData = {
         ...dataToSubmit,
         paymentDate: values.paymentDate.toISOString(),
@@ -154,7 +159,7 @@ export function PaymentForm({
         setLastPayment(newPayment);
         form.reset({
             ...initialData,
-            customerId: values.customerId,
+            entityId: values.entityId,
             invoiceId: '',
             amount: 0,
             paymentDate: new Date(),
@@ -163,7 +168,6 @@ export function PaymentForm({
             notes: '',
         });
         setSelectedInvoiceBalance(null);
-        setFilteredInvoices([]);
     }
   }
 
@@ -197,6 +201,11 @@ export function PaymentForm({
         setIsGeneratingPdf(false);
     }
   };
+  
+  const entities = paymentType === 'purchase' ? fincas : customers;
+  const entityLabel = paymentType === 'purchase' ? 'Proveedor (Finca)' : 'Cliente';
+  const entityPlaceholder = paymentType === 'purchase' ? 'Seleccione un proveedor' : 'Seleccione un cliente';
+  const selectEntityFirstMessage = paymentType === 'purchase' ? 'Seleccione un proveedor primero' : 'Seleccione un cliente primero';
 
   const customerForReceipt = lastPayment ? customers.find(c => c.id === invoices.find(i => i.id === lastPayment.invoiceId)?.customerId) : null;
   const invoiceForReceipt = lastPayment ? invoices.find(i => i.id === lastPayment.invoiceId) : null;
@@ -208,20 +217,20 @@ export function PaymentForm({
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="customerId"
+            name="entityId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cliente</FormLabel>
+                <FormLabel>{entityLabel}</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un cliente" />
+                        <SelectValue placeholder={entityPlaceholder} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {customers.map(customer => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
+                      {entities.map(entity => (
+                          <SelectItem key={entity.id} value={entity.id}>
+                            {entity.name}
                           </SelectItem>
                       ))}
                     </SelectContent>
@@ -236,10 +245,10 @@ export function PaymentForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Factura a Pagar</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCustomerId}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={!selectedEntityId}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={!selectedCustomerId ? "Seleccione un cliente primero" : "Seleccione una factura"} />
+                        <SelectValue placeholder={!selectedEntityId ? selectEntityFirstMessage : "Seleccione una factura"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

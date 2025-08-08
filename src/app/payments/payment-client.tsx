@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAppData } from '@/context/app-data-context';
@@ -9,7 +10,7 @@ import type { Payment, Customer, Invoice } from '@/lib/types';
 import { addPayment } from '@/services/payments';
 
 export function PaymentClient() {
-  const { customers, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
+  const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastReceiptData, setLastReceiptData] = useState<{ payment: Payment; customer: Customer; invoice: Invoice} | null>(null);
@@ -62,12 +63,14 @@ export function PaymentClient() {
           <CardContent>
             <PaymentForm 
               customers={customers}
+              fincas={fincas}
               invoices={invoices}
               creditNotes={creditNotes}
               debitNotes={debitNotes}
               payments={payments}
               onSubmit={handleAddPayment}
               isSubmitting={isSubmitting}
+              paymentType="sale"
             />
           </CardContent>
         </Card>
