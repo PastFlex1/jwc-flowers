@@ -1,15 +1,16 @@
+
 'use client';
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
-import type { StatementData } from './account-statement-client';
+import type { StatementData } from './farm-account-statement-client';
 
-type AccountStatementViewProps = {
+type FarmAccountStatementViewProps = {
   data: StatementData;
 };
 
-export function AccountStatementView({ data }: AccountStatementViewProps) {
+export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps) {
 
   const groupedInvoices = data.invoices.reduce((acc, invoice) => {
     const month = format(parseISO(invoice.flightDate), 'MMMM yyyy');
@@ -21,7 +22,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
   }, {} as Record<string, typeof data.invoices>);
 
   return (
-    <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="statement-to-print">
+    <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="farm-statement-to-print">
       <CardContent className="p-0 text-sm leading-tight">
         <header className="flex justify-between items-start mb-6">
           <div className="w-1/2">
@@ -36,7 +37,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
             </div>
           </div>
           <div className="w-1/2 flex flex-col items-end">
-            <h1 className="text-xl font-bold mb-4 tracking-wider">ESTADO DE CUENTA {data.customer.name.toUpperCase()}</h1>
+            <h1 className="text-xl font-bold mb-4 tracking-wider">ESTADO DE CUENTA {data.finca.name.toUpperCase()}</h1>
             <div className="w-[280px] text-xs mt-4">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
                 <div className="w-2/3 p-1">SALDO DE CUENTA:</div>
@@ -62,12 +63,12 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
 
         <section className="border border-black p-2 mb-4 text-xs">
           <div className="grid grid-cols-[auto,1fr] gap-x-2">
-            <strong>CLIENTE FACTURACIÓN:</strong>
-            <span className="font-bold">{data.customer.name.toUpperCase()}</span>
+            <strong>PROVEEDOR:</strong>
+            <span className="font-bold">{data.finca.name.toUpperCase()}</span>
             <strong>DIRECCIÓN:</strong>
-            <span>{data.customer.address}</span>
-            <strong>CIUDAD:</strong>
-            <span>{data.customer.estadoCiudad}, {data.customer.pais}</span>
+            <span>{data.finca.address}</span>
+            <strong>RUC:</strong>
+            <span>{data.finca.taxId}</span>
           </div>
         </section>
 
@@ -75,7 +76,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
           <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-center bg-gray-200 border-t border-l border-r border-black text-xs">
             <div className="p-1 border-r border-black">FECHA</div>
             <div className="p-1 border-r border-black">FACTURA #</div>
-            <div className="p-1 border-r border-black">CLIENTE</div>
+            <div className="p-1 border-r border-black">PROVEEDOR</div>
             <div className="p-1 border-r border-black">CARGOS</div>
             <div className="p-1 border-r border-black">CRÉDITOS/DÉBITOS</div>
             <div className="p-1 border-r border-black">PAGOS</div>
@@ -91,7 +92,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
                    <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
                     <div className="p-1 text-center">{format(parseISO(invoice.flightDate), 'dd/MM/yyyy')}</div>
                     <div className="p-1 text-center">{invoice.invoiceNumber}</div>
-                    <div className="p-1">{data.customer.name}</div>
+                    <div className="p-1">{data.finca.name}</div>
                     <div className="p-1 text-right">${invoice.total.toFixed(2)}</div>
                     <div className="p-1 text-right">${(invoice.credits - invoice.debits).toFixed(2)}</div>
                     <div className="p-1 text-right">${invoice.payments.toFixed(2)}</div>
@@ -110,17 +111,6 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
               <div className="p-1 text-right">${data.totalOutstanding.toFixed(2)}</div>
             </div>
         </section>
-
-        <footer className="mt-6 text-xs">
-          <h4 className="font-bold text-center mb-2">POLÍTICA DE CRÉDITO</h4>
-          <div className="border border-black p-2 space-y-1">
-            <p>Al trabajar con <strong>JCW FLOWERS</strong>, el cliente acepta cumplir con las siguientes reglas de política de crédito.</p>
-            <p>1. Envíe toda la información a tiempo; un cliente tiene <strong>máximo 8 días</strong> para enviar la información desde que la finca entregó las cajas en la agencia de carga.</p>
-            <p>2. Fotos: de las flores, ramos, etiqueta, cajas, etc. Número de Factura, Día de Envío, Número de Guía Aérea (AWB), Fecha de llegada al destino final, Foto del código UPC.</p>
-            <p>3. En caso de que aprobemos un crédito, será solo por el costo de las flores, no aceptamos ningún costo de transporte ni ningún otro cargo.</p>
-            <p><strong>NOTA. Si un cliente no envía toda la información anterior, JCW FLOWERS</strong> no podrá procesar los créditos, y el crédito será rechazado.</p>
-          </div>
-        </footer>
       </CardContent>
     </Card>
   );

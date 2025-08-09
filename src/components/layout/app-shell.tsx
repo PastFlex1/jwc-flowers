@@ -152,7 +152,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                      <MenubarSeparator />
                     <MenubarItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</MenubarItem>
                     <MenubarItem onClick={() => router.push('/debit-notes')}>Notas de Débito</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta Cliente</MenubarItem>
+                    <MenubarItem onClick={() => router.push('/farm-account-statement')}>Estado de Cuenta Finca</MenubarItem>
                     <MenubarItem onClick={() => router.push('/payments')}>Registrar Pago</MenubarItem>
                     <MenubarItem onClick={() => router.push('/record-purchase-payment')}>Cuentas por Pagar</MenubarItem>
                   </MenubarContent>
