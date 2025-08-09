@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -15,6 +16,7 @@ const formSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
   address: z.string().min(5, { message: "Address is too short." }),
   phone: z.string().min(7, { message: "Phone number is not valid." }),
+  email: z.string().email({ message: "Invalid email format." }).optional().or(z.literal('')),
   taxId: z.string().min(10, { message: "Tax ID / RUC is not valid." }),
   productType: z.string().min(3, { message: "Product type is too short." }),
 });
@@ -36,6 +38,7 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
       name: '',
       address: '',
       phone: '',
+      email: '',
       taxId: '',
       productType: '',
     },
@@ -46,6 +49,7 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
       name: '',
       address: '',
       phone: '',
+      email: '',
       taxId: '',
       productType: '',
     });
@@ -85,19 +89,34 @@ export function FincaForm({ onSubmit, onClose, initialData, isSubmitting }: Finc
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input placeholder="0991234567" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="0991234567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input placeholder="contact@farm.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+        </div>
         <FormField
           control={form.control}
           name="taxId"

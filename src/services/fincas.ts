@@ -1,3 +1,4 @@
+
 import { db } from '@/lib/firebase';
 import type { Finca } from '@/lib/types';
 import {
@@ -19,6 +20,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Finca => 
     name: data.name,
     address: data.address,
     phone: data.phone,
+    email: data.email,
     taxId: data.taxId,
     productType: data.productType,
   };

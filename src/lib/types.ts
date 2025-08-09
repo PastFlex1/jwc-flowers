@@ -1,6 +1,7 @@
 
 
 
+
 export interface Customer {
   id: string;
   name: string;
@@ -63,6 +64,7 @@ export interface Finca {
   name: string;
   address: string;
   phone: string;
+  email?: string;
   taxId: string;
   productType: string;
 }

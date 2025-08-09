@@ -5,8 +5,11 @@ import { useState, useMemo } from 'react';
 import { useAppData } from '@/context/app-data-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import type { Finca, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { FarmAccountStatementView } from './farm-account-statement-view';
+import FarmAccountStatementDownloadButton from './farm-account-statement-download';
+import SendFarmDocumentsDialog from './send-documents-dialog';
 
 export type StatementData = {
   finca: Finca;
@@ -21,6 +24,7 @@ export type StatementData = {
 export function FarmAccountStatementClient() {
   const { fincas, invoices, creditNotes, debitNotes, payments } = useAppData();
   const [selectedFincaId, setSelectedFincaId] = useState<string | null>(null);
+  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
   const statementData = useMemo((): StatementData | null => {
     if (!selectedFincaId) return null;
@@ -88,6 +92,12 @@ export function FarmAccountStatementClient() {
             <h2 className="text-3xl font-bold tracking-tight font-headline">Estado de Cuenta de Finca</h2>
             <p className="text-muted-foreground">Seleccione una finca para ver su estado de cuenta detallado.</p>
           </div>
+          {statementData && (
+             <div className="flex gap-2">
+                <FarmAccountStatementDownloadButton data={statementData} />
+                <Button variant="outline" onClick={() => setIsSendDialogOpen(true)}>Enviar Documentos</Button>
+            </div>
+          )}
         </div>
 
         <Card>
@@ -121,6 +131,15 @@ export function FarmAccountStatementClient() {
           </div>
         )}
       </div>
+       
+      {statementData && (
+        <SendFarmDocumentsDialog 
+          isOpen={isSendDialogOpen}
+          onClose={() => setIsSendDialogOpen(false)}
+          finca={statementData.finca}
+          invoices={statementData.invoices}
+        />
+      )}
     </>
   );
 }
