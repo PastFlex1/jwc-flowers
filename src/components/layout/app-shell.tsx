@@ -174,13 +174,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full"  onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
-                     <Avatar>
-                        <AvatarFallback>
-                           <UserCircle />
-                        </AvatarFallback>
-                      </Avatar>
-                  </Button>
+                  <div onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <Avatar>
+                          <AvatarFallback>
+                            <UserCircle />
+                          </AvatarFallback>
+                        </Avatar>
+                    </Button>
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
                   <DropdownMenuLabel>{user?.username}</DropdownMenuLabel>
