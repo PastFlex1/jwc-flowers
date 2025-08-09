@@ -21,8 +21,6 @@ import {
   Flower2,
   FileText,
   Users,
-  Leaf,
-  Database,
   Settings,
   Plus,
   Languages,
@@ -31,17 +29,8 @@ import {
   ShoppingCart,
   Receipt,
 } from 'lucide-react';
-import {
-  Menubar,
-  MenubarContent,
-  MenubarItem,
-  MenubarLabel,
-  MenubarMenu,
-  MenubarSeparator,
-  MenubarTrigger,
-} from '@/components/ui/menubar';
 import { useTranslation } from '@/context/i18n-context';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,6 +45,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { t, setLocale, locale } = useTranslation();
   const { user, logout } = useAuth();
+  const [maintenanceMenuOpen, setMaintenanceMenuOpen] = React.useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
+  const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+
 
   const handleLogout = async () => {
     await logout();
@@ -102,7 +95,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <SidebarFooter className="p-4 mt-auto">
            <div className="flex items-center gap-3 w-full px-2 h-12">
-              <Database className="h-6 w-6 text-muted-foreground" />
               <div className="flex flex-col items-start">
                  <span className="font-medium">{t('sidebar.devMode')}</span>
                  <span className="text-xs text-muted-foreground">{t('sidebar.dbAccess')}</span>
@@ -126,60 +118,63 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newPurchase')}</span>
               </Button>
-              <Menubar className="p-0 bg-transparent border-none">
-                <MenubarMenu>
-                  <MenubarTrigger asChild>
+              
+              <DropdownMenu open={maintenanceMenuOpen} onOpenChange={setMaintenanceMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                   <div onMouseEnter={() => setMaintenanceMenuOpen(true)} onMouseLeave={() => setMaintenanceMenuOpen(false)}>
                     <Button variant="outline" size="icon">
                       <Settings className="h-5 w-5" />
                       <span className="sr-only">{t('header.maintenance')}</span>
                     </Button>
-                  </MenubarTrigger>
-                  <MenubarContent align="end">
-                    <MenubarLabel>{t('header.masterTables')}</MenubarLabel>
-                    <MenubarSeparator />
-                    <MenubarItem onClick={() => router.push('/productos')}>{t('productos.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/customers')}>{t('customers.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/consignatarios')}>{t('consignatarios.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/vendedores')}>{t('vendedores.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/marcacion')}>{t('marcacion.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/pais')}>{t('pais.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/provincias')}>{t('provincias.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/dae')}>{t('dae.title')}</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/cargueras')}>{t('cargueras.title')}</MenubarItem>
-                    <MenubarSeparator />
-                    <MenubarLabel>{t('header.documents')}</MenubarLabel>
-                     <MenubarSeparator />
-                    <MenubarItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/debit-notes')}>Notas de Débito</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/account-statement')}>Estado de Cuenta Cliente</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/farm-account-statement')}>Estado de Cuenta Finca</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/payments')}>Registrar Pago</MenubarItem>
-                    <MenubarItem onClick={() => router.push('/record-purchase-payment')}>Cuentas por Pagar</MenubarItem>
-                  </MenubarContent>
-                </MenubarMenu>
-              </Menubar>
-              <Menubar className="p-0 bg-transparent border-none">
-                <MenubarMenu>
-                  <MenubarTrigger asChild>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onMouseEnter={() => setMaintenanceMenuOpen(true)} onMouseLeave={() => setMaintenanceMenuOpen(false)}>
+                  <DropdownMenuLabel>{t('header.masterTables')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/productos')}>{t('productos.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/customers')}>{t('customers.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/consignatarios')}>{t('consignatarios.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/vendedores')}>{t('vendedores.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/marcacion')}>{t('marcacion.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/pais')}>{t('pais.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/provincias')}>{t('provincias.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/dae')}>{t('dae.title')}</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/cargueras')}>{t('cargueras.title')}</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>{t('header.documents')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/debit-notes')}>Notas de Débito</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/account-statement')}>Estado de Cuenta Cliente</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/farm-account-statement')}>Estado de Cuenta Finca</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/payments')}>Registrar Pago</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/record-purchase-payment')}>Cuentas por Pagar</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu open={languageMenuOpen} onOpenChange={setLanguageMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <div onMouseEnter={() => setLanguageMenuOpen(true)} onMouseLeave={() => setLanguageMenuOpen(false)}>
                     <Button variant="outline" size="icon">
                       <Languages className="h-5 w-5" />
                       <span className="sr-only">{t('header.changeLanguage')}</span>
                     </Button>
-                  </MenubarTrigger>
-                  <MenubarContent align="end">
-                    <MenubarItem onClick={() => setLocale('es')} disabled={locale === 'es'}>
-                      Español
-                    </MenubarItem>
-                    <MenubarItem onClick={() => setLocale('en')} disabled={locale === 'en'}>
-                      English
-                    </MenubarItem>
-                  </MenubarContent>
-                </MenubarMenu>
-              </Menubar>
-              <DropdownMenu>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onMouseEnter={() => setLanguageMenuOpen(true)} onMouseLeave={() => setLanguageMenuOpen(false)}>
+                  <DropdownMenuItem onClick={() => setLocale('es')} disabled={locale === 'es'}>
+                    Español
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLocale('en')} disabled={locale === 'en'}>
+                    English
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" className="rounded-full"  onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
                      <Avatar>
                         <AvatarFallback>
                            <UserCircle />
@@ -187,7 +182,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
                   <DropdownMenuLabel>{user?.username}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
