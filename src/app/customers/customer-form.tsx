@@ -116,8 +116,10 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
     const dataToSubmit: CustomerFormData = {
       ...values,
       daeId: values.daeId === '__none__' ? '' : values.daeId,
-      id: initialData?.id,
     };
+    if (initialData?.id) {
+        dataToSubmit.id = initialData.id;
+    }
     onSubmit(dataToSubmit);
   }
 
