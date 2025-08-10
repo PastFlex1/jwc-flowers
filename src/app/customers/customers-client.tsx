@@ -125,6 +125,7 @@ export function CustomersClient() {
     try {
       await deleteCustomer(customerToDelete.id);
       await refreshData();
+      setLocalCustomers(customers); // Re-sync local state with global state
       toast({ title: 'Success', description: 'Customer deleted successfully.' });
     } catch (error) {
       console.error("Error deleting customer:", error);
