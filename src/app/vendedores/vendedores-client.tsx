@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +28,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function VendedoresClient() {
   const { vendedores, refreshData } = useAppData();
-  const [localVendedores, setLocalVendedores] = useState<Vendedor[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,17 +37,12 @@ export function VendedoresClient() {
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalVendedores(vendedores);
-    setCurrentPage(1);
-  }, [vendedores]);
-
-  const totalPages = Math.ceil(localVendedores.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(vendedores.length / ITEMS_PER_PAGE);
 
   const paginatedVendedores = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localVendedores.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localVendedores, currentPage]);
+    return vendedores.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [vendedores, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -76,6 +70,7 @@ export function VendedoresClient() {
         toast({ title: 'Success', description: 'Seller added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -87,7 +82,6 @@ export function VendedoresClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
   

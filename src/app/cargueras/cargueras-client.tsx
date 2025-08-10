@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function CarguerasClient() {
   const { cargueras, refreshData } = useAppData();
-  const [localCargueras, setLocalCargueras] = useState<Carguera[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,17 +38,12 @@ export function CarguerasClient() {
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalCargueras(cargueras);
-    setCurrentPage(1);
-  }, [cargueras]);
-  
-  const totalPages = Math.ceil(localCargueras.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(cargueras.length / ITEMS_PER_PAGE);
 
   const paginatedCargueras = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localCargueras.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localCargueras, currentPage]);
+    return cargueras.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [cargueras, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -77,6 +71,7 @@ export function CarguerasClient() {
             toast({ title: t('common.success'), description: t('cargueras.toast.added') });
         }
         await refreshData();
+        handleCloseDialog();
     } catch (error) {
         console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -88,7 +83,6 @@ export function CarguerasClient() {
         });
     } finally {
         setIsSubmitting(false);
-        handleCloseDialog();
     }
   };
 

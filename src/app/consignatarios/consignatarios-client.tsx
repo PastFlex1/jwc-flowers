@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function ConsignatariosClient() {
   const { consignatarios, paises, customers, provincias, refreshData } = useAppData();
-  const [localConsignatarios, setLocalConsignatarios] = useState<Consignatario[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,11 +38,6 @@ export function ConsignatariosClient() {
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalConsignatarios(consignatarios);
-    setCurrentPage(1);
-  }, [consignatarios]);
-  
   const customerMap = useMemo(() => {
     return customers.reduce((acc, customer) => {
       acc[customer.id] = customer.name;
@@ -51,12 +45,12 @@ export function ConsignatariosClient() {
     }, {} as Record<string, string>);
   }, [customers]);
 
-  const totalPages = Math.ceil(localConsignatarios.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(consignatarios.length / ITEMS_PER_PAGE);
 
   const paginatedConsignatarios = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localConsignatarios.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localConsignatarios, currentPage]);
+    return consignatarios.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [consignatarios, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -84,6 +78,7 @@ export function ConsignatariosClient() {
         toast({ title: 'Success', description: 'Consignee added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -95,7 +90,6 @@ export function ConsignatariosClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 

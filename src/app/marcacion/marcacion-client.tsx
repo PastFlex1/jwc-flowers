@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function MarcacionClient() {
   const { marcaciones, customers, refreshData } = useAppData();
-  const [localMarcaciones, setLocalMarcaciones] = useState<Marcacion[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,11 +37,6 @@ export function MarcacionClient() {
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setLocalMarcaciones(marcaciones);
-    setCurrentPage(1);
-  }, [marcaciones]);
   
   const customerMap = useMemo(() => {
     return customers.reduce((acc, customer) => {
@@ -51,12 +45,12 @@ export function MarcacionClient() {
     }, {} as Record<string, string>);
   }, [customers]);
 
-  const totalPages = Math.ceil(localMarcaciones.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(marcaciones.length / ITEMS_PER_PAGE);
 
   const paginatedMarcaciones = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localMarcaciones.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localMarcaciones, currentPage]);
+    return marcaciones.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [marcaciones, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -84,6 +78,7 @@ export function MarcacionClient() {
         toast({ title: 'Success', description: 'Marking added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -95,7 +90,6 @@ export function MarcacionClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 

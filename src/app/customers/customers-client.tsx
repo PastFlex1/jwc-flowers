@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,14 +25,14 @@ import { useTranslation } from '@/context/i18n-context';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
+  useState(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
     return () => {
       clearTimeout(handler);
     };
-  }, [value, delay]);
+  });
   return debouncedValue;
 }
 
@@ -42,7 +42,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function CustomersClient() {
   const { customers, paises, cargueras, vendedores, daes, refreshData } = useAppData();
-  const [localCustomers, setLocalCustomers] = useState<Customer[]>([]);
   const { t } = useTranslation();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,8 +53,8 @@ export function CustomersClient() {
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const filtered = customers.filter(customer => {
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(customer => {
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         const searchFields = [
             customer.name,
@@ -63,16 +62,15 @@ export function CustomersClient() {
         ];
         return searchFields.some(field => field?.toLowerCase().includes(lowerCaseSearch));
     });
-    setLocalCustomers(filtered);
-    setCurrentPage(1);
   }, [customers, debouncedSearchTerm]);
 
-  const totalPages = Math.ceil(localCustomers.length / ITEMS_PER_PAGE);
+
+  const totalPages = Math.ceil(filteredCustomers.length / ITEMS_PER_PAGE);
 
   const paginatedCustomers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localCustomers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localCustomers, currentPage]);
+    return filteredCustomers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredCustomers, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -100,6 +98,7 @@ export function CustomersClient() {
         toast({ title: 'Success', description: 'Customer added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -111,7 +110,6 @@ export function CustomersClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
   
@@ -125,7 +123,6 @@ export function CustomersClient() {
     try {
       await deleteCustomer(customerToDelete.id);
       await refreshData();
-      setLocalCustomers(customers); // Re-sync local state with global state
       toast({ title: 'Success', description: 'Customer deleted successfully.' });
     } catch (error) {
       console.error("Error deleting customer:", error);

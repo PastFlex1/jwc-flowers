@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function ProvinciasClient() {
   const { provincias, refreshData } = useAppData();
-  const [localProvincias, setLocalProvincias] = useState<Provincia[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,18 +37,13 @@ export function ProvinciasClient() {
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setLocalProvincias(provincias);
-    setCurrentPage(1);
-  }, [provincias]);
   
-  const totalPages = Math.ceil(localProvincias.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(provincias.length / ITEMS_PER_PAGE);
 
   const paginatedProvincias = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localProvincias.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localProvincias, currentPage]);
+    return provincias.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [provincias, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -78,6 +72,7 @@ export function ProvinciasClient() {
             toast({ title: 'Success', description: 'Province added successfully.' });
         }
         await refreshData();
+        handleCloseDialog();
     } catch (error) {
         console.error("Error submitting province:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -89,7 +84,6 @@ export function ProvinciasClient() {
         });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 

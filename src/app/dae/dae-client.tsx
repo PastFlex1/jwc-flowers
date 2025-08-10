@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function DaeClient() {
   const { daes, paises, refreshData } = useAppData();
-  const [localDaes, setLocalDaes] = useState<Dae[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,17 +38,12 @@ export function DaeClient() {
   const [daeToDelete, setDaeToDelete] = useState<Dae | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalDaes(daes);
-    setCurrentPage(1);
-  }, [daes]);
-
-  const totalPages = Math.ceil(localDaes.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(daes.length / ITEMS_PER_PAGE);
 
   const paginatedDaes = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localDaes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localDaes, currentPage]);
+    return daes.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [daes, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -77,6 +71,7 @@ export function DaeClient() {
         toast({ title: 'Success', description: 'DAE added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -88,7 +83,6 @@ export function DaeClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 

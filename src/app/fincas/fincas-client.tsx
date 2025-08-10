@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -29,7 +29,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function FincasClient() {
   const { fincas, refreshData } = useAppData();
-  const [localFincas, setLocalFincas] = useState<Finca[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -39,17 +38,12 @@ export function FincasClient() {
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalFincas(fincas);
-    setCurrentPage(1);
-  }, [fincas]);
-
-  const totalPages = Math.ceil(localFincas.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(fincas.length / ITEMS_PER_PAGE);
 
   const paginatedFincas = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localFincas.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localFincas, currentPage]);
+    return fincas.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [fincas, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -78,6 +72,7 @@ export function FincasClient() {
         toast({ title: 'Success', description: 'Farm added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -89,7 +84,6 @@ export function FincasClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 

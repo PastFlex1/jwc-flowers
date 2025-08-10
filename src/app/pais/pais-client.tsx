@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -30,7 +30,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function PaisClient() {
   const { paises, refreshData } = useAppData();
-  const [localPaises, setLocalPaises] = useState<Pais[]>([]);
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,17 +39,12 @@ export function PaisClient() {
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    setLocalPaises(paises);
-    setCurrentPage(1);
-  }, [paises]);
-
-  const totalPages = Math.ceil(localPaises.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(paises.length / ITEMS_PER_PAGE);
 
   const paginatedPaises = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localPaises.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localPaises, currentPage]);
+    return paises.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [paises, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -78,6 +72,7 @@ export function PaisClient() {
         toast({ title: 'Success', description: 'Country added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -89,7 +84,6 @@ export function PaisClient() {
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 
