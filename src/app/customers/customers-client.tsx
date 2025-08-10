@@ -100,7 +100,6 @@ export function CustomersClient() {
         toast({ title: 'Success', description: 'Customer added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -112,6 +111,7 @@ export function CustomersClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
   
@@ -124,8 +124,8 @@ export function CustomersClient() {
     
     try {
       await deleteCustomer(customerToDelete.id);
-      toast({ title: 'Success', description: 'Customer deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Customer deleted successfully.' });
     } catch (error) {
       console.error("Error deleting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

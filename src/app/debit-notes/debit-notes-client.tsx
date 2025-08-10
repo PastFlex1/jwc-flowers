@@ -70,7 +70,6 @@ export function DebitNotesClient() {
       await addDebitNote(formData);
       toast({ title: t('common.success'), description: t('debitNotes.toast.added') });
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -82,6 +81,7 @@ export function DebitNotesClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -94,8 +94,8 @@ export function DebitNotesClient() {
     
     try {
       await deleteDebitNote(noteToDelete.id);
-      toast({ title: t('common.success'), description: t('debitNotes.toast.deleted') });
       await refreshData();
+      toast({ title: t('common.success'), description: t('debitNotes.toast.deleted') });
     } catch (error) {
       console.error("Error deleting note:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

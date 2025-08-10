@@ -71,7 +71,6 @@ export function CreditNotesClient() {
       await addCreditNote(formData);
       toast({ title: t('common.success'), description: t('creditNotes.toast.added') });
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -83,6 +82,7 @@ export function CreditNotesClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -95,8 +95,8 @@ export function CreditNotesClient() {
     
     try {
       await deleteCreditNote(noteToDelete.id);
-      toast({ title: t('common.success'), description: t('creditNotes.toast.deleted') });
       await refreshData();
+      toast({ title: t('common.success'), description: t('creditNotes.toast.deleted') });
     } catch (error) {
       console.error("Error deleting note:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

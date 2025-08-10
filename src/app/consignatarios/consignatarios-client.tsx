@@ -84,7 +84,6 @@ export function ConsignatariosClient() {
         toast({ title: 'Success', description: 'Consignee added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -96,6 +95,7 @@ export function ConsignatariosClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -108,8 +108,8 @@ export function ConsignatariosClient() {
 
     try {
       await deleteConsignatario(consignatarioToDelete.id);
-      toast({ title: 'Success', description: 'Consignee deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Consignee deleted successfully.' });
     } catch (error) {
         console.error("Error deleting consignatario:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

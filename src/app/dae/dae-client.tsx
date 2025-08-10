@@ -77,7 +77,6 @@ export function DaeClient() {
         toast({ title: 'Success', description: 'DAE added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -89,6 +88,7 @@ export function DaeClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -101,8 +101,8 @@ export function DaeClient() {
 
     try {
       await deleteDae(daeToDelete.id);
-      toast({ title: 'Success', description: 'DAE deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'DAE deleted successfully.' });
     } catch (error) {
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

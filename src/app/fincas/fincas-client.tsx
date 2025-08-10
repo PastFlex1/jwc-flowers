@@ -78,7 +78,6 @@ export function FincasClient() {
         toast({ title: 'Success', description: 'Farm added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -90,6 +89,7 @@ export function FincasClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -102,8 +102,8 @@ export function FincasClient() {
 
     try {
       await deleteFinca(fincaToDelete.id);
-      toast({ title: 'Success', description: 'Farm deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Farm deleted successfully.' });
     } catch (error) {
       console.error("Error deleting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

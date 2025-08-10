@@ -84,7 +84,6 @@ export function MarcacionClient() {
         toast({ title: 'Success', description: 'Marking added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -96,6 +95,7 @@ export function MarcacionClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -108,8 +108,8 @@ export function MarcacionClient() {
 
     try {
       await deleteMarcacion(marcacionToDelete.id);
-      toast({ title: 'Success', description: 'Marking deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Marking deleted successfully.' });
     } catch (error) {
       console.error("Error deleting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

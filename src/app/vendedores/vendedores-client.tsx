@@ -76,7 +76,6 @@ export function VendedoresClient() {
         toast({ title: 'Success', description: 'Seller added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -88,6 +87,7 @@ export function VendedoresClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
   
@@ -100,8 +100,8 @@ export function VendedoresClient() {
     
     try {
       await deleteVendedor(vendedorToDelete.id);
-      toast({ title: 'Success', description: 'Seller deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Seller deleted successfully.' });
     } catch (error) {
       console.error("Error deleting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

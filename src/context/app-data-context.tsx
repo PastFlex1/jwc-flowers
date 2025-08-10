@@ -65,7 +65,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
       const [

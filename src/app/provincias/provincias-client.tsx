@@ -78,7 +78,6 @@ export function ProvinciasClient() {
             toast({ title: 'Success', description: 'Province added successfully.' });
         }
         await refreshData();
-        handleCloseDialog();
     } catch (error) {
         console.error("Error submitting province:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -90,6 +89,7 @@ export function ProvinciasClient() {
         });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -102,8 +102,8 @@ export function ProvinciasClient() {
     
     try {
       await deleteProvincia(provinciaToDelete.id);
-      toast({ title: 'Success', description: 'Province deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Province deleted successfully.' });
     } catch (error) {
         console.error("Error deleting provincia:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

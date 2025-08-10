@@ -77,7 +77,6 @@ export function CarguerasClient() {
             toast({ title: t('common.success'), description: t('cargueras.toast.added') });
         }
         await refreshData();
-        handleCloseDialog();
     } catch (error) {
         console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -89,6 +88,7 @@ export function CarguerasClient() {
         });
     } finally {
         setIsSubmitting(false);
+        handleCloseDialog();
     }
   };
 
@@ -101,8 +101,8 @@ export function CarguerasClient() {
     
     try {
       await deleteCarguera(cargueraToDelete.id);
-      toast({ title: t('common.success'), description: t('cargueras.toast.deleted') });
       await refreshData();
+      toast({ title: t('common.success'), description: t('cargueras.toast.deleted') });
     } catch (error) {
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

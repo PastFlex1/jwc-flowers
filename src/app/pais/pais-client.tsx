@@ -78,7 +78,6 @@ export function PaisClient() {
         toast({ title: 'Success', description: 'Country added successfully.' });
       }
       await refreshData();
-      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -90,6 +89,7 @@ export function PaisClient() {
       });
     } finally {
       setIsSubmitting(false);
+      handleCloseDialog();
     }
   };
 
@@ -102,8 +102,8 @@ export function PaisClient() {
     
     try {
       await deletePais(paisToDelete.id);
-      toast({ title: 'Success', description: 'Country deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Country deleted successfully.' });
     } catch (error) {
       console.error("Error deleting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

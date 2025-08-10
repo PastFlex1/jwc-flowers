@@ -124,8 +124,8 @@ export function ProductosClient() {
     if (!productoToDelete) return;
     try {
       await deleteProducto(productoToDelete.id);
-      toast({ title: 'Success', description: 'Product deleted successfully.' });
       await refreshData();
+      toast({ title: 'Success', description: 'Product deleted successfully.' });
     } catch (error) {
       console.error("Error deleting product:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -141,16 +141,13 @@ export function ProductosClient() {
   };
 
   const handleInlineUpdate = async (id: string, field: keyof Producto, value: any) => {
-    const originalProductos = [...localProductos];
-    setLocalProductos(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
-    
     try {
       await updateProducto(id, { [field]: value });
       await refreshData();
       toast({ title: 'Success', description: 'Product updated.' });
     } catch (error) {
-      setLocalProductos(originalProductos);
       toast({ title: 'Error', description: 'Failed to update product.', variant: 'destructive' });
+      await refreshData();
     }
   };
 
