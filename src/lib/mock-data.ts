@@ -39,3 +39,4 @@ export const cargueras: Carguera[] = [
     { id: 'car-25', nombreCarguera: 'WORLD WIDE', pais: 'Internacional' },
 ];
 
+
