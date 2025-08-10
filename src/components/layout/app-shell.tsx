@@ -46,12 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { t, setLocale, locale } = useTranslation();
   const { user, logout } = useAuth();
-  const [masterTablesMenuOpen, setMasterTablesMenuOpen] = React.useState(false);
-  const [documentsMenuOpen, setDocumentsMenuOpen] = React.useState(false);
-  const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
-  const [userMenuOpen, setUserMenuOpen] = React.useState(false);
-
-
+  
   const handleLogout = async () => {
     await logout();
     router.push('/login');
@@ -121,16 +116,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <span className="hidden sm:inline">{t('header.newPurchase')}</span>
               </Button>
               
-              <DropdownMenu open={masterTablesMenuOpen} onOpenChange={setMasterTablesMenuOpen}>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <div onMouseEnter={() => setMasterTablesMenuOpen(true)} onMouseLeave={() => setMasterTablesMenuOpen(false)} className="h-full flex items-center">
-                    <Button variant="ghost">
-                      {t('header.masterTables')}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button variant="ghost">
+                    {t('header.masterTables')}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onMouseEnter={() => setMasterTablesMenuOpen(true)} onMouseLeave={() => setMasterTablesMenuOpen(false)}>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => router.push('/productos')}>{t('productos.title')}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/customers')}>{t('customers.title')}</DropdownMenuItem>
@@ -144,16 +137,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu open={documentsMenuOpen} onOpenChange={setDocumentsMenuOpen}>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <div onMouseEnter={() => setDocumentsMenuOpen(true)} onMouseLeave={() => setDocumentsMenuOpen(false)} className="h-full flex items-center">
-                    <Button variant="ghost">
-                      {t('header.documents')}
-                      <ChevronDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button variant="ghost">
+                    {t('header.documents')}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onMouseEnter={() => setDocumentsMenuOpen(true)} onMouseLeave={() => setDocumentsMenuOpen(false)}>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/debit-notes')}>Notas de Débito</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/account-statement')}>Estado de Cuenta Cliente</DropdownMenuItem>
@@ -163,17 +154,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-
-              <DropdownMenu open={languageMenuOpen} onOpenChange={setLanguageMenuOpen}>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div onMouseEnter={() => setLanguageMenuOpen(true)} onMouseLeave={() => setLanguageMenuOpen(false)}>
-                    <Button variant="outline" size="icon">
-                      <Languages className="h-5 w-5" />
-                      <span className="sr-only">{t('header.changeLanguage')}</span>
-                    </Button>
-                  </div>
+                  <Button variant="outline" size="icon">
+                    <Languages className="h-5 w-5" />
+                    <span className="sr-only">{t('header.changeLanguage')}</span>
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onMouseEnter={() => setLanguageMenuOpen(true)} onMouseLeave={() => setLanguageMenuOpen(false)}>
+                <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => setLocale('es')} disabled={locale === 'es'}>
                     Español
                   </DropdownMenuItem>
@@ -183,19 +171,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <DropdownMenu open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                      <Avatar>
-                          <AvatarFallback>
-                            <UserCircle />
-                          </AvatarFallback>
-                        </Avatar>
-                    </Button>
-                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar>
+                        <AvatarFallback>
+                          <UserCircle />
+                        </AvatarFallback>
+                      </Avatar>
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onMouseEnter={() => setUserMenuOpen(true)} onMouseLeave={() => setUserMenuOpen(false)}>
+                <DropdownMenuContent align="end">
                   <DropdownMenuLabel>{user?.username}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
