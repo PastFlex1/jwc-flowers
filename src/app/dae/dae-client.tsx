@@ -67,16 +67,6 @@ export function DaeClient() {
 
   const handleFormSubmit = async (daeData: DaeFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localDaes];
-
-    if (daeData.id) {
-        setLocalDaes(prev => prev.map(d => d.id === daeData.id ? { ...d, ...daeData } as Dae : d));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalDaes(prev => [...prev, { ...daeData, id: tempId } as Dae]);
-    }
-    
-    handleCloseDialog();
     
     try {
       if (daeData.id) {
@@ -87,8 +77,8 @@ export function DaeClient() {
         toast({ title: 'Success', description: 'DAE added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalDaes(originalData); // Revert
       console.error("Error submitting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -109,15 +99,11 @@ export function DaeClient() {
   const handleDeleteConfirm = async () => {
     if (!daeToDelete) return;
 
-    const originalData = [...localDaes];
-    setLocalDaes(prev => prev.filter(d => d.id !== daeToDelete.id));
-
     try {
       await deleteDae(daeToDelete.id);
       toast({ title: 'Success', description: 'DAE deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalDaes(originalData);
       console.error("Error deleting DAE:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

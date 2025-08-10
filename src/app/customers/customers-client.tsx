@@ -90,17 +90,6 @@ export function CustomersClient() {
 
   const handleFormSubmit = async (customerData: CustomerFormData) => {
     setIsSubmitting(true);
-    const originalCustomers = [...localCustomers];
-
-    // Optimistic update
-    if (customerData.id) {
-        setLocalCustomers(prev => prev.map(c => c.id === customerData.id ? { ...c, ...customerData } as Customer : c));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalCustomers(prev => [...prev, { ...customerData, id: tempId } as Customer]);
-    }
-    
-    handleCloseDialog();
     
     try {
       if (customerData.id) {
@@ -111,8 +100,8 @@ export function CustomersClient() {
         toast({ title: 'Success', description: 'Customer added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalCustomers(originalCustomers); // Revert on failure
       console.error("Error submitting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -133,15 +122,11 @@ export function CustomersClient() {
   const handleDeleteConfirm = async () => {
     if (!customerToDelete) return;
     
-    const originalCustomers = [...localCustomers];
-    setLocalCustomers(prev => prev.filter(c => c.id !== customerToDelete.id));
-
     try {
       await deleteCustomer(customerToDelete.id);
       toast({ title: 'Success', description: 'Customer deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalCustomers(originalCustomers); // Revert on failure
       console.error("Error deleting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

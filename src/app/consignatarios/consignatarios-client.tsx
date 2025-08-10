@@ -74,17 +74,6 @@ export function ConsignatariosClient() {
 
   const handleFormSubmit = async (formData: ConsignatarioFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localConsignatarios];
-    
-    // Optimistic Update
-    if (formData.id) {
-        setLocalConsignatarios(prev => prev.map(c => c.id === formData.id ? { ...c, ...formData } as Consignatario : c));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalConsignatarios(prev => [...prev, { ...formData, id: tempId } as Consignatario]);
-    }
-    
-    handleCloseDialog();
     
     try {
       if (formData.id) {
@@ -95,8 +84,8 @@ export function ConsignatariosClient() {
         toast({ title: 'Success', description: 'Consignee added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalConsignatarios(originalData); // Revert
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -117,15 +106,11 @@ export function ConsignatariosClient() {
   const handleDeleteConfirm = async () => {
     if (!consignatarioToDelete) return;
 
-    const originalData = [...localConsignatarios];
-    setLocalConsignatarios(prev => prev.filter(c => c.id !== consignatarioToDelete.id));
-
     try {
       await deleteConsignatario(consignatarioToDelete.id);
       toast({ title: 'Success', description: 'Consignee deleted successfully.' });
       await refreshData();
     } catch (error) {
-        setLocalConsignatarios(originalData);
         console.error("Error deleting consignatario:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({

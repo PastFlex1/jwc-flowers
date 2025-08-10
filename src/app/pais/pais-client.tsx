@@ -68,16 +68,6 @@ export function PaisClient() {
 
   const handleFormSubmit = async (paisData: PaisFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localPaises];
-
-    if (paisData.id) {
-        setLocalPaises(prev => prev.map(p => p.id === paisData.id ? { ...p, ...paisData } as Pais : p));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalPaises(prev => [...prev, { ...paisData, id: tempId } as Pais]);
-    }
-
-    handleCloseDialog();
     
     try {
       if (paisData.id) {
@@ -88,8 +78,8 @@ export function PaisClient() {
         toast({ title: 'Success', description: 'Country added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalPaises(originalData);
       console.error("Error submitting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -110,15 +100,11 @@ export function PaisClient() {
   const handleDeleteConfirm = async () => {
     if (!paisToDelete) return;
     
-    const originalData = [...localPaises];
-    setLocalPaises(prev => prev.filter(p => p.id !== paisToDelete.id));
-
     try {
       await deletePais(paisToDelete.id);
       toast({ title: 'Success', description: 'Country deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalPaises(originalData);
       console.error("Error deleting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

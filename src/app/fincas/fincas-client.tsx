@@ -68,17 +68,6 @@ export function FincasClient() {
 
   const handleFormSubmit = async (fincaData: FincaFormData) => {
     setIsSubmitting(true);
-    const originalFincas = [...localFincas];
-
-    // Optimistic Update
-    if (fincaData.id) {
-        setLocalFincas(prev => prev.map(f => f.id === fincaData.id ? { ...f, ...fincaData } as Finca : f));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalFincas(prev => [...prev, { ...fincaData, id: tempId } as Finca]);
-    }
-
-    handleCloseDialog();
 
     try {
       if (fincaData.id) {
@@ -89,8 +78,8 @@ export function FincasClient() {
         toast({ title: 'Success', description: 'Farm added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalFincas(originalFincas); // Revert on failure
       console.error("Error submitting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -111,15 +100,11 @@ export function FincasClient() {
   const handleDeleteConfirm = async () => {
     if (!fincaToDelete) return;
 
-    const originalFincas = [...localFincas];
-    setLocalFincas(prev => prev.filter(f => f.id !== fincaToDelete.id));
-    
     try {
       await deleteFinca(fincaToDelete.id);
       toast({ title: 'Success', description: 'Farm deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalFincas(originalFincas); // Revert
       console.error("Error deleting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

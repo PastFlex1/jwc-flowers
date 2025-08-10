@@ -74,16 +74,6 @@ export function MarcacionClient() {
 
   const handleFormSubmit = async (marcacionData: MarcacionFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localMarcaciones];
-
-    if (marcacionData.id) {
-        setLocalMarcaciones(prev => prev.map(m => m.id === marcacionData.id ? { ...m, ...marcacionData } as Marcacion : m));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalMarcaciones(prev => [...prev, { ...marcacionData, id: tempId } as Marcacion]);
-    }
-
-    handleCloseDialog();
 
     try {
       if (marcacionData.id) {
@@ -94,8 +84,8 @@ export function MarcacionClient() {
         toast({ title: 'Success', description: 'Marking added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalMarcaciones(originalData); // Revert
       console.error("Error submitting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -116,15 +106,11 @@ export function MarcacionClient() {
   const handleDeleteConfirm = async () => {
     if (!marcacionToDelete) return;
 
-    const originalData = [...localMarcaciones];
-    setLocalMarcaciones(prev => prev.filter(m => m.id !== marcacionToDelete.id));
-
     try {
       await deleteMarcacion(marcacionToDelete.id);
       toast({ title: 'Success', description: 'Marking deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalMarcaciones(originalData);
       console.error("Error deleting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

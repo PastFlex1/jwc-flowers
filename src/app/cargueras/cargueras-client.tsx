@@ -67,18 +67,7 @@ export function CarguerasClient() {
 
   const handleFormSubmit = async (cargueraData: CargueraFormData) => {
     setIsSubmitting(true);
-    const originalCargueras = [...localCargueras];
     
-    // Optimistic Update
-    if (cargueraData.id) {
-        setLocalCargueras(prev => prev.map(c => c.id === cargueraData.id ? { ...c, ...cargueraData } as Carguera : c));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalCargueras(prev => [...prev, { ...cargueraData, id: tempId } as Carguera]);
-    }
-    
-    handleCloseDialog();
-
     try {
         if (cargueraData.id) {
             await updateCarguera(cargueraData.id, cargueraData as Carguera);
@@ -88,8 +77,8 @@ export function CarguerasClient() {
             toast({ title: t('common.success'), description: t('cargueras.toast.added') });
         }
         await refreshData();
+        handleCloseDialog();
     } catch (error) {
-        setLocalCargueras(originalCargueras);
         console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
@@ -110,15 +99,11 @@ export function CarguerasClient() {
   const handleDeleteConfirm = async () => {
     if (!cargueraToDelete) return;
     
-    const originalCargueras = [...localCargueras];
-    setLocalCargueras(prev => prev.filter(c => c.id !== cargueraToDelete.id));
-    
     try {
       await deleteCarguera(cargueraToDelete.id);
       toast({ title: t('common.success'), description: t('cargueras.toast.deleted') });
       await refreshData();
     } catch (error) {
-      setLocalCargueras(originalCargueras);
       console.error("Error deleting carguera:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

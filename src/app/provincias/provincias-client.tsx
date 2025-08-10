@@ -68,16 +68,6 @@ export function ProvinciasClient() {
 
   const handleFormSubmit = async (provinciaData: ProvinciaFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localProvincias];
-
-    if (provinciaData.id) {
-        setLocalProvincias(prev => prev.map(p => p.id === provinciaData.id ? { ...p, ...provinciaData } as Provincia : p));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalProvincias(prev => [...prev, { ...provinciaData, id: tempId } as Provincia]);
-    }
-
-    handleCloseDialog();
     
     try {
         if (provinciaData.id) {
@@ -88,8 +78,8 @@ export function ProvinciasClient() {
             toast({ title: 'Success', description: 'Province added successfully.' });
         }
         await refreshData();
+        handleCloseDialog();
     } catch (error) {
-        setLocalProvincias(originalData);
         console.error("Error submitting province:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({
@@ -110,15 +100,11 @@ export function ProvinciasClient() {
   const handleDeleteConfirm = async () => {
     if (!provinciaToDelete) return;
     
-    const originalData = [...localProvincias];
-    setLocalProvincias(prev => prev.filter(p => p.id !== provinciaToDelete.id));
-
     try {
       await deleteProvincia(provinciaToDelete.id);
       toast({ title: 'Success', description: 'Province deleted successfully.' });
       await refreshData();
     } catch (error) {
-        setLocalProvincias(originalData);
         console.error("Error deleting provincia:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         toast({

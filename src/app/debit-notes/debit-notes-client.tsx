@@ -65,12 +65,12 @@ export function DebitNotesClient() {
 
   const handleFormSubmit = async (formData: DebitNoteFormData) => {
     setIsSubmitting(true);
-    handleCloseDialog();
     
     try {
       await addDebitNote(formData);
       toast({ title: t('common.success'), description: t('debitNotes.toast.added') });
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
       console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -92,15 +92,11 @@ export function DebitNotesClient() {
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return;
     
-    const originalNotes = [...localDebitNotes];
-    setLocalDebitNotes(prev => prev.filter(c => c.id !== noteToDelete.id));
-    
     try {
       await deleteDebitNote(noteToDelete.id);
       toast({ title: t('common.success'), description: t('debitNotes.toast.deleted') });
       await refreshData();
     } catch (error) {
-      setLocalDebitNotes(originalNotes);
       console.error("Error deleting note:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({

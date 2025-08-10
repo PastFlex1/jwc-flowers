@@ -66,16 +66,6 @@ export function VendedoresClient() {
 
   const handleFormSubmit = async (vendedorData: VendedorFormData) => {
     setIsSubmitting(true);
-    const originalData = [...localVendedores];
-
-    if (vendedorData.id) {
-        setLocalVendedores(prev => prev.map(v => v.id === vendedorData.id ? { ...v, ...vendedorData } as Vendedor : v));
-    } else {
-        const tempId = `temp-${Date.now()}`;
-        setLocalVendedores(prev => [...prev, { ...vendedorData, id: tempId } as Vendedor]);
-    }
-
-    handleCloseDialog();
     
     try {
       if (vendedorData.id) {
@@ -86,8 +76,8 @@ export function VendedoresClient() {
         toast({ title: 'Success', description: 'Seller added successfully.' });
       }
       await refreshData();
+      handleCloseDialog();
     } catch (error) {
-      setLocalVendedores(originalData);
       console.error("Error submitting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
@@ -108,15 +98,11 @@ export function VendedoresClient() {
   const handleDeleteConfirm = async () => {
     if (!vendedorToDelete) return;
     
-    const originalData = [...localVendedores];
-    setLocalVendedores(prev => prev.filter(v => v.id !== vendedorToDelete.id));
-
     try {
       await deleteVendedor(vendedorToDelete.id);
       toast({ title: 'Success', description: 'Seller deleted successfully.' });
       await refreshData();
     } catch (error) {
-      setLocalVendedores(originalData);
       console.error("Error deleting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       toast({
