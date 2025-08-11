@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
@@ -57,6 +58,7 @@ const lineItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
+  type: z.enum(['sale', 'purchase', 'both'], { required_error: 'Debe seleccionar un tipo de factura.' }),
   invoiceNumber: z.string().min(1, 'Invoice number is required.'),
   farmDepartureDate: z.date({ required_error: 'Departure date is required.' }),
   flightDate: z.date({ required_error: 'Flight date is required.' }),
@@ -264,11 +266,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
       return { ...restOfItem, bunches: cleanedBunches };
     });
   
-    const invoiceType = pathname.includes('/purchases') ? 'purchase' : 'sale';
-
     const processedInvoice: Omit<Invoice, 'id'> = {
       ...values,
-      type: invoiceType,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -285,7 +284,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
         description: t('invoices.new.toast.successDescription'),
       });
       sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      const destination = invoiceType === 'purchase' ? '/accounts-payable' : '/invoices';
+      const destination = values.type === 'purchase' ? '/accounts-payable' : '/invoices';
       router.push(destination);
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -308,8 +307,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{initialData ? "Duplicar Factura" : t('invoices.new.title')}</h2>
-        <p className="text-muted-foreground">{initialData ? "Edite los detalles y guarde para crear una nueva factura." : t('invoices.new.description')}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{initialData ? "Duplicar Factura" : "Nueva Factura"}</h2>
+        <p className="text-muted-foreground">{initialData ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra."}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -318,6 +317,42 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
               <CardTitle>{t('invoices.new.detailsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem className="col-span-full">
+                    <FormLabel>Tipo de Factura</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col md:flex-row gap-4"
+                      >
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="sale" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Venta (Estado de Cuenta Cliente)</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="purchase" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Compra (Estado de Cuenta Finca)</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="both" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Ambos</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
                <FormField
                 control={form.control}
                 name="invoiceNumber"
@@ -633,10 +668,10 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className="w-[80px] align-top pt-2">
+                                                <TableCell className="w-[50px] align-top pt-2">
                                                     {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />} /> : null}
                                                 </TableCell>
-                                                <TableCell className="w-[100px] align-top pt-2">
+                                                <TableCell className="w-[50px] align-top pt-2">
                                                      {bunchIndex === 0 ? (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
@@ -650,7 +685,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                             )} />
                                                         ) : null}
                                                 </TableCell>
-                                                <TableCell className="w-[90px] align-top pt-2">
+                                                <TableCell className="w-[50px] align-top pt-2">
                                                     {bunchIndex === 0 ? (
                                                         <FormField 
                                                             control={form.control} 
@@ -684,14 +719,14 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                         <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
-                                                <TableCell className="w-[80px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="w-[100px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="w-[100px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} onBlur={() => form.trigger(`items.${lineItemIndex}.numberOfBunches`)} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="w-[100px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="w-[100px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
-                                                <TableCell className="w-[90px]"><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
-                                                <TableCell className="w-[100px]"><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
-                                                <TableCell className="w-[120px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} onBlur={() => form.trigger(`items.${lineItemIndex}.numberOfBunches`)} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} />}/></TableCell>
+                                                <TableCell className="w-[50px]"><Input readOnly disabled value={totalStems} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="w-[50px]"><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50" /></TableCell>
+                                                <TableCell className="w-[50px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50" /></TableCell>
                                                 <TableCell className="w-[100px]">
                                                     <div className="flex items-center gap-1">
                                                         {bunchIndex === 0 && (

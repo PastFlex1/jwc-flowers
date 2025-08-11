@@ -45,7 +45,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function AccountsPayableClient() {
   const { invoices, fincas, creditNotes, debitNotes, payments, refreshData } = useAppData();
-  const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -88,9 +87,9 @@ export function AccountsPayableClient() {
     return result;
   }, [invoices, creditNotes, debitNotes, payments]);
 
-  useEffect(() => {
-    const purchaseInvoices = invoices.filter(inv => inv.type === 'purchase');
-    const filtered = purchaseInvoices.filter(invoice => {
+  const filteredInvoices = useMemo(() => {
+    const purchaseInvoices = invoices.filter(inv => inv.type === 'purchase' || inv.type === 'both');
+    return purchaseInvoices.filter(invoice => {
         const farmName = fincaMap[invoice.farmId]?.name || '';
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         
@@ -103,16 +102,15 @@ export function AccountsPayableClient() {
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
     });
-    setLocalInvoices(filtered);
-    setCurrentPage(1);
   }, [invoices, debouncedSearchTerm, fincaMap]);
 
-  const totalPages = Math.ceil(localInvoices.length / ITEMS_PER_PAGE);
+
+  const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE);
 
   const paginatedInvoices = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localInvoices, currentPage]);
+    return filteredInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredInvoices, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -143,16 +141,11 @@ export function AccountsPayableClient() {
 
   const handleDeleteConfirm = async () => {
     if (!invoiceToDelete) return;
-
-    const originalInvoices = [...localInvoices];
-    setLocalInvoices(prev => prev.filter(i => i.id !== invoiceToDelete.id));
-
     try {
       await deleteInvoice(invoiceToDelete.id);
-      toast({ title: t('common.success'), description: "La factura de compra ha sido eliminada." });
       await refreshData();
+      toast({ title: t('common.success'), description: "La factura de compra ha sido eliminada." });
     } catch (error) {
-      setLocalInvoices(originalInvoices);
       console.error("Error deleting invoice:", error);
       const errorMessage = error instanceof Error ? error.message : t('common.unknownError');
       toast({

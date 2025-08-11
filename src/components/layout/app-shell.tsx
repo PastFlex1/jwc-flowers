@@ -145,11 +145,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <div className="flex-1 flex items-center gap-2">
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('header.newSale')}</span>
-              </Button>
-              <Button onClick={() => router.push('/purchases/new')} variant="outline">
-                <ShoppingCart className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('header.newPurchase')}</span>
+                <span className="hidden sm:inline">Nueva Factura</span>
               </Button>
            </div>
            <div className="ml-auto flex items-center gap-2">

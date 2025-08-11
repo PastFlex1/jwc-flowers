@@ -32,7 +32,7 @@ export function AccountStatementClient() {
     const customer = customers.find(c => c.id === selectedCustomerId);
     if (!customer) return null;
 
-    const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || !inv.type));
+    const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
 
     const processedInvoices = customerInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {

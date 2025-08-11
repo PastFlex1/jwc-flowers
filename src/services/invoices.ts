@@ -1,6 +1,5 @@
 
 
-
 import { db } from '@/lib/firebase';
 import type { Invoice, LineItem, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 import {
@@ -35,7 +34,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
 
   return {
     id: snapshot.id,
-    type: data.type || 'sale', // Default to 'sale' for older documents
+    type: data.type || 'sale',
     invoiceNumber: data.invoiceNumber,
     customerId: data.customerId,
     farmDepartureDate: farmDepartureDate,

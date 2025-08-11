@@ -32,7 +32,7 @@ export function FarmAccountStatementClient() {
     const finca = fincas.find(f => f.id === selectedFincaId);
     if (!finca) return null;
 
-    const fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && inv.type === 'purchase');
+    const fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
 
     const processedInvoices = fincaInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
@@ -49,7 +49,7 @@ export function FarmAccountStatementClient() {
 
       const totalCredits = creditsForInvoice.reduce((acc, note) => acc + note.amount, 0);
       const totalDebits = debitsForInvoice.reduce((acc, note) => acc + note.amount, 0);
-      const totalPayments = paymentsForInvoice.reduce((acc, payment) => payment.amount, 0);
+      const totalPayments = paymentsForInvoice.reduce((sum, payment) => sum + payment.amount, 0);
       
       const totalCharge = invoiceSubtotal + totalDebits;
       const balance = totalCharge - totalCredits - totalPayments;

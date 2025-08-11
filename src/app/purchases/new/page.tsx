@@ -1,5 +1,5 @@
-import { NewInvoiceForm } from '@/app/invoices/new/new-invoice-form';
+import { redirect } from 'next/navigation';
 
 export default function NewPurchasePage() {
-  return <NewInvoiceForm />;
+  redirect('/invoices/new');
 }

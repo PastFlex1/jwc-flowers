@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -46,7 +45,6 @@ const ITEMS_PER_PAGE = 10;
 
 export function InvoicesClient() {
   const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
-  const [localInvoices, setLocalInvoices] = useState<Invoice[]>([]);
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -89,9 +87,9 @@ export function InvoicesClient() {
     return result;
   }, [invoices, creditNotes, debitNotes, payments]);
 
-  useEffect(() => {
-    const saleInvoices = invoices.filter(inv => inv.type === 'sale' || !inv.type);
-    const filtered = saleInvoices.filter(invoice => {
+  const filteredInvoices = useMemo(() => {
+    const saleInvoices = invoices.filter(inv => inv.type === 'sale' || inv.type === 'both');
+    return saleInvoices.filter(invoice => {
         const customerName = customerMap[invoice.customerId]?.name || '';
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         
@@ -104,16 +102,15 @@ export function InvoicesClient() {
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
     });
-    setLocalInvoices(filtered);
-    setCurrentPage(1);
   }, [invoices, debouncedSearchTerm, customerMap]);
 
-  const totalPages = Math.ceil(localInvoices.length / ITEMS_PER_PAGE);
+
+  const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE);
 
   const paginatedInvoices = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localInvoices, currentPage]);
+    return filteredInvoices.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredInvoices, currentPage]);
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -144,15 +141,11 @@ export function InvoicesClient() {
   const handleDeleteConfirm = async () => {
     if (!invoiceToDelete) return;
 
-    const originalInvoices = [...localInvoices];
-    setLocalInvoices(prev => prev.filter(i => i.id !== invoiceToDelete.id));
-
     try {
       await deleteInvoice(invoiceToDelete.id);
-      toast({ title: t('common.success'), description: t('invoices.toast.deleted') });
       await refreshData();
+      toast({ title: t('common.success'), description: t('invoices.toast.deleted') });
     } catch (error) {
-      setLocalInvoices(originalInvoices);
       console.error("Error deleting invoice:", error);
       const errorMessage = error instanceof Error ? error.message : t('common.unknownError');
       toast({
