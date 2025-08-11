@@ -123,6 +123,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
   
   const { control } = form;
 
+  let rowCounter = 0;
+
   const uniqueProducts = useMemo(() => {
     const unique = new Map<string, { id: string; price: number }>();
     productos.filter(p => p.estado === 'Activo').forEach(p => {
@@ -623,6 +625,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-16">N°</TableHead>
                                 <TableHead className="w-24">Nº Caja</TableHead>
                                 <TableHead className="w-32">Tipo Caja</TableHead>
                                 <TableHead className="w-24"># Ramos</TableHead>
@@ -644,6 +647,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                             {lineItems.map((lineItem, lineItemIndex) => (
                                 <React.Fragment key={lineItem.id}>
                                     {Array.isArray(lineItem.bunches) && lineItem.bunches.map((bunch, bunchIndex) => {
+                                        rowCounter++;
                                         const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
                                         
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
@@ -668,6 +672,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
 
                                         return (
                                             <TableRow key={bunch.id}>
+                                                <TableCell className="align-top pt-2 font-medium">{rowCounter}</TableCell>
                                                 <TableCell className="align-top pt-2">
                                                     {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2" />} /> : null}
                                                 </TableCell>
