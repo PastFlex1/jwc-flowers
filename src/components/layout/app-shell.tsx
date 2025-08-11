@@ -29,6 +29,17 @@ import {
   ShoppingCart,
   Receipt,
   ChevronDown,
+  ChevronRight,
+  Package,
+  Building,
+  User,
+  Tags,
+  MapPin,
+  FileArchive,
+  Ship,
+  Notebook,
+  CreditCard,
+  Banknote,
 } from 'lucide-react';
 import { useTranslation } from '@/context/i18n-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -40,6 +51,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { cn } from '@/lib/utils';
+
+
+const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
+  const pathname = usePathname();
+  const isActive = pathname === href;
+  return (
+    <Link href={href} prefetch={true} className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
+        isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+      )}>
+        {children}
+    </Link>
+  )
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -52,11 +84,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
-  const navItems = [
-    { href: '/accounts-payable', label: t('sidebar.accountsPayable'), icon: Receipt },
+  const mainNavItems = [
     { href: '/invoices', label: t('sidebar.invoices'), icon: FileText },
-    { href: '/customers', label: t('sidebar.customers'), icon: Users },
+    { href: '/accounts-payable', label: t('sidebar.accountsPayable'), icon: Receipt },
   ];
+
+  const documentLinks = [
+    { href: '/credit-notes', label: 'Notas de Crédito', icon: FileText },
+    { href: '/debit-notes', label: 'Notas de Débito', icon: FileText },
+    { href: '/account-statement', label: 'Estado de Cuenta Cliente', icon: Users },
+    { href: '/farm-account-statement', label: 'Estado de Cuenta Finca', icon: Building },
+    { href: '/payments', label: 'Registrar Pago', icon: Banknote },
+    { href: '/record-purchase-payment', label: 'Registrar Pago Compra', icon: CreditCard },
+  ];
+
+  const masterTableLinks = [
+      { href: '/productos', label: t('productos.title'), icon: Package },
+      { href: '/fincas', label: t('fincas.title'), icon: Building },
+      { href: '/customers', label: t('customers.title'), icon: Users },
+      { href: '/consignatarios', label: t('consignatarios.title'), icon: User },
+      { href: '/vendedores', label: t('vendedores.title'), icon: UserCircle },
+      { href: '/marcacion', label: t('marcacion.title'), icon: Tags },
+      { href: '/pais', label: t('pais.title'), icon: MapPin },
+      { href: '/provincias', label: t('provincias.title'), icon: MapPin },
+      { href: '/dae', label: t('dae.title'), icon: FileArchive },
+      { href: '/cargueras', label: t('cargueras.title'), icon: Ship },
+  ];
+
 
   return (
     <SidebarProvider>
@@ -73,21 +127,60 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarHeader>
 
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                className="gap-3"
-              >
-                <Link href={item.href} prefetch={true}>
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+        <SidebarMenu className="flex-grow">
+          <div className="px-4 py-2">
+            <h3 className="mb-2 px-2 text-lg font-semibold tracking-tight">{t('sidebar.main')}</h3>
+            <div className="space-y-1">
+               {mainNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href)}
+                    className="gap-3"
+                  >
+                    <Link href={item.href} prefetch={true}>
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </div>
+          </div>
+          
+          <Accordion type="multiple" className="w-full px-4">
+            <AccordionItem value="documents" className="border-none">
+              <AccordionTrigger className="py-2 hover:no-underline text-lg font-semibold tracking-tight">
+                {t('header.documents')}
+              </AccordionTrigger>
+              <AccordionContent className="pb-0 pl-2">
+                <div className="space-y-1">
+                  {documentLinks.map(item => (
+                     <NavLink key={item.href} href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </NavLink>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="master-tables" className="border-none">
+              <AccordionTrigger className="py-2 hover:no-underline text-lg font-semibold tracking-tight">
+                {t('header.masterTables')}
+              </AccordionTrigger>
+              <AccordionContent className="pb-0 pl-2">
+                <div className="space-y-1">
+                   {masterTableLinks.map(item => (
+                      <NavLink key={item.href} href={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </NavLink>
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          
         </SidebarMenu>
 
         <SidebarFooter className="p-4 mt-auto">
@@ -115,44 +208,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newPurchase')}</span>
               </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">
-                    {t('header.masterTables')}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push('/productos')}>{t('productos.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/fincas')}>{t('fincas.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/customers')}>{t('customers.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/consignatarios')}>{t('consignatarios.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/vendedores')}>{t('vendedores.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/marcacion')}>{t('marcacion.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/pais')}>{t('pais.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/provincias')}>{t('provincias.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/dae')}>{t('dae.title')}</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/cargueras')}>{t('cargueras.title')}</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">
-                    {t('header.documents')}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push('/credit-notes')}>Notas de Crédito</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/debit-notes')}>Notas de Débito</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/account-statement')}>Estado de Cuenta Cliente</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/farm-account-statement')}>Estado de Cuenta Finca</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/payments')}>Registrar Pago</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/record-purchase-payment')}>Cuentas por Pagar</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
