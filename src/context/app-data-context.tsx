@@ -38,6 +38,7 @@ type AppData = {
 
 type AppDataContextType = AppData & {
   isLoading: boolean;
+  hasBeenLoaded: boolean;
   refreshData: () => Promise<void>;
   hydrateData: (initialData: Partial<AppData>) => void;
 };
@@ -62,10 +63,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     payments: [],
   });
   
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasBeenLoaded, setHasBeenLoaded] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async (): Promise<void> => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       const [
@@ -100,7 +103,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getPayments(),
       ]);
 
-      // Merge default cargueras with DB data, ensuring no duplicates
       const dbCarguerasNames = new Set(dbCargueras.map(c => c.nombreCarguera.toLowerCase()));
       const combinedCargueras = [...dbCargueras];
       defaultCargueras.forEach(dc => {
@@ -125,6 +127,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         debitNotes: debitNotesData,
         payments: paymentsData,
       });
+      setHasBeenLoaded(true);
 
     } catch (error) {
       console.error("Failed to fetch global app data:", error);
@@ -137,26 +140,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     } finally {
         setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, isLoading]);
   
   const hydrateData = useCallback((initialData: Partial<AppData>) => {
     setData(prevData => ({ ...prevData, ...initialData }));
+    setHasBeenLoaded(true);
     setIsLoading(false);
   }, []);
-
-  useEffect(() => {
-    // Initial fetch if no data is hydrated from a server component
-    if (isLoading) {
-      fetchData();
-    }
-  }, [fetchData, isLoading]);
 
   const value = useMemo(() => ({
     ...data,
     isLoading,
+    hasBeenLoaded,
     refreshData: fetchData,
     hydrateData,
-  }), [data, isLoading, fetchData, hydrateData]);
+  }), [data, isLoading, hasBeenLoaded, fetchData, hydrateData]);
 
   return (
     <AppDataContext.Provider value={value}>

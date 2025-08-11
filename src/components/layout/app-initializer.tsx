@@ -12,7 +12,7 @@ function AppLoadingScreen() {
         <div className="flex h-screen w-screen items-center justify-center bg-background">
              <div className="flex flex-col items-center gap-4">
                 <Flower2 className="h-12 w-12 text-primary animate-pulse" />
-                <p className="text-muted-foreground">Syncing data...</p>
+                <p className="text-muted-foreground">Sincronizando datos...</p>
             </div>
         </div>
     );
@@ -20,7 +20,7 @@ function AppLoadingScreen() {
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const { isLoading: isDataLoading } = useAppData();
+  const { isLoading: isDataLoading, refreshData, hasBeenLoaded } = useAppData();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,6 +29,12 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
       router.replace('/login');
     }
   }, [isAuthenticated, isAuthLoading, pathname, router]);
+  
+  useEffect(() => {
+    if (isAuthenticated && !hasBeenLoaded && !isDataLoading) {
+      refreshData();
+    }
+  }, [isAuthenticated, hasBeenLoaded, isDataLoading, refreshData]);
 
   if (isAuthLoading) {
     return <AppLoadingScreen />;
@@ -39,11 +45,10 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
         return <AppLoadingScreen />;
      }
      if (pathname === '/login') {
-        return <AppLoadingScreen />; // Or show children if you want login page to be accessible when logged in
+        return <AppLoadingScreen />;
      }
      return <AppShell>{children}</AppShell>;
   }
 
-  // Not authenticated, and not loading, show children (which should be the login page)
   return <>{children}</>;
 }

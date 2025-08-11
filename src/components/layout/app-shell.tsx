@@ -51,27 +51,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 import { cn } from '@/lib/utils';
-
-
-const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
-  const pathname = usePathname();
-  const isActive = pathname === href;
-  return (
-    <Link href={href} prefetch={true} className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground",
-        isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-      )}>
-        {children}
-    </Link>
-  )
-}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -147,40 +127,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ))}
             </div>
           </div>
-          
-          <Accordion type="multiple" className="w-full px-4">
-            <AccordionItem value="documents" className="border-none">
-              <AccordionTrigger className="py-2 hover:no-underline text-lg font-semibold tracking-tight">
-                {t('header.documents')}
-              </AccordionTrigger>
-              <AccordionContent className="pb-0 pl-2">
-                <div className="space-y-1">
-                  {documentLinks.map(item => (
-                     <NavLink key={item.href} href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                      </NavLink>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="master-tables" className="border-none">
-              <AccordionTrigger className="py-2 hover:no-underline text-lg font-semibold tracking-tight">
-                {t('header.masterTables')}
-              </AccordionTrigger>
-              <AccordionContent className="pb-0 pl-2">
-                <div className="space-y-1">
-                   {masterTableLinks.map(item => (
-                      <NavLink key={item.href} href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        {item.label}
-                      </NavLink>
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          
         </SidebarMenu>
 
         <SidebarFooter className="p-4 mt-auto">
@@ -196,10 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SidebarInset className="flex flex-col">
         <header className="app-shell-header flex h-16 shrink-0 items-center gap-4 border-b bg-background px-6">
            <SidebarTrigger className="md:hidden" />
-           <div className="flex-1">
-             {/* This can be a breadcrumb or page title */}
-           </div>
-           <div className="ml-auto flex items-center gap-4">
+           <div className="flex-1 flex items-center gap-2">
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newSale')}</span>
@@ -208,6 +151,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <ShoppingCart className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">{t('header.newPurchase')}</span>
               </Button>
+           </div>
+           <div className="ml-auto flex items-center gap-2">
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost">
+                    {t('header.documents')}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {documentLinks.map(link => (
+                    <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)}>
+                      <link.icon className="mr-2 h-4 w-4" />
+                      <span>{link.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost">
+                    {t('header.masterTables')}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                   {masterTableLinks.map(link => (
+                    <DropdownMenuItem key={link.href} onClick={() => router.push(link.href)}>
+                      <link.icon className="mr-2 h-4 w-4" />
+                      <span>{link.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
