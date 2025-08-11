@@ -623,20 +623,20 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[80px]">Nº Caja</TableHead>
-                                <TableHead className="w-[100px]">Tipo Caja</TableHead>
-                                <TableHead className="w-[90px]"># Ramos</TableHead>
+                                <TableHead className="w-24">Nº Caja</TableHead>
+                                <TableHead className="w-32">Tipo Caja</TableHead>
+                                <TableHead className="w-24"># Ramos</TableHead>
                                 <TableHead className="min-w-[150px]">Producto</TableHead>
                                 <TableHead className="min-w-[150px]">Variedad</TableHead>
                                 <TableHead className="min-w-[150px]">Color</TableHead>
-                                <TableHead className="w-[80px]">Long.</TableHead>
-                                <TableHead className="w-[100px]">Tallos/Ramo</TableHead>
-                                <TableHead className="w-[100px]">Ramos/Caja</TableHead>
-                                <TableHead className="w-[100px]">P. Compra</TableHead>
-                                <TableHead className="w-[100px]">P. Venta</TableHead>
-                                <TableHead className="w-[90px]">Total Tallos</TableHead>
-                                <TableHead className="w-[100px]">Total</TableHead>
-                                <TableHead className="w-[120px]">Diferencia (%)</TableHead>
+                                <TableHead className="w-24">Long.</TableHead>
+                                <TableHead className="w-24">Tallos/Ramo</TableHead>
+                                <TableHead className="w-24">Ramos/Caja</TableHead>
+                                <TableHead className="w-24">P. Compra</TableHead>
+                                <TableHead className="w-24">P. Venta</TableHead>
+                                <TableHead className="w-24">Total Tallos</TableHead>
+                                <TableHead className="w-24">Total</TableHead>
+                                <TableHead className="w-28">Diferencia (%)</TableHead>
                                 <TableHead className="w-[100px]">Acciones</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -668,14 +668,14 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
 
                                         return (
                                             <TableRow key={bunch.id}>
-                                                <TableCell className="w-[50px] align-top pt-2">
-                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="py-2" />} /> : null}
+                                                <TableCell className="align-top pt-2">
+                                                    {bunchIndex === 0 ? <FormField control={form.control} name={`items.${lineItemIndex}.boxNumber`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2" />} /> : null}
                                                 </TableCell>
-                                                <TableCell className="w-[50px] align-top pt-2">
+                                                <TableCell className="align-top pt-2">
                                                      {bunchIndex === 0 ? (
                                                         <FormField control={form.control} name={`items.${lineItemIndex}.boxType`} render={({ field }) => (
                                                                 <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                                                                    <FormControl><SelectTrigger className="py-2"><SelectValue/></SelectTrigger></FormControl>
+                                                                    <FormControl><SelectTrigger className="w-32 py-2"><SelectValue/></SelectTrigger></FormControl>
                                                                     <SelectContent>
                                                                         <SelectItem value="hb">HB</SelectItem>
                                                                         <SelectItem value="qb">QB</SelectItem>
@@ -685,7 +685,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                             )} />
                                                         ) : null}
                                                 </TableCell>
-                                                <TableCell className="w-[50px] align-top pt-2">
+                                                <TableCell className="align-top pt-2">
                                                     {bunchIndex === 0 ? (
                                                         <FormField 
                                                             control={form.control} 
@@ -693,7 +693,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                             render={({ field }) => (
                                                                 <FormItem>
                                                                     <FormControl>
-                                                                        <Input type="number" {...field} value={field.value ?? 0} className="py-2" />
+                                                                        <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2" />
                                                                     </FormControl>
                                                                     <FormMessage />
                                                                 </FormItem>
@@ -719,15 +719,15 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
                                                         <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
-                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="py-2"/>}/></TableCell>
-                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="py-2"/>}/></TableCell>
-                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} onBlur={() => form.trigger(`items.${lineItemIndex}.numberOfBunches`)} value={field.value ?? 0} className="py-2"/>}/></TableCell>
-                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="py-2"/>}/></TableCell>
-                                                <TableCell className="w-[50px]"><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="py-2"/>}/></TableCell>
-                                                <TableCell className="w-[50px]"><Input readOnly disabled value={totalStems} className="bg-muted/50 py-2" /></TableCell>
-                                                <TableCell className="w-[50px]"><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="bg-muted/50 py-2" /></TableCell>
-                                                <TableCell className="w-[50px]"><Input readOnly disabled value={differencePercent} className="bg-muted/50 py-2" /></TableCell>
-                                                <TableCell className="w-[100px]">
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.stemsPerBunch`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.bunchesPerBox`} render={({ field }) => <Input type="number" {...field} onBlur={() => form.trigger(`items.${lineItemIndex}.numberOfBunches`)} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
+                                                <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
+                                                <TableCell><Input readOnly disabled value={totalStems} className="w-24 bg-muted/50 py-2" /></TableCell>
+                                                <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="w-24 bg-muted/50 py-2" /></TableCell>
+                                                <TableCell><Input readOnly disabled value={differencePercent} className="w-28 bg-muted/50 py-2" /></TableCell>
+                                                <TableCell>
                                                     <div className="flex items-center gap-1">
                                                         {bunchIndex === 0 && (
                                                             <Button type="button" variant="ghost" size="icon" onClick={() => handleAddBunch(lineItemIndex)}>
