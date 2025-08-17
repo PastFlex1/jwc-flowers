@@ -21,7 +21,14 @@ const formSchema = z.object({
   daeId: z.string().optional(),
   estadoCiudad: z.string().min(2, { message: "State/City is required." }),
   address: z.string().min(10, { message: "Address is too short." }),
-  email: z.string().email({ message: "Invalid email." }),
+  email: z.string().refine(value => {
+    if (!value) return true;
+    const emails = value.split(',').map(email => email.trim()).filter(Boolean);
+    if (emails.length === 0) return true;
+    return emails.every(email => z.string().email().safeParse(email).success);
+    }, {
+        message: "Proporcione una lista válida de correos electrónicos separados por comas."
+    }),
   phone: z.string().min(7, { message: "Invalid phone number." }),
   agencia: z.string().min(1, { message: "Agency is required." }),
   vendedor: z.string().min(1, { message: "Seller is required." }),
@@ -261,7 +268,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
               <FormItem>
                 <FormLabel>Email</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g., alex@example.com" {...field} />
+                  <Input placeholder="e.g., alex@example.com, info@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -18,6 +18,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentS
    if (!data) throw new Error("Document data not found");
   return {
     id: snapshot.id,
+    type: data.type || 'National',
     name: data.name,
     cedula: data.cedula,
     pais: data.pais,
