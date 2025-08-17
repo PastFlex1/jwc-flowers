@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -46,7 +47,7 @@ const formSchema = z.object({
     }
     return true;
 }, {
-    message: "For International customers, ID must be 1234567890 or 8888888888888.",
+    message: "For International customers, ID must be '1234567890' or '8888888888888'.",
     path: ['cedula'],
 });
 
@@ -76,7 +77,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       type: 'National',
       name: '',
       cedula: '',
-      pais: '',
+      pais: 'Ecuador',
       daeId: "__none__",
       estadoCiudad: '',
       address: '',
@@ -92,11 +93,27 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
   const selectedPais = form.watch('pais');
   const customerType = form.watch('type');
 
+  const filteredPaises = useMemo(() => {
+    if (customerType === 'International') {
+        return paises.filter(p => p.nombre !== 'Ecuador');
+    }
+    return paises;
+  }, [paises, customerType]);
+
+
   useEffect(() => {
-    if (customerType === 'International' && form.getValues('cedula') === '') {
-        form.setValue('cedula', '1234567890');
-    } else if (customerType === 'National' && (form.getValues('cedula') === '1234567890' || form.getValues('cedula') === '8888888888888')) {
-        form.setValue('cedula', '');
+    if (customerType === 'International') {
+        if (form.getValues('cedula') === '' || form.getValues('cedula').length < 10) {
+            form.setValue('cedula', '1234567890');
+        }
+        if (form.getValues('pais') === 'Ecuador') {
+            form.setValue('pais', '');
+        }
+    } else if (customerType === 'National') {
+        if (form.getValues('cedula') === '1234567890' || form.getValues('cedula') === '8888888888888') {
+            form.setValue('cedula', '');
+        }
+        form.setValue('pais', 'Ecuador');
     }
   }, [customerType, form]);
 
@@ -124,7 +141,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       type: 'National',
       name: '',
       cedula: '',
-      pais: '',
+      pais: 'Ecuador',
       daeId: "__none__",
       estadoCiudad: '',
       address: '',
@@ -206,14 +223,14 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} disabled={customerType === 'National'}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a country" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {paises.map(p => (
+                    {filteredPaises.map(p => (
                       <SelectItem key={p.id} value={p.nombre}>
                         {p.nombre}
                       </SelectItem>
@@ -301,7 +318,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
                   </FormControl>
                   <SelectContent>
                     {vendedores.map(v => (
-                      <SelectItem key={v.id} value={v.nombre}>
+                      <SelectItem key={v.id} value={v.id}>
                         {v.nombre}
                       </SelectItem>
                     ))}

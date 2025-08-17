@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Plus, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -170,64 +171,71 @@ export function CustomersClient() {
           </DialogContent>
         </Dialog>
         
-        <div className="mb-4 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name or ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Customer List</CardTitle>
+                <CardDescription>A list of all your customers.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="mb-4 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="Search by name or ID..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                />
+                </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {paginatedCustomers.map((customer) => (
-            <Card key={customer.id} className="flex flex-col">
-              <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
-                <h3 className="text-xl font-semibold">{customer.name}</h3>
-                <p className="text-sm text-muted-foreground">{customer.cedula}</p>
-                <Badge variant={customer.type === 'National' ? 'secondary' : 'outline'} className="mt-2">
-                    {customer.type}
-                </Badge>
-              </CardContent>
-              <div className="p-4 border-t flex justify-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>
-                  {t('customers.edit')}
-                </Button>
-                <Button variant="destructive" size="icon" onClick={() => handleDeleteClick(customer)}>
-                  <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">{t('customers.delete')}</span>
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {paginatedCustomers.map((customer) => (
+                    <Card key={customer.id} className="flex flex-col">
+                    <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
+                        <h3 className="text-xl font-semibold">{customer.name}</h3>
+                        <p className="text-sm text-muted-foreground">{customer.cedula}</p>
+                        <Badge variant={customer.type === 'National' ? 'secondary' : 'outline'} className="mt-2">
+                            {customer.type}
+                        </Badge>
+                    </CardContent>
+                    <div className="p-4 border-t flex justify-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>
+                        {t('customers.edit')}
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(customer)}>
+                        {t('customers.delete')}
+                        </Button>
+                    </div>
+                    </Card>
+                ))}
+                </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-6">
-            <div className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={currentPage >= totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+                {totalPages > 1 && (
+                <CardFooter className="flex items-center justify-between pt-6 px-0">
+                    <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage >= totalPages}
+                    >
+                        Next
+                    </Button>
+                    </div>
+                </CardFooter>
+                )}
+            </CardContent>
+        </Card>
       </div>
 
       <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
