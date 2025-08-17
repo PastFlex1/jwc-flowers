@@ -42,14 +42,11 @@ const formSchema = z.object({
     path: ['cedula'],
 }).refine(data => {
     if (data.type === 'International') {
-        if (data.cedula === '1234567890' || data.cedula === '8888888888888') {
-            return true;
-        }
-        return data.cedula.length >= 5;
+        return data.cedula === '1234567890' || data.cedula === '8888888888888';
     }
     return true;
 }, {
-    message: "For International customers, ID must be 1234567890, 8888888888888, or at least 5 characters.",
+    message: "For International customers, ID must be 1234567890 or 8888888888888.",
     path: ['cedula'],
 });
 
@@ -96,9 +93,9 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
   const customerType = form.watch('type');
 
   useEffect(() => {
-    if (customerType === 'International') {
+    if (customerType === 'International' && form.getValues('cedula') === '') {
         form.setValue('cedula', '1234567890');
-    } else {
+    } else if (customerType === 'National' && (form.getValues('cedula') === '1234567890' || form.getValues('cedula') === '8888888888888')) {
         form.setValue('cedula', '');
     }
   }, [customerType, form]);
@@ -143,6 +140,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
   function handleSubmit(values: z.infer<typeof formSchema>) {
     const dataToSubmit: CustomerFormData = {
       ...values,
+      type: values.type,
       daeId: values.daeId === '__none__' ? '' : values.daeId,
     };
     if (initialData?.id) {
