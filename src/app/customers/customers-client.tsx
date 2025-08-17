@@ -22,18 +22,19 @@ import type { Customer } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { Badge } from '@/components/ui/badge';
 
 function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-  return debouncedValue;
+    const [debouncedValue, setDebouncedValue] = useState<T>(value);
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedValue(value);
+        }, delay);
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [value, delay]);
+    return debouncedValue;
 }
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
@@ -185,6 +186,9 @@ export function CustomersClient() {
               <CardContent className="p-6 flex flex-col items-center justify-center text-center flex-grow">
                 <h3 className="text-xl font-semibold">{customer.name}</h3>
                 <p className="text-sm text-muted-foreground">{customer.cedula}</p>
+                <Badge variant={customer.type === 'National' ? 'secondary' : 'outline'} className="mt-2">
+                    {customer.type}
+                </Badge>
               </CardContent>
               <div className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(customer)}>

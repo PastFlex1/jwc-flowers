@@ -1,10 +1,7 @@
 
-
-
-
-
 export interface Customer {
   id: string;
+  type: 'National' | 'International';
   name: string;
   cedula: string;
   pais: string;

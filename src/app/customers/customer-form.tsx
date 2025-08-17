@@ -13,18 +13,9 @@ import type { Customer, Pais, Carguera, Vendedor, Dae } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
+  type: z.enum(['National', 'International'], { required_error: "Type is required." }),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  cedula: z.string().refine(val => {
-    if (val.length === 10) {
-      return /^\d{10}$/.test(val);
-    }
-    if (val.length === 13) {
-      return /^\d{10}001$/.test(val);
-    }
-    return false;
-  }, {
-    message: "ID must be 10 digits or RUC must be 13 digits and end in 001."
-  }),
+  cedula: z.string().min(1, { message: "ID/RUC is required."}),
   pais: z.string().min(1, { message: "Country is required." }),
   daeId: z.string().optional(),
   estadoCiudad: z.string().min(2, { message: "State/City is required." }),
@@ -35,6 +26,31 @@ const formSchema = z.object({
   vendedor: z.string().min(1, { message: "Seller is required." }),
   plazo: z.coerce.number().refine(val => [8, 15, 30, 45].includes(val), { message: "Invalid term." }),
   cupo: z.coerce.number().positive({ message: "Credit limit must be a positive number." }),
+}).refine(data => {
+    if (data.type === 'National') {
+        if (data.cedula.length === 10) {
+            return /^\d{10}$/.test(data.cedula);
+        }
+        if (data.cedula.length === 13) {
+            return /^\d{10}001$/.test(data.cedula);
+        }
+        return false;
+    }
+    return true;
+}, {
+    message: "For National customers, ID must be 10 digits or RUC must be 13 digits and end in 001.",
+    path: ['cedula'],
+}).refine(data => {
+    if (data.type === 'International') {
+        if (data.cedula === '1234567890' || data.cedula === '8888888888888') {
+            return true;
+        }
+        return data.cedula.length >= 5;
+    }
+    return true;
+}, {
+    message: "For International customers, ID must be 1234567890, 8888888888888, or at least 5 characters.",
+    path: ['cedula'],
 });
 
 type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
@@ -60,6 +76,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       cupo: Number(initialData.cupo),
       daeId: initialData.daeId || "__none__",
     } : {
+      type: 'National',
       name: '',
       cedula: '',
       pais: '',
@@ -76,6 +93,16 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
   });
 
   const selectedPais = form.watch('pais');
+  const customerType = form.watch('type');
+
+  useEffect(() => {
+    if (customerType === 'International') {
+        form.setValue('cedula', '1234567890');
+    } else {
+        form.setValue('cedula', '');
+    }
+  }, [customerType, form]);
+
 
   useEffect(() => {
     if (selectedPais) {
@@ -97,6 +124,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
       cupo: Number(initialData.cupo),
       daeId: initialData.daeId || "__none__",
     } : {
+      type: 'National',
       name: '',
       cedula: '',
       pais: '',
@@ -127,6 +155,27 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Cliente</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione el tipo de cliente" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="National">Nacional</SelectItem>
+                    <SelectItem value="International">Internacional</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="name"
