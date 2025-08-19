@@ -1,6 +1,3 @@
-
-
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -89,9 +86,6 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
           <InvoiceActions
             invoice={invoice}
             customer={customer}
-            consignatario={consignatario}
-            carguera={carguera}
-            pais={pais}
           />
         </div>
         

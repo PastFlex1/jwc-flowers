@@ -5,18 +5,15 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import InvoiceDownloadButton from './invoice-download-button';
 import { SendInvoiceDialog } from '../send-invoice-dialog';
-import type { Invoice, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
+import type { Invoice, Customer } from '@/lib/types';
 import { Send } from 'lucide-react';
 
 type InvoiceActionsProps = {
   invoice: Invoice;
   customer: Customer | null;
-  consignatario: Consignatario | null;
-  carguera: Carguera | null;
-  pais: Pais | null;
 };
 
-export function InvoiceActions({ invoice, customer, consignatario, carguera, pais }: InvoiceActionsProps) {
+export function InvoiceActions({ invoice, customer }: InvoiceActionsProps) {
   const router = useRouter();
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
 
