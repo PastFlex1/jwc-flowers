@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { Customer, Pais, Carguera, Vendedor, Dae } from '@/lib/types';
+import type { Customer, Pais, Carguera, Vendedor, Dae, Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
@@ -68,10 +68,11 @@ type CustomerFormProps = {
   cargueras: Carguera[];
   vendedores: Vendedor[];
   daes: Dae[];
+  provincias: Provincia[];
   isSubmitting: boolean;
 };
 
-export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, daes, isSubmitting }: CustomerFormProps) {
+export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras, vendedores, daes, provincias, isSubmitting }: CustomerFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -109,6 +110,7 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
 
 
   useEffect(() => {
+    form.setValue('estadoCiudad', '');
     if (customerType === 'International') {
         if (form.getValues('cedula') === '' || form.getValues('cedula').length < 10) {
             form.setValue('cedula', '1234567890');
@@ -248,15 +250,32 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
               </FormItem>
             )}
           />
-          <FormField
+           <FormField
             control={form.control}
             name="estadoCiudad"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>State/City</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Pichincha" {...field} />
-                </FormControl>
+                  {customerType === 'National' ? (
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a province" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {provincias.map(p => (
+                          <SelectItem key={p.id} value={p.nombre}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <FormControl>
+                       <Input placeholder="e.g., Florida" {...field} />
+                    </FormControl>
+                  )}
                 <FormMessage />
               </FormItem>
             )}

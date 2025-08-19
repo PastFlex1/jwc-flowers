@@ -43,7 +43,7 @@ type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function CustomersClient() {
-  const { customers, paises, cargueras, vendedores, daes, refreshData } = useAppData();
+  const { customers, paises, cargueras, vendedores, daes, provincias, refreshData } = useAppData();
   const { t } = useTranslation();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,6 +166,7 @@ export function CustomersClient() {
               cargueras={cargueras}
               vendedores={vendedores}
               daes={daes}
+              provincias={provincias}
               isSubmitting={isSubmitting}
             />
           </DialogContent>
