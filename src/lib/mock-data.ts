@@ -8,8 +8,35 @@ export const fincas: Finca[] = [];
 export const vendedores: Vendedor[] = [];
 export const marcaciones: Marcacion[] = [];
 export const paises: Pais[] = [];
-export const provincias: Provincia[] = [];
 export const daes: Dae[] = [];
+
+export const provincias: Provincia[] = [
+    { id: 'prov-01', nombre: 'El Oro' },
+    { id: 'prov-02', nombre: 'Esmeraldas' },
+    { id: 'prov-03', nombre: 'Guayas' },
+    { id: 'prov-04', nombre: 'Los Ríos' },
+    { id: 'prov-05', nombre: 'Manabí' },
+    { id: 'prov-06', nombre: 'Santa Elena' },
+    { id: 'prov-07', nombre: 'Santo Domingo de los Tsáchilas' },
+    { id: 'prov-08', nombre: 'Azuay' },
+    { id: 'prov-09', nombre: 'Bolívar' },
+    { id: 'prov-10', nombre: 'Cañar' },
+    { id: 'prov-11', nombre: 'Carchi' },
+    { id: 'prov-12', nombre: 'Chimborazo' },
+    { id: 'prov-13', nombre: 'Cotopaxi' },
+    { id: 'prov-14', nombre: 'Imbabura' },
+    { id: 'prov-15', nombre: 'Loja' },
+    { id: 'prov-16', nombre: 'Pichincha' },
+    { id: 'prov-17', nombre: 'Tungurahua' },
+    { id: 'prov-18', nombre: 'Galápagos' },
+    { id: 'prov-19', nombre: 'Morona Santiago' },
+    { id: 'prov-20', nombre: 'Napo' },
+    { id: 'prov-21', nombre: 'Orellana' },
+    { id: 'prov-22', nombre: 'Pastaza' },
+    { id: 'prov-23', nombre: 'Sucumbíos' },
+    { id: 'prov-24', nombre: 'Zamora Chinchipe' },
+];
+
 
 export const cargueras: Carguera[] = [
     { id: 'car-01', nombreCarguera: 'ALIANZA LOGISTIC/G&G', pais: 'Internacional' },
@@ -38,5 +65,6 @@ export const cargueras: Carguera[] = [
     { id: 'car-24', nombreCarguera: 'VALUE CARGO', pais: 'Internacional' },
     { id: 'car-25', nombreCarguera: 'WORLD WIDE', pais: 'Internacional' },
 ];
+
 
 

@@ -16,7 +16,7 @@ import { getProductos } from '@/services/productos';
 import { getCreditNotes } from '@/services/credit-notes';
 import { getDebitNotes } from '@/services/debit-notes';
 import { getPayments } from '@/services/payments';
-import { cargueras as defaultCargueras } from '@/lib/mock-data';
+import { cargueras as defaultCargueras, provincias as defaultProvincias } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
 type AppData = {
@@ -55,7 +55,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     consignatarios: [],
     daes: [],
     marcaciones: [],
-    provincias: [],
+    provincias: defaultProvincias,
     invoices: [],
     productos: [],
     creditNotes: [],
@@ -80,7 +80,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         consignatariosData,
         daesData,
         marcacionesData,
-        provinciasData,
+        dbProvincias,
         invoicesData,
         productosData,
         creditNotesData,
@@ -110,6 +110,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           combinedCargueras.push(dc);
         }
       });
+      
+      const dbProvinciasNames = new Set(dbProvincias.map(p => p.nombre.toLowerCase()));
+      const combinedProvincias = [...dbProvincias];
+      defaultProvincias.forEach(dp => {
+        if (!dbProvinciasNames.has(dp.nombre.toLowerCase())) {
+          combinedProvincias.push(dp);
+        }
+      });
 
       setData({
         paises: paisesData,
@@ -120,7 +128,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         consignatarios: consignatariosData,
         daes: daesData,
         marcaciones: marcacionesData,
-        provincias: provinciasData,
+        provincias: combinedProvincias,
         invoices: invoicesData,
         productos: productosData,
         creditNotes: creditNotesData,
