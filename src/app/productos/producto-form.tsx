@@ -59,7 +59,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, var
       ...values,
       barras: initialData?.barras || '',
       estado: initialData?.estado || 'Activo',
-      precio: initialData?.precio || 0, // Manteniendo el campo por si se usa en otro lado, aunque la UI no lo pida.
+      precio: initialData?.precio || 0,
     };
     
     if (initialData?.id) {
@@ -153,7 +153,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, var
           name="tallosPorRamo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tallos por Ramo</FormLabel>
+              <FormLabel>N° de Tallos</FormLabel>
               <FormControl>
                 <Input type="number" step="1" placeholder="25" {...field} />
               </FormControl>

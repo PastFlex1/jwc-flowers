@@ -86,11 +86,8 @@ export function NewInvoiceForm() {
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
-  const duplicateId = searchParams.get('duplicate'); // Note: this logic is in `invoices/duplicate/[id]` page now
   
   const [isEditing, setIsEditing] = useState(false);
-  const [initialData, setInitialData] = useState<Partial<InvoiceFormValues> | null>(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
@@ -149,7 +146,6 @@ export function NewInvoiceForm() {
       isEditMode = false;
     }
   
-    setInitialData(dataToLoad);
     setIsEditing(isEditMode);
     form.reset(dataToLoad as InvoiceFormValues);
   }, [editId, invoices, router, isMounted, form]);
@@ -346,7 +342,7 @@ export function NewInvoiceForm() {
     }
   }
 
-  if (!isMounted || !initialData) {
+  if (!isMounted) {
     return <div>Loading form...</div>;
   }
   

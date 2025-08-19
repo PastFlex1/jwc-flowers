@@ -314,7 +314,7 @@ export function ProductosClient() {
                   <TableRow>
                     <TableHead>PRODUCTO</TableHead>
                     <TableHead>COLOR</TableHead>
-                    <TableHead>TALLOS/RAMO</TableHead>
+                    <TableHead>N° TALLOS</TableHead>
                     <TableHead>BARRAS</TableHead>
                     <TableHead>ESTADO</TableHead>
                     <TableHead className="text-right">ACCIONES</TableHead>
