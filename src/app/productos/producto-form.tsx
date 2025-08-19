@@ -8,29 +8,30 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { Producto } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Producto, Variedad } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
   variedad: z.string().min(1, "Variedad es requerida."),
-  nombre: z.string().min(1, "Nombre es requerido."),
+  nombre: z.string().min(1, "Nombre del producto es requerido."),
   nombreColor: z.string().min(1, "Nombre del color es requerido."),
   color: z.string().min(1, "Color es requerido."),
-  precio: z.coerce.number().min(0, "Precio debe ser positivo."),
+  tallosPorRamo: z.coerce.number().min(0, "Tallos debe ser un número positivo."),
 });
 
 type ProductoFormData = z.infer<typeof formSchema>;
 type FormSubmitData = Omit<Producto, 'id'> & { id?: string };
-
 
 type ProductoFormProps = {
   onSubmit: (data: FormSubmitData) => void;
   onClose: () => void;
   initialData?: Producto | null;
   isSubmitting: boolean;
+  variedades: Variedad[];
 };
 
-export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: ProductoFormProps) {
+export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, variedades }: ProductoFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -39,7 +40,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       nombreColor: initialData?.nombreColor || '',
       color: initialData?.color || '#000000',
-      precio: initialData?.precio || 0,
+      tallosPorRamo: initialData?.tallosPorRamo || 0,
     },
   });
 
@@ -49,7 +50,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       nombre: initialData?.nombre || '',
       nombreColor: initialData?.nombreColor || '',
       color: initialData?.color || '#000000',
-      precio: initialData?.precio || 0,
+      tallosPorRamo: initialData?.tallosPorRamo || 0,
     });
   }, [initialData, form]);
 
@@ -58,6 +59,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
       ...values,
       barras: initialData?.barras || '',
       estado: initialData?.estado || 'Activo',
+      precio: initialData?.precio || 0, // Manteniendo el campo por si se usa en otro lado, aunque la UI no lo pida.
     };
     
     if (initialData?.id) {
@@ -76,9 +78,20 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           render={({ field }) => (
             <FormItem>
               <FormLabel>Variedad</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., TALLOS" {...field} />
-              </FormControl>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione una variedad" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {variedades.map(v => (
+                      <SelectItem key={v.id} value={v.nombre}>
+                        {v.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -88,7 +101,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre</FormLabel>
+              <FormLabel>Producto</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., ABSOLUT IN PINK" {...field} />
               </FormControl>
@@ -137,12 +150,12 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting }: P
         />
          <FormField
           control={form.control}
-          name="precio"
+          name="tallosPorRamo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Precio</FormLabel>
+              <FormLabel>Tallos por Ramo</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" placeholder="0.01" {...field} />
+                <Input type="number" step="1" placeholder="25" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

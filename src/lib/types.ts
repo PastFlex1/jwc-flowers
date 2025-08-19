@@ -1,4 +1,5 @@
 
+
 export interface Customer {
   id: string;
   type: 'National' | 'International';
@@ -110,6 +111,11 @@ export interface Consignatario {
   provincia: string;
 }
 
+export interface Variedad {
+  id: string;
+  nombre: string;
+}
+
 export interface Producto {
   id: string;
   nombre: string;
@@ -118,6 +124,7 @@ export interface Producto {
   color: string;
   nombreColor: string;
   precio: number;
+  tallosPorRamo: number;
   estado: 'Activo' | 'Inactivo';
 }
 

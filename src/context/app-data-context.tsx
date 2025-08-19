@@ -1,7 +1,8 @@
+
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
-import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment } from '@/lib/types';
+import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment, Variedad } from '@/lib/types';
 import { getPaises } from '@/services/paises';
 import { getVendedores } from '@/services/vendedores';
 import { getCustomers } from '@/services/customers';
@@ -16,6 +17,7 @@ import { getProductos } from '@/services/productos';
 import { getCreditNotes } from '@/services/credit-notes';
 import { getDebitNotes } from '@/services/debit-notes';
 import { getPayments } from '@/services/payments';
+import { getVariedades } from '@/services/variedades';
 import { cargueras as defaultCargueras, provincias as defaultProvincias } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,6 +33,7 @@ type AppData = {
   provincias: Provincia[];
   invoices: Invoice[];
   productos: Producto[];
+  variedades: Variedad[];
   creditNotes: CreditNote[];
   debitNotes: DebitNote[];
   payments: Payment[];
@@ -58,6 +61,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     provincias: defaultProvincias,
     invoices: [],
     productos: [],
+    variedades: [],
     creditNotes: [],
     debitNotes: [],
     payments: [],
@@ -83,6 +87,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         dbProvincias,
         invoicesData,
         productosData,
+        variedadesData,
         creditNotesData,
         debitNotesData,
         paymentsData,
@@ -98,6 +103,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         getProvincias(),
         getInvoices(),
         getProductos(),
+        getVariedades(),
         getCreditNotes(),
         getDebitNotes(),
         getPayments(),
@@ -131,6 +137,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         provincias: combinedProvincias,
         invoices: invoicesData,
         productos: productosData,
+        variedades: variedadesData,
         creditNotes: creditNotesData,
         debitNotes: debitNotesData,
         payments: paymentsData,

@@ -21,14 +21,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { addProducto, updateProducto, deleteProducto } from '@/services/productos';
-import type { Producto } from '@/lib/types';
+import { addVariedad, getVariedades, deleteVariedad } from '@/services/variedades';
+import type { Producto, Variedad } from '@/lib/types';
 import { ProductoForm } from './producto-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { VariedadForm } from './variedad-form';
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
-
-const ITEMS_PER_PAGE = 10;
+type VariedadFormData = Omit<Variedad, 'id'> & { id?: string };
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -44,94 +45,121 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function ProductosClient() {
-  const { productos, refreshData } = useAppData();
-  const [localProductos, setLocalProductos] = useState<Producto[]>([]);
+  const { productos, variedades, refreshData } = useAppData();
   const { t } = useTranslation();
   
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isProductoDialogOpen, setIsProductoDialogOpen] = useState(false);
+  const [isVariedadDialogOpen, setIsVariedadDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProducto, setEditingProducto] = useState<Producto | null>(null);
   const [productoToDelete, setProductoToDelete] = useState<Producto | null>(null);
+  const [variedadToDelete, setVariedadToDelete] = useState<Variedad | null>(null);
+  const [selectedVariedad, setSelectedVariedad] = useState<Variedad | null>(null);
+  const [isViewProductsDialogOpen, setIsViewProductsDialogOpen] = useState(false);
+
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  useEffect(() => {
-    const filtered = productos.filter(producto =>
-      (producto.nombre?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
-      (producto.variedad?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase())
+  const filteredVariedades = useMemo(() => {
+    return variedades.filter(variedad =>
+      (variedad.nombre?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase())
     );
-    setLocalProductos(filtered);
-    setCurrentPage(1);
-  }, [productos, debouncedSearchTerm]);
+  }, [variedades, debouncedSearchTerm]);
 
+  const productosForSelectedVariedad = useMemo(() => {
+    if (!selectedVariedad) return [];
+    return productos.filter(p => p.variedad === selectedVariedad.nombre);
+  }, [productos, selectedVariedad]);
 
-  const totalPages = Math.ceil(localProductos.length / ITEMS_PER_PAGE);
-
-  const paginatedProductos = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return localProductos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [localProductos, currentPage]);
-
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-
-  const handleOpenDialog = (producto: Producto | null = null) => {
+  const handleOpenProductoDialog = (producto: Producto | null = null) => {
     setEditingProducto(producto);
-    setIsDialogOpen(true);
+    setIsProductoDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
+  const handleCloseProductoDialog = () => {
     if (isSubmitting) return;
-    setIsDialogOpen(false);
+    setIsProductoDialogOpen(false);
     setEditingProducto(null);
   };
+  
+  const handleOpenVariedadDialog = () => {
+    setIsVariedadDialogOpen(true);
+  };
 
-  const handleFormSubmit = async (productoData: ProductoFormData) => {
+  const handleCloseVariedadDialog = () => {
+    if (isSubmitting) return;
+    setIsVariedadDialogOpen(false);
+  };
+
+  const handleProductoFormSubmit = async (productoData: ProductoFormData) => {
     setIsSubmitting(true);
-    
     try {
       if (productoData.id) {
         const { id, ...dataToUpdate } = productoData;
         await updateProducto(id, dataToUpdate);
-        toast({ title: 'Success', description: 'Product updated successfully.' });
+        toast({ title: 'Éxito', description: 'Producto actualizado correctamente.' });
       } else {
         await addProducto(productoData);
-        toast({ title: 'Success', description: 'Product added successfully.' });
+        toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
       }
       await refreshData();
+      handleCloseProductoDialog();
     } catch (error) {
       console.error("Error submitting product:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
-        title: 'Error Saving',
-        description: `Could not save the product: ${errorMessage}.`,
+        title: 'Error al Guardar',
+        description: `No se pudo guardar el producto: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
     } finally {
       setIsSubmitting(false);
-      handleCloseDialog();
     }
   };
 
-  const handleDeleteClick = (producto: Producto) => {
+  const handleVariedadFormSubmit = async (variedadData: { nombre: string }) => {
+    setIsSubmitting(true);
+    try {
+      await addVariedad(variedadData);
+      toast({ title: 'Éxito', description: 'Variedad añadida correctamente.' });
+      await refreshData();
+      handleCloseVariedadDialog();
+    } catch (error) {
+      console.error("Error submitting variety:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Guardar',
+        description: `No se pudo guardar la variedad: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteProductoClick = (producto: Producto) => {
     setProductoToDelete(producto);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteVariedadClick = (variedad: Variedad) => {
+    setVariedadToDelete(variedad);
+  };
+
+  const handleDeleteProductoConfirm = async () => {
     if (!productoToDelete) return;
     try {
       await deleteProducto(productoToDelete.id);
       await refreshData();
-      toast({ title: 'Success', description: 'Product deleted successfully.' });
+      toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
     } catch (error) {
       console.error("Error deleting product:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
-        title: 'Error Deleting',
-        description: `Could not delete the product: ${errorMessage}.`,
+        title: 'Error al Eliminar',
+        description: `No se pudo eliminar el producto: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -140,15 +168,53 @@ export function ProductosClient() {
     }
   };
 
+  const handleDeleteVariedadConfirm = async () => {
+    if (!variedadToDelete) return;
+    // Check if there are any products using this variety
+    const productsUsingVariety = productos.filter(p => p.variedad === variedadToDelete.nombre);
+    if (productsUsingVariety.length > 0) {
+      toast({
+        title: 'Error al Eliminar',
+        description: `No se puede eliminar la variedad "${variedadToDelete.nombre}" porque está siendo utilizada por ${productsUsingVariety.length} producto(s).`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+      setVariedadToDelete(null);
+      return;
+    }
+
+    try {
+      await deleteVariedad(variedadToDelete.id);
+      await refreshData();
+      toast({ title: 'Éxito', description: 'Variedad eliminada correctamente.' });
+    } catch (error) {
+      console.error("Error deleting variety:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast({
+        title: 'Error al Eliminar',
+        description: `No se pudo eliminar la variedad: ${errorMessage}.`,
+        variant: 'destructive',
+        duration: 10000,
+      });
+    } finally {
+      setVariedadToDelete(null);
+    }
+  };
+
   const handleInlineUpdate = async (id: string, field: keyof Producto, value: any) => {
     try {
       await updateProducto(id, { [field]: value });
       await refreshData();
-      toast({ title: 'Success', description: 'Product updated.' });
+      toast({ title: 'Éxito', description: 'Producto actualizado.' });
     } catch (error) {
-      toast({ title: 'Error', description: 'Failed to update product.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo actualizar el producto.', variant: 'destructive' });
       await refreshData();
     }
+  };
+  
+  const handleViewProducts = (variedad: Variedad) => {
+    setSelectedVariedad(variedad);
+    setIsViewProductsDialogOpen(true);
   };
 
   return (
@@ -157,159 +223,177 @@ export function ProductosClient() {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight font-headline">PRODUCTOS</h2>
-            <p className="text-muted-foreground">Administra tus productos.</p>
+            <p className="text-muted-foreground">Administra tus variedades y productos.</p>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="mr-2 h-4 w-4" /> Añadir Producto
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleOpenVariedadDialog}>
+              <Plus className="mr-2 h-4 w-4" /> Añadir Variedad
+            </Button>
+            <Button onClick={() => handleOpenProductoDialog()}>
+              <Plus className="mr-2 h-4 w-4" /> Añadir Producto
+            </Button>
+          </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <Dialog open={isProductoDialogOpen} onOpenChange={(open) => !open && handleCloseProductoDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingProducto ? 'Editar Producto' : 'Añadir Nuevo Producto'}</DialogTitle>
             </DialogHeader>
             <ProductoForm 
-              onSubmit={handleFormSubmit}
-              onClose={handleCloseDialog}
+              onSubmit={handleProductoFormSubmit}
+              onClose={handleCloseProductoDialog}
               initialData={editingProducto}
+              isSubmitting={isSubmitting}
+              variedades={variedades}
+            />
+          </DialogContent>
+        </Dialog>
+        
+        <Dialog open={isVariedadDialogOpen} onOpenChange={(open) => !open && handleCloseVariedadDialog()}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Añadir Nueva Variedad</DialogTitle>
+            </DialogHeader>
+            <VariedadForm 
+              onSubmit={handleVariedadFormSubmit}
+              onClose={handleCloseVariedadDialog}
               isSubmitting={isSubmitting}
             />
           </DialogContent>
         </Dialog>
 
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle>Lista de Productos</CardTitle>
-                <div className="flex gap-2">
+            <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Lista de Variedades</CardTitle>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Buscar producto..."
+                            placeholder="Buscar variedad..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 w-64"
                         />
                     </div>
                 </div>
-            </div>
-            <CardDescription>Una lista de todos tus productos.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>NOMBRE</TableHead>
-                  <TableHead>VARIEDAD</TableHead>
-                  <TableHead>COLOR</TableHead>
-                  <TableHead>BARRAS</TableHead>
-                  <TableHead>PRECIO</TableHead>
-                  <TableHead>ESTADO</TableHead>
-                  <TableHead className="text-right">ACCIONES</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedProductos.map((producto) => (
-                  <TableRow key={producto.id}>
-                    <TableCell className="font-medium">{producto.nombre}</TableCell>
-                    <TableCell>{producto.variedad}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-4 w-4 rounded-full border"
-                          style={{ backgroundColor: producto.color }}
-                        />
-                        <span>{producto.nombreColor}</span>
+                <CardDescription>Una lista de todas tus variedades de productos. Haz clic en una para ver los productos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredVariedades.map((variedad) => (
+                  <Card key={variedad.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleViewProducts(variedad)}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-lg font-medium">
+                        {variedad.nombre}
+                      </CardTitle>
+                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDeleteVariedadClick(variedad); }}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                       </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-sm text-muted-foreground">
+                        {productos.filter(p => p.variedad === variedad.nombre).length} productos
                       </div>
-                    </TableCell>
-                    <TableCell>
-                       <Input
-                        type="text"
-                        defaultValue={producto.barras}
-                        onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
-                        className="w-28 h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        defaultValue={producto.precio}
-                        onBlur={(e) => handleInlineUpdate(producto.id, 'precio', parseFloat(e.target.value))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            (e.target as HTMLInputElement).blur();
-                          }
-                        }}
-                        className="w-24 h-8"
-                      />
-                    </TableCell>
-                    <TableCell>
-                       <Badge 
-                        variant={producto.estado === 'Activo' ? 'secondary' : 'destructive'}
-                        className="cursor-pointer"
-                        onClick={() => handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
-                       >
-                         {producto.estado}
-                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-right space-x-0">
-                       <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(producto)}>
-                           <Edit className="h-4 w-4" />
-                       </Button>
-                       <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(producto)}>
-                           <Trash2 className="h-4 w-4 text-destructive" />
-                       </Button>
-                    </TableCell>
-                  </TableRow>
+                    </CardContent>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-           {totalPages > 1 && (
-            <CardFooter className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextPage}
-                  disabled={currentPage >= totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </CardFooter>
-          )}
+            </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isViewProductsDialogOpen} onOpenChange={setIsViewProductsDialogOpen}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Productos de la Variedad: {selectedVariedad?.nombre}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>PRODUCTO</TableHead>
+                    <TableHead>COLOR</TableHead>
+                    <TableHead>TALLOS/RAMO</TableHead>
+                    <TableHead>BARRAS</TableHead>
+                    <TableHead>ESTADO</TableHead>
+                    <TableHead className="text-right">ACCIONES</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {productosForSelectedVariedad.map((producto) => (
+                    <TableRow key={producto.id}>
+                      <TableCell className="font-medium">{producto.nombre}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-4 w-4 rounded-full border"
+                            style={{ backgroundColor: producto.color }}
+                          />
+                          <span>{producto.nombreColor}</span>
+                        </div>
+                      </TableCell>
+                       <TableCell>{producto.tallosPorRamo}</TableCell>
+                      <TableCell>
+                        <Input
+                          type="text"
+                          defaultValue={producto.barras}
+                          onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          className="w-28 h-8"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={producto.estado === 'Activo' ? 'secondary' : 'destructive'}
+                          className="cursor-pointer"
+                          onClick={() => handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
+                        >
+                          {producto.estado}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right space-x-0">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenProductoDialog(producto)}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteProductoClick(producto)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={!!variedadToDelete} onOpenChange={(open) => !open && setVariedadToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás totalmente seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la variedad.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setVariedadToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteVariedadConfirm} variant="destructive">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!productoToDelete} onOpenChange={(open) => !open && setProductoToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás totalmente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the product from your records.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setProductoToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} variant="destructive">Delete</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setProductoToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProductoConfirm} variant="destructive">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

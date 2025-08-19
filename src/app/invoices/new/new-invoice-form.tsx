@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -172,10 +173,10 @@ export function NewInvoiceForm() {
   let rowCounter = 0;
 
   const uniqueProducts = useMemo(() => {
-    const unique = new Map<string, { id: string; price: number }>();
+    const unique = new Map<string, { id: string; price: number; tallosPorRamo: number }>();
     productos.filter(p => p.estado === 'Activo').forEach(p => {
         if (!unique.has(p.nombre)) {
-            unique.set(p.nombre, { id: p.id, price: p.precio });
+            unique.set(p.nombre, { id: p.id, price: p.precio, tallosPorRamo: p.tallosPorRamo });
         }
     });
     return Array.from(unique.entries()).map(([name, data]) => ({ name, ...data }));
@@ -281,6 +282,7 @@ export function NewInvoiceForm() {
     if (productDetails) {
         form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, productDetails.id);
         form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.salePrice`, productDetails.price);
+        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, productDetails.tallosPorRamo);
         form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
         form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
     }
