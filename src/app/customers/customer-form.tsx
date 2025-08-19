@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import type { Customer, Pais, Carguera, Vendedor, Dae, Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   type: z.enum(['National', 'International'], { required_error: "Type is required." }),
@@ -256,26 +257,27 @@ export function CustomerForm({ onSubmit, onClose, initialData, paises, cargueras
             render={({ field }) => (
               <FormItem>
                 <FormLabel>State/City</FormLabel>
-                  {customerType === 'National' ? (
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a province" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {provincias.map(p => (
-                          <SelectItem key={p.id} value={p.nombre}>
-                            {p.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
+                <div className={cn({ hidden: customerType !== 'National' })}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a province" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {provincias.map(p => (
+                        <SelectItem key={p.id} value={p.nombre}>
+                          {p.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                 <div className={cn({ hidden: customerType !== 'International' })}>
                     <FormControl>
                        <Input placeholder="e.g., Florida" {...field} />
                     </FormControl>
-                  )}
+                 </div>
                 <FormMessage />
               </FormItem>
             )}
