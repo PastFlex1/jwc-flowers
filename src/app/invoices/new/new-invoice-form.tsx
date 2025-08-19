@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -77,52 +77,90 @@ const invoiceSchema = z.object({
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>;
 
-const getInitialFormValues = (initialData?: Partial<InvoiceFormValues>): Partial<InvoiceFormValues> => {
-  if (initialData) return initialData;
-  if (typeof window === 'undefined') return { items: [] };
-  const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-  if (savedData) {
-    try {
-      const parsedData = JSON.parse(savedData);
-      if (parsedData.farmDepartureDate) {
-        parsedData.farmDepartureDate = parseISO(parsedData.farmDepartureDate);
-      }
-      if (parsedData.flightDate) {
-        parsedData.flightDate = parseISO(parsedData.flightDate);
-      }
-      return parsedData;
-    } catch (e) {
-      console.error('Failed to parse form data from session storage', e);
-      return { items: [] };
-    }
-  }
-  return { items: [] };
-};
-
-export function NewInvoiceForm({ initialData, isEditing = false } : { initialData?: Partial<InvoiceFormValues>, isEditing?: boolean}) {
+export function NewInvoiceForm() {
   const router = useRouter();
-  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, refreshData } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData } = useAppData();
   const { t } = useTranslation();
+
+  const editId = searchParams.get('edit');
+  const [isEditing, setIsEditing] = useState(!!editId);
+  const [initialData, setInitialData] = useState<Partial<InvoiceFormValues> | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
   const [isMounted, setIsMounted] = useState(false);
 
+  useEffect(() => {
+    setIsMounted(true);
+    if (editId) {
+      const invoiceToEdit = invoices.find(inv => inv.id === editId);
+      if (invoiceToEdit) {
+        setInitialData({
+            ...invoiceToEdit,
+            farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
+            flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
+            items: invoiceToEdit.items.map(item => ({
+              ...item,
+              id: uuidv4(),
+              numberOfBunches: item.numberOfBunches,
+              bunches: item.bunches.map(bunch => ({
+                ...bunch,
+                id: uuidv4(),
+              })),
+            })),
+        });
+        setIsEditing(true);
+      } else {
+         router.push('/invoices/new');
+      }
+    } else {
+      if (typeof window !== 'undefined') {
+        const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
+                if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
+                setInitialData(parsed);
+            } catch(e) {
+                setInitialData({ items: [] });
+            }
+        } else {
+            setInitialData({ items: [] });
+        }
+      }
+      setIsEditing(false);
+    }
+  }, [editId, invoices, router]);
+
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
-    defaultValues: getInitialFormValues(initialData),
   });
+  
+  useEffect(() => {
+    if (initialData) {
+      form.reset(initialData);
+    }
+  }, [initialData, form]);
+
+  useEffect(() => {
+    if (isMounted && !editId) {
+      const subscription = form.watch((value) => {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [isMounted, form, editId]);
+
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
-  
-  const { control } = form;
 
   let rowCounter = 0;
 
@@ -146,31 +184,6 @@ export function NewInvoiceForm({ initialData, isEditing = false } : { initialDat
     if (!productName || !variety) return [];
     return [...new Set(productos.filter(p => p.nombre === productName && p.variedad === variety && p.estado === 'Activo').map(p => p.nombreColor))];
   }, [productos]);
-
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      if (initialData) {
-        form.reset(initialData);
-      } else {
-        const savedData = getInitialFormValues();
-        form.reset(savedData);
-      }
-    }
-  }, [isMounted, form, initialData]);
-
-  useEffect(() => {
-    if (isMounted && !initialData) {
-      const subscription = form.watch((value) => {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
-      });
-      return () => subscription.unsubscribe();
-    }
-  }, [isMounted, form, initialData]);
 
   const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
@@ -324,15 +337,15 @@ export function NewInvoiceForm({ initialData, isEditing = false } : { initialDat
     }
   }
 
-  if (!isMounted) {
-    return null;
+  if (!isMounted || !initialData) {
+    return <div>Loading form...</div>;
   }
   
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : (initialData ? "Duplicar Factura" : "Nueva Factura")}</h2>
-        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : (initialData ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra.")}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : (initialData?.id ? "Duplicar Factura" : "Nueva Factura")}</h2>
+        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : (initialData?.id ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra.")}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

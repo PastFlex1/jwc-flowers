@@ -1,5 +1,14 @@
+import { Suspense } from 'react';
 import { NewInvoiceForm } from './new-invoice-form';
 
-export default function NewInvoicePage() {
+function NewInvoicePageContent() {
   return <NewInvoiceForm />;
+}
+
+export default function NewInvoicePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <NewInvoicePageContent />
+    </Suspense>
+  );
 }
