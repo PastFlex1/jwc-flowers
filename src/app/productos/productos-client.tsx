@@ -338,8 +338,15 @@ export function ProductosClient() {
                         <Input
                           type="text"
                           defaultValue={producto.barras}
-                          onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={(e) => {
+                            e.stopPropagation();
+                            handleInlineUpdate(producto.id, 'barras', e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                          }}
                           className="w-28 h-8"
                         />
                       </TableCell>
@@ -347,16 +354,19 @@ export function ProductosClient() {
                         <Badge 
                           variant={producto.estado === 'Activo' ? 'secondary' : 'destructive'}
                           className="cursor-pointer"
-                          onClick={() => handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
+                          onClick={(e) => {
+                              e.stopPropagation();
+                              handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo');
+                          }}
                         >
                           {producto.estado}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-0">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenProductoDialog(producto)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenProductoDialog(producto); }}>
                             <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteProductoClick(producto)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteProductoClick(producto); }}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
