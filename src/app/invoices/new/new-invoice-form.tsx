@@ -150,8 +150,18 @@ export function NewInvoiceForm({ initialData, isEditing = false } : { initialDat
 
   useEffect(() => {
     setIsMounted(true);
-    form.reset(getInitialFormValues(initialData));
-  }, [form, initialData]);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      if (initialData) {
+        form.reset(initialData);
+      } else {
+        const savedData = getInitialFormValues();
+        form.reset(savedData);
+      }
+    }
+  }, [isMounted, form, initialData]);
 
   useEffect(() => {
     if (isMounted && !initialData) {
