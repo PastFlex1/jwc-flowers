@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Edit, Trash2, Search, ChevronLeft, ChevronRight, Copy } from 'lucide-react';
+import { Edit, Trash2, Search, ChevronLeft, ChevronRight, Copy, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -220,15 +220,21 @@ export function InvoicesClient() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link href={`/invoices/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title={t('invoices.editTooltip')}>
+                            <Button variant="ghost" size="icon" title="Ver/Enviar Factura">
+                              <Send className="h-4 w-4" />
+                              <span className="sr-only">Ver/Enviar Factura</span>
+                            </Button>
+                          </Link>
+                           <Link href={`/invoices/edit/${invoice.id}`} passHref>
+                            <Button variant="ghost" size="icon" title="Editar Factura">
                               <Edit className="h-4 w-4" />
-                              <span className="sr-only">{t('invoices.editTooltip')}</span>
+                              <span className="sr-only">Editar Factura</span>
                             </Button>
                           </Link>
                           <Link href={`/invoices/duplicate/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Duplicate Invoice">
+                            <Button variant="ghost" size="icon" title="Duplicar Factura">
                               <Copy className="h-4 w-4" />
-                              <span className="sr-only">Duplicate Invoice</span>
+                              <span className="sr-only">Duplicar Factura</span>
                             </Button>
                           </Link>
                           <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>

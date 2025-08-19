@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
-import { addInvoice } from '@/services/invoices';
+import { addInvoice, updateInvoice } from '@/services/invoices';
 import type { Invoice, BunchItem, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 
@@ -58,6 +58,7 @@ const lineItemSchema = z.object({
 });
 
 const invoiceSchema = z.object({
+  id: z.string().optional(),
   type: z.enum(['sale', 'purchase', 'both'], { required_error: 'Debe seleccionar un tipo de factura.' }),
   invoiceNumber: z.string().min(1, 'Invoice number is required.'),
   farmDepartureDate: z.date({ required_error: 'Departure date is required.' }),
@@ -98,7 +99,7 @@ const getInitialFormValues = (initialData?: Partial<InvoiceFormValues>): Partial
   return { items: [] };
 };
 
-export function NewInvoiceForm({ initialData } : { initialData?: Partial<InvoiceFormValues>}) {
+export function NewInvoiceForm({ initialData, isEditing = false } : { initialData?: Partial<InvoiceFormValues>, isEditing?: boolean}) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
@@ -260,16 +261,17 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
     setIsSubmitting(true);
   
     const cleanedItems = values.items.map(item => {
-      const { id, ...restOfItem } = item; // eslint-disable-line @typescript-eslint/no-unused-vars
+      const { id, ...restOfItem } = item;
       const cleanedBunches = item.bunches.map(bunch => {
-        const { id, ...restOfBunch } = bunch; // eslint-disable-line @typescript-eslint/no-unused-vars
+        const { id, ...restOfBunch } = bunch;
         return restOfBunch;
       });
       return { ...restOfItem, bunches: cleanedBunches };
     });
   
-    const processedInvoice: Omit<Invoice, 'id'> = {
+    const processedInvoice: Omit<Invoice, 'id'> & { id?: string } = {
       ...values,
+      id: isEditing ? values.id : undefined,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -279,21 +281,31 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
     };
   
     try {
-      await addInvoice(processedInvoice);
+      if (isEditing && processedInvoice.id) {
+        await updateInvoice(processedInvoice.id, processedInvoice);
+        toast({
+          title: "Factura Actualizada",
+          description: "La factura ha sido actualizada correctamente.",
+        });
+      } else {
+        await addInvoice(processedInvoice);
+        toast({
+          title: t('invoices.new.toast.successTitle'),
+          description: t('invoices.new.toast.successDescription'),
+        });
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      }
+
       await refreshData();
-      toast({
-        title: t('invoices.new.toast.successTitle'),
-        description: t('invoices.new.toast.successDescription'),
-      });
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
       const destination = values.type === 'purchase' ? '/accounts-payable' : '/invoices';
       router.push(destination);
+
     } catch (error) {
-      console.error('Error creating invoice:', error);
+      console.error('Error saving invoice:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       toast({
-        title: t('invoices.new.toast.errorTitle'),
-        description: t('invoices.new.toast.errorDescription', { error: errorMessage }),
+        title: isEditing ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
+        description: `No se pudo guardar la factura: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -309,8 +321,8 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{initialData ? "Duplicar Factura" : "Nueva Factura"}</h2>
-        <p className="text-muted-foreground">{initialData ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra."}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : (initialData ? "Duplicar Factura" : "Nueva Factura")}</h2>
+        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : (initialData ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra.")}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -762,7 +774,7 @@ export function NewInvoiceForm({ initialData } : { initialData?: Partial<Invoice
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? t('invoices.new.saving') : t('invoices.new.save')}
+              {isSubmitting ? t('common.saving') : (isEditing ? 'Guardar Cambios' : t('invoices.new.save'))}
             </Button>
           </div>
         </form>
