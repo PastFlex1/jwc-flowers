@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -277,17 +277,17 @@ export function ProductosClient() {
                         />
                     </div>
                 </div>
-                <CardDescription>Una lista de todas tus variedades de productos. Haz clic en una para ver los productos.</CardDescription>
+                <CardDescription>Una lista de todas tus variedades de productos.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {filteredVariedades.map((variedad) => (
-                  <Card key={variedad.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleViewProducts(variedad)}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <Card key={variedad.id} className="flex flex-col justify-between">
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                       <CardTitle className="text-lg font-medium">
                         {variedad.nombre}
                       </CardTitle>
-                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); handleDeleteVariedadClick(variedad); }}>
+                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDeleteVariedadClick(variedad)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                        </Button>
                     </CardHeader>
@@ -296,6 +296,12 @@ export function ProductosClient() {
                         {productos.filter(p => p.variedad === variedad.nombre).length} productos
                       </div>
                     </CardContent>
+                    <CardFooter>
+                      <Button variant="outline" className="w-full" onClick={() => handleViewProducts(variedad)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver Productos
+                      </Button>
+                    </CardFooter>
                   </Card>
                 ))}
               </div>
@@ -338,15 +344,8 @@ export function ProductosClient() {
                         <Input
                           type="text"
                           defaultValue={producto.barras}
-                          onClick={(e) => e.stopPropagation()}
-                          onBlur={(e) => {
-                            e.stopPropagation();
-                            handleInlineUpdate(producto.id, 'barras', e.target.value);
-                          }}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
-                            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                          }}
+                          onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                           className="w-28 h-8"
                         />
                       </TableCell>
@@ -354,19 +353,16 @@ export function ProductosClient() {
                         <Badge 
                           variant={producto.estado === 'Activo' ? 'secondary' : 'destructive'}
                           className="cursor-pointer"
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo');
-                          }}
+                          onClick={() => handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
                         >
                           {producto.estado}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-0">
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenProductoDialog(producto); }}>
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenProductoDialog(producto)}>
                             <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteProductoClick(producto); }}>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteProductoClick(producto)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </TableCell>
