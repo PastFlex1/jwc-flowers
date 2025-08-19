@@ -274,13 +274,12 @@ export function NewInvoiceForm() {
   };
 
   const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
-    const productDetails = uniqueProducts.find(p => p.name === productName);
-    if (productDetails) {
-        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, productDetails.id);
-        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.salePrice`, productDetails.price);
-        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, productDetails.tallosPorRamo);
-        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
-        form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
+    const productInfo = productos.find(p => p.nombre === productName);
+    if (productInfo) {
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, productInfo.id);
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, productInfo.tallosPorRamo);
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
     }
   };
 

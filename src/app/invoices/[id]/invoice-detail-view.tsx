@@ -55,10 +55,10 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
         {(item.bunches || []).map((bunch, bunchIndex) => {
             const stemsPerBunch = bunch.stemsPerBunch || 0;
             const bunchesPerBox = bunch.bunchesPerBox || 0;
-            const salePrice = bunch.salePrice || 0;
+            const pricePerStem = invoice.type === 'purchase' ? bunch.purchasePrice : bunch.salePrice;
 
             const totalStemsForBunch = stemsPerBunch * bunchesPerBox;
-            const totalPrice = totalStemsForBunch * salePrice;
+            const totalPrice = totalStemsForBunch * pricePerStem;
             
             return (
                  <div key={bunch.id || bunchIndex} className="contents text-[10px] leading-tight">
@@ -70,7 +70,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.length}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{totalStemsForBunch}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunchesPerBox}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-right">{salePrice.toFixed(3)}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-right">{pricePerStem.toFixed(3)}</div>
                     <div className="border-b border-r border-l border-gray-400 p-1 text-right font-semibold">${totalPrice.toFixed(2)}</div>
                 </div>
             )
