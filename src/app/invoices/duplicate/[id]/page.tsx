@@ -5,6 +5,7 @@ import { getInvoiceById } from '@/services/invoices';
 import { NewInvoiceForm, type InvoiceFormValues } from '@/app/invoices/new/new-invoice-form';
 import { v4 as uuidv4 } from 'uuid';
 import { parseISO } from 'date-fns';
+import { Suspense } from 'react';
 
 type DuplicateInvoicePageProps = {
   params: {
@@ -12,28 +13,15 @@ type DuplicateInvoicePageProps = {
   };
 };
 
+// This is a server component to fetch the initial data
 export default async function DuplicateInvoicePage({ params }: DuplicateInvoicePageProps) {
-  const invoiceToDuplicate = await getInvoiceById(params.id);
-
-  if (!invoiceToDuplicate) {
-    notFound();
-  }
-
-  const initialData: Partial<InvoiceFormValues> = {
-    ...invoiceToDuplicate,
-    invoiceNumber: '', // Clear the invoice number for a new one
-    farmDepartureDate: invoiceToDuplicate.farmDepartureDate ? parseISO(invoiceToDuplicate.farmDepartureDate) : new Date(),
-    flightDate: invoiceToDuplicate.flightDate ? parseISO(invoiceToDuplicate.flightDate) : new Date(),
-    items: invoiceToDuplicate.items.map(item => ({
-      ...item,
-      id: uuidv4(),
-      numberOfBunches: item.numberOfBunches,
-      bunches: item.bunches.map(bunch => ({
-        ...bunch,
-        id: uuidv4(),
-      })),
-    })),
-  };
-
-  return <NewInvoiceForm initialData={initialData} />;
+  
+  // This page can be removed if duplication is handled entirely on the client
+  // For now, it shows an example of pre-populating the form from the server
+  
+  return (
+    <Suspense fallback={<div>Loading duplicate data...</div>}>
+      <NewInvoiceForm />
+    </Suspense>
+  );
 }

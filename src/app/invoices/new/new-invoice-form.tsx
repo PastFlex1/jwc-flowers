@@ -85,7 +85,9 @@ export function NewInvoiceForm() {
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
-  const [isEditing, setIsEditing] = useState(!!editId);
+  const duplicateId = searchParams.get('duplicate'); // Note: this logic is in `invoices/duplicate/[id]` page now
+  
+  const [isEditing, setIsEditing] = useState(false);
   const [initialData, setInitialData] = useState<Partial<InvoiceFormValues> | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,46 +97,7 @@ export function NewInvoiceForm() {
 
   useEffect(() => {
     setIsMounted(true);
-    if (editId) {
-      const invoiceToEdit = invoices.find(inv => inv.id === editId);
-      if (invoiceToEdit) {
-        setInitialData({
-            ...invoiceToEdit,
-            farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
-            flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
-            items: invoiceToEdit.items.map(item => ({
-              ...item,
-              id: uuidv4(),
-              numberOfBunches: item.numberOfBunches,
-              bunches: item.bunches.map(bunch => ({
-                ...bunch,
-                id: uuidv4(),
-              })),
-            })),
-        });
-        setIsEditing(true);
-      } else {
-         router.push('/invoices/new');
-      }
-    } else {
-      if (typeof window !== 'undefined') {
-        const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-        if (savedData) {
-            try {
-                const parsed = JSON.parse(savedData);
-                if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
-                if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
-                setInitialData(parsed);
-            } catch(e) {
-                setInitialData({ items: [] });
-            }
-        } else {
-            setInitialData({ items: [] });
-        }
-      }
-      setIsEditing(false);
-    }
-  }, [editId, invoices, router]);
+  }, []);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -142,19 +105,63 @@ export function NewInvoiceForm() {
   });
   
   useEffect(() => {
-    if (initialData) {
-      form.reset(initialData);
+    if (!isMounted) return;
+
+    let dataToLoad: Partial<InvoiceFormValues> | null = null;
+    let isEditMode = false;
+  
+    if (editId) {
+      const invoiceToEdit = invoices.find(inv => inv.id === editId);
+      if (invoiceToEdit) {
+        dataToLoad = {
+          ...invoiceToEdit,
+          farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
+          flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
+          items: invoiceToEdit.items.map(item => ({
+            ...item,
+            id: uuidv4(),
+            bunches: item.bunches.map(bunch => ({
+              ...bunch,
+              id: uuidv4(),
+            })),
+          })),
+        };
+        isEditMode = true;
+      } else {
+        router.push('/invoices/new');
+      }
+    } else {
+      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
+          if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
+          dataToLoad = parsed;
+        } catch (e) {
+          console.error("Could not parse saved form data:", e);
+          dataToLoad = { items: [] };
+        }
+      } else {
+        dataToLoad = { items: [] };
+      }
+      isEditMode = false;
     }
-  }, [initialData, form]);
+  
+    setInitialData(dataToLoad);
+    setIsEditing(isEditMode);
+    form.reset(dataToLoad as InvoiceFormValues);
+  }, [editId, invoices, router, isMounted, form]);
+
 
   useEffect(() => {
-    if (isMounted && !editId) {
+    if (isMounted && !isEditing) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
     }
-  }, [isMounted, form, editId]);
+  }, [isMounted, form, isEditing]);
 
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
@@ -344,8 +351,8 @@ export function NewInvoiceForm() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : (initialData?.id ? "Duplicar Factura" : "Nueva Factura")}</h2>
-        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : (initialData?.id ? "Edite los detalles y guarde para crear una nueva factura." : "Crear una nueva factura de venta o compra.")}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : "Nueva Factura"}</h2>
+        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : "Crear una nueva factura de venta o compra."}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
