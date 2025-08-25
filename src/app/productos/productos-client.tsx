@@ -105,6 +105,10 @@ export function ProductosClient() {
       }
       await refreshData();
       handleCloseProductoDialog();
+      // Also close the view dialog if it's open
+      if (isViewProductsDialogOpen) {
+        setIsViewProductsDialogOpen(false);
+      }
     } catch (error) {
       console.error("Error submitting product:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -297,7 +301,7 @@ export function ProductosClient() {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button variant="outline" className="w-full" onClick={() => handleViewProducts(variedad)}>
+                       <Button variant="outline" className="w-full" onClick={() => handleViewProducts(variedad)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Ver Productos
                       </Button>
