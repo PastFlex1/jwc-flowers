@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search, Eye, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,9 @@ import { VariedadForm } from './variedad-form';
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
 type VariedadFormData = Omit<Variedad, 'id'> & { id?: string };
+type PendingChanges = {
+    [productId: string]: Partial<Omit<Producto, 'id'>>;
+};
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -56,6 +59,8 @@ export function ProductosClient() {
   const [variedadToDelete, setVariedadToDelete] = useState<Variedad | null>(null);
   const [selectedVariedad, setSelectedVariedad] = useState<Variedad | null>(null);
   const [isViewProductsDialogOpen, setIsViewProductsDialogOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
+
 
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,8 +74,16 @@ export function ProductosClient() {
 
   const productosForSelectedVariedad = useMemo(() => {
     if (!selectedVariedad) return [];
-    return productos.filter(p => p.variedad === selectedVariedad.nombre);
-  }, [productos, selectedVariedad]);
+    const varietyProducts = productos.filter(p => p.variedad === selectedVariedad.nombre);
+
+    // Apply pending changes for display
+    return varietyProducts.map(p => ({
+        ...p,
+        ...pendingChanges[p.id],
+    }));
+
+  }, [productos, selectedVariedad, pendingChanges]);
+
 
   const handleOpenProductoDialog = (producto: Producto | null = null) => {
     setEditingProducto(producto);
@@ -204,15 +217,35 @@ export function ProductosClient() {
       setVariedadToDelete(null);
     }
   };
+  
+  const handleStageChange = (productId: string, field: keyof Producto, value: any) => {
+    setPendingChanges(prev => ({
+        ...prev,
+        [productId]: {
+            ...prev[productId],
+            [field]: value
+        }
+    }));
+  };
 
-  const handleInlineUpdate = async (id: string, field: keyof Producto, value: any) => {
+  const handleSaveChanges = async () => {
+    setIsSubmitting(true);
+    const changesToSave = Object.entries(pendingChanges);
+
     try {
-      await updateProducto(id, { [field]: value });
-      await refreshData();
-      toast({ title: 'Éxito', description: 'Producto actualizado.' });
+        await Promise.all(
+            changesToSave.map(([id, data]) => updateProducto(id, data))
+        );
+        
+        await refreshData();
+        setPendingChanges({});
+        toast({ title: 'Éxito', description: `${changesToSave.length} producto(s) actualizados.` });
+
     } catch (error) {
-      toast({ title: 'Error', description: 'No se pudo actualizar el producto.', variant: 'destructive' });
-      await refreshData();
+        toast({ title: 'Error', description: 'No se pudieron guardar todos los cambios.', variant: 'destructive' });
+        await refreshData();
+    } finally {
+        setIsSubmitting(false);
     }
   };
   
@@ -351,8 +384,7 @@ export function ProductosClient() {
                         <Input
                           type="text"
                           defaultValue={producto.barras}
-                          onBlur={(e) => handleInlineUpdate(producto.id, 'barras', e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                          onChange={(e) => handleStageChange(producto.id, 'barras', e.target.value)}
                           className="w-28 h-8"
                         />
                       </TableCell>
@@ -360,7 +392,7 @@ export function ProductosClient() {
                         <Badge 
                           variant={producto.estado === 'Activo' ? 'secondary' : 'destructive'}
                           className="cursor-pointer"
-                          onClick={() => handleInlineUpdate(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
+                          onClick={() => handleStageChange(producto.id, 'estado', producto.estado === 'Activo' ? 'Inactivo' : 'Activo')}
                         >
                           {producto.estado}
                         </Badge>
@@ -378,6 +410,12 @@ export function ProductosClient() {
                 </TableBody>
             </Table>
           </div>
+           <DialogFooter>
+                <Button onClick={handleSaveChanges} disabled={isSubmitting || Object.keys(pendingChanges).length === 0}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
       
