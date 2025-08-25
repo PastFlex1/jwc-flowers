@@ -314,7 +314,10 @@ export function ProductosClient() {
       </div>
 
       <Dialog open={isViewProductsDialogOpen} onOpenChange={setIsViewProductsDialogOpen}>
-        <DialogContent className="sm:max-w-4xl">
+        <DialogContent 
+          className="sm:max-w-4xl"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Productos de la Variedad: {selectedVariedad?.nombre}</DialogTitle>
           </DialogHeader>
