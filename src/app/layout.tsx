@@ -9,6 +9,7 @@ import { AppDataProvider } from '@/context/app-data-context';
 export const metadata: Metadata = {
   title: 'JCW FLOWERS',
   description: 'Complete invoicing system for florists',
+  viewport: 'width=device-width, initial-scale=1',
 };
 
 export default function RootLayout({

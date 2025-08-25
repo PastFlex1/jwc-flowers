@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -152,8 +151,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">
-                    {t('header.documents')}
+                  <Button variant="ghost" className='px-2 sm:px-4'>
+                    <span className='hidden sm:inline'>{t('header.documents')}</span>
+                    <Notebook className='sm:hidden h-5 w-5'/>
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -169,8 +169,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost">
-                    {t('header.masterTables')}
+                  <Button variant="ghost" className='px-2 sm:px-4'>
+                    <span className='hidden sm:inline'>{t('header.masterTables')}</span>
+                    <Settings className='sm:hidden h-5 w-5'/>
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>

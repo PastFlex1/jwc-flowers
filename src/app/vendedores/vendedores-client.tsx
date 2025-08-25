@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -144,7 +144,7 @@ export function VendedoresClient() {
                 <h3 className="text-xl font-semibold">{vendedor.nombre}</h3>
                 <p className="text-muted-foreground">{vendedor.siglas}</p>
               </CardContent>
-              <div className="p-4 border-t flex justify-center gap-2">
+              <CardFooter className="p-4 border-t flex justify-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenDialog(vendedor)}>
                   {t('vendedores.edit')}
                 </Button>
@@ -152,7 +152,7 @@ export function VendedoresClient() {
                   <Trash2 className="h-4 w-4" />
                   <span className="sr-only">{t('vendedores.delete')}</span>
                 </Button>
-              </div>
+              </CardFooter>
             </Card>
           ))}
         </div>

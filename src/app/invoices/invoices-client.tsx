@@ -182,72 +182,74 @@ export function InvoicesClient() {
                 className="pl-10"
               />
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('invoices.invoiceNumber')}</TableHead>
-                  <TableHead>{t('invoices.customer')}</TableHead>
-                  <TableHead>{t('invoices.flightDate')}</TableHead>
-                  <TableHead>{t('invoices.amount')}</TableHead>
-                  <TableHead>{t('invoices.status')}</TableHead>
-                  <TableHead className="text-right">{t('invoices.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedInvoices.map((invoice) => {
-                  const balance = getInvoiceBalance(invoice);
-                  return (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
-                        <Link href={`/invoices/${invoice.id}`} className="hover:underline text-primary">
-                          {invoice.invoiceNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
-                      <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
-                      <TableCell>${balance.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={invoice.status === 'Paid' ? 'secondary' : invoice.status === 'Overdue' ? 'destructive' : 'outline'}
-                          className={cn({
-                            'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': invoice.status === 'Paid',
-                            'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': invoice.status === 'Pending',
-                          })}
-                        >
-                          {invoice.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Link href={`/invoices/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Ver/Enviar Factura">
-                              <Send className="h-4 w-4" />
-                              <span className="sr-only">Ver/Enviar Factura</span>
-                            </Button>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('invoices.invoiceNumber')}</TableHead>
+                    <TableHead>{t('invoices.customer')}</TableHead>
+                    <TableHead>{t('invoices.flightDate')}</TableHead>
+                    <TableHead>{t('invoices.amount')}</TableHead>
+                    <TableHead>{t('invoices.status')}</TableHead>
+                    <TableHead className="text-right">{t('invoices.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedInvoices.map((invoice) => {
+                    const balance = getInvoiceBalance(invoice);
+                    return (
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">
+                          <Link href={`/invoices/${invoice.id}`} className="hover:underline text-primary">
+                            {invoice.invoiceNumber}
                           </Link>
-                           <Link href={`/invoices/new?edit=${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Editar Factura">
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Editar Factura</span>
+                        </TableCell>
+                        <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
+                        <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
+                        <TableCell>${balance.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={invoice.status === 'Paid' ? 'secondary' : invoice.status === 'Overdue' ? 'destructive' : 'outline'}
+                            className={cn({
+                              'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300': invoice.status === 'Paid',
+                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300': invoice.status === 'Pending',
+                            })}
+                          >
+                            {invoice.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/invoices/${invoice.id}`} passHref>
+                              <Button variant="ghost" size="icon" title="Ver/Enviar Factura">
+                                <Send className="h-4 w-4" />
+                                <span className="sr-only">Ver/Enviar Factura</span>
+                              </Button>
+                            </Link>
+                             <Link href={`/invoices/new?edit=${invoice.id}`} passHref>
+                              <Button variant="ghost" size="icon" title="Editar Factura">
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Editar Factura</span>
+                              </Button>
+                            </Link>
+                            <Link href={`/invoices/duplicate/${invoice.id}`} passHref>
+                              <Button variant="ghost" size="icon" title="Duplicar Factura">
+                                <Copy className="h-4 w-4" />
+                                <span className="sr-only">Duplicar Factura</span>
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">{t('invoices.deleteTooltip')}</span>
                             </Button>
-                          </Link>
-                          <Link href={`/invoices/duplicate/${invoice.id}`} passHref>
-                            <Button variant="ghost" size="icon" title="Duplicar Factura">
-                              <Copy className="h-4 w-4" />
-                              <span className="sr-only">Duplicar Factura</span>
-                            </Button>
-                          </Link>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(invoice)} title={t('invoices.deleteTooltip')}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">{t('invoices.deleteTooltip')}</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
           {totalPages > 1 && (
             <CardFooter className="flex items-center justify-between">
