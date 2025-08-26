@@ -15,6 +15,7 @@ import {
   SidebarInset,
   SidebarFooter,
   SidebarRail,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Flower2,
@@ -50,6 +51,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 function AppShellHeader() {
+  const { state } = useSidebar();
   return (
     <SidebarHeader className="p-4">
       <Button
@@ -138,8 +140,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarMenu>
 
-        <SidebarFooter className="p-4 mt-auto">
-           <div className="flex items-center gap-3 w-full px-2 h-12 transition-all duration-300 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+        <SidebarFooter className="p-4 mt-auto transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+           <div className="flex items-center gap-3 w-full px-2 h-12">
               <div className="flex flex-col items-start">
                  <span className="font-medium">{t('sidebar.devMode')}</span>
                  <span className="text-xs text-muted-foreground">{t('sidebar.dbAccess')}</span>
