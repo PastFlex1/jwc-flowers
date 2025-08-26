@@ -273,7 +273,7 @@ const SidebarRail = React.forwardRef<
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "absolute z-20 flex items-center justify-center rounded-full bg-transparent p-1 transition-all duration-200 ease-linear hover:bg-accent group-data-[side=left]:-right-3 group-data-[side=right]:-left-3 top-1/2 -translate-y-1/2",
+        "absolute z-20 flex h-6 w-6 items-center justify-center rounded-full bg-background border border-border shadow-sm transition-all duration-200 ease-linear hover:bg-accent group-data-[side=left]:-right-3 group-data-[side=right]:-left-3 top-1/2 -translate-y-1/2",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         className
@@ -282,7 +282,7 @@ const SidebarRail = React.forwardRef<
     >
       <ChevronLeft
         className={cn(
-          "size-4 text-muted-foreground transition-transform",
+          "size-5 text-muted-foreground transition-transform",
           state === "collapsed" && "rotate-180",
           "group-data-[side=right]:rotate-180 group-data-[side=right][data-state=collapsed]:rotate-0"
         )}
