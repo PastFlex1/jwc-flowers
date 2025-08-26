@@ -14,8 +14,7 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarFooter,
-  SidebarTrigger,
-  useSidebar,
+  SidebarRail,
 } from '@/components/ui/sidebar';
 import {
   Flower2,
@@ -26,10 +25,8 @@ import {
   Languages,
   LogOut,
   UserCircle,
-  ShoppingCart,
   Receipt,
   ChevronDown,
-  ChevronRight,
   Package,
   Building,
   User,
@@ -51,29 +48,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
 
 function AppShellHeader() {
-  const { isMobile, toggleSidebar } = useSidebar();
-
   return (
     <SidebarHeader className="p-4">
       <Button
         variant="ghost"
         className="flex h-auto w-full items-center justify-start gap-2 p-0 hover:bg-transparent"
-        onClick={() => {
-            if (isMobile) {
-                toggleSidebar()
-            }
-        }}
+        asChild
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
-          <Flower2 className="h-6 w-6 text-primary" />
-        </div>
-        <div className="flex flex-col items-start gap-px overflow-hidden whitespace-nowrap transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-          <h2 className="text-lg font-semibold font-headline">JCW FLOWERS</h2>
-          <p className="text-sm text-muted-foreground">Para Floristas</p>
-        </div>
+        <Link href="/">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+            <Flower2 className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex flex-col items-start gap-px overflow-hidden whitespace-nowrap transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <h2 className="text-lg font-semibold font-headline">JCW FLOWERS</h2>
+            <p className="text-sm text-muted-foreground">Para Floristas</p>
+            </div>
+        </Link>
       </Button>
     </SidebarHeader>
   );
@@ -154,11 +146,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
         </SidebarFooter>
+        <SidebarRail />
       </Sidebar>
 
       <SidebarInset className="flex flex-col">
         <header className="app-shell-header flex h-16 shrink-0 items-center gap-4 border-b bg-background px-6">
-           <SidebarTrigger />
            <div className="flex-1 flex items-center gap-2">
               <Button onClick={() => router.push('/invoices/new')}>
                 <Plus className="h-4 w-4 sm:mr-2" />
