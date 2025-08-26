@@ -15,6 +15,7 @@ import {
   SidebarInset,
   SidebarFooter,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   Flower2,
@@ -51,6 +52,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+
+function AppShellHeader() {
+  const { toggleSidebar } = useSidebar();
+  const { t } = useTranslation();
+
+  return (
+    <SidebarHeader className="p-4">
+      <Button
+        variant="ghost"
+        className="flex h-auto w-full items-center justify-start gap-2 p-0 hover:bg-transparent"
+        onClick={toggleSidebar}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+          <Flower2 className="h-6 w-6 text-primary" />
+        </div>
+        <div className="flex flex-col items-start gap-px overflow-hidden whitespace-nowrap transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+          <h2 className="text-lg font-semibold font-headline">{t('sidebar.title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('sidebar.subtitle')}</p>
+        </div>
+      </Button>
+    </SidebarHeader>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -94,21 +118,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar>
-        <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-10 w-10">
-              <Flower2 className="h-6 w-6 text-primary" />
-            </Button>
-            <div className="flex flex-col">
-              <h2 className="text-lg font-semibold font-headline">{t('sidebar.title')}</h2>
-              <p className="text-sm text-muted-foreground">{t('sidebar.subtitle')}</p>
-            </div>
-          </div>
-        </SidebarHeader>
+        <AppShellHeader />
 
         <SidebarMenu className="flex-grow">
           <div className="px-4 py-2">
-            <h3 className="mb-2 px-2 text-lg font-semibold tracking-tight">{t('sidebar.main')}</h3>
+            <h3 className="mb-2 px-2 text-lg font-semibold tracking-tight transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">{t('sidebar.main')}</h3>
             <div className="space-y-1">
                {mainNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -116,10 +130,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     asChild
                     isActive={pathname.startsWith(item.href)}
                     className="gap-3"
+                    tooltip={item.label}
                   >
                     <Link href={item.href} prefetch={true}>
                       <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      <span className='transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0'>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -129,7 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarMenu>
 
         <SidebarFooter className="p-4 mt-auto">
-           <div className="flex items-center gap-3 w-full px-2 h-12">
+           <div className="flex items-center gap-3 w-full px-2 h-12 transition-all duration-300 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
               <div className="flex flex-col items-start">
                  <span className="font-medium">{t('sidebar.devMode')}</span>
                  <span className="text-xs text-muted-foreground">{t('sidebar.dbAccess')}</span>
