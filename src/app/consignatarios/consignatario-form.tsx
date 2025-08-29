@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,12 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import type { Consignatario, Pais, Customer, Provincia } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   nombreConsignatario: z.string().min(2, { message: "The name must be at least 2 characters." }),
   customerId: z.string().min(1, { message: "Please select a customer." }),
   direccion: z.string().min(5, { message: "The address must be at least 5 characters." }),
-  provincia: z.string().min(1, { message: "Please select a province." }),
+  provincia: z.string().min(1, { message: "Please select a province/city." }),
   pais: z.string().min(1, { message: "Please select a country." }),
 });
 
@@ -45,6 +46,20 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
     },
   });
 
+  const selectedCustomerId = form.watch('customerId');
+  const selectedPais = form.watch('pais');
+
+  useEffect(() => {
+    if (selectedCustomerId) {
+      const customer = customers.find(c => c.id === selectedCustomerId);
+      if (customer) {
+        form.setValue('pais', customer.pais, { shouldValidate: true });
+        form.setValue('provincia', customer.estadoCiudad, { shouldValidate: true });
+      }
+    }
+  }, [selectedCustomerId, customers, form]);
+
+
   useEffect(() => {
     form.reset(initialData || {
       nombreConsignatario: '',
@@ -59,6 +74,8 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
     const dataToSubmit = initialData ? { ...values, id: initialData.id } : values;
     onSubmit(dataToSubmit);
   }
+
+  const isNational = useMemo(() => selectedPais === 'Ecuador', [selectedPais]);
 
   return (
     <Form {...form}>
@@ -116,35 +133,11 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="provincia"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Province</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a province" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {provincias.map(provincia => (
-                        <SelectItem key={provincia.id} value={provincia.nombre}>
-                          {provincia.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
             name="pais"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a country" />
@@ -158,6 +151,36 @@ export function ConsignatarioForm({ onSubmit, onClose, initialData, paises, cust
                       ))}
                     </SelectContent>
                   </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+           <FormField
+            control={form.control}
+            name="provincia"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Province/City</FormLabel>
+                {isNational ? (
+                   <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a province" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {provincias.map(p => (
+                          <SelectItem key={p.id} value={p.nombre}>
+                            {p.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                ) : (
+                  <FormControl>
+                    <Input placeholder="e.g., Florida" {...field} />
+                  </FormControl>
+                )}
                 <FormMessage />
               </FormItem>
             )}
