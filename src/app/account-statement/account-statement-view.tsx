@@ -1,16 +1,18 @@
+
 'use client';
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import type { StatementData } from './account-statement-client';
+import { useTranslation } from '@/context/i18n-context';
 
 type AccountStatementViewProps = {
   data: StatementData;
 };
 
 export function AccountStatementView({ data }: AccountStatementViewProps) {
-
+  const { t } = useTranslation();
   const groupedInvoices = data.invoices.reduce((acc, invoice) => {
     const month = format(parseISO(invoice.flightDate), 'MMMM yyyy');
     if (!acc[month]) {
@@ -36,10 +38,10 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
             </div>
           </div>
           <div className="w-1/2 flex flex-col items-end">
-            <h1 className="text-xl font-bold mb-4 tracking-wider">ESTADO DE CUENTA {data.customer.name.toUpperCase()}</h1>
+            <h1 className="text-xl font-bold mb-4 tracking-wider">{t('accountStatement.view.title', { customerName: data.customer.name.toUpperCase() })}</h1>
             <div className="w-[280px] text-xs mt-4">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
-                <div className="w-2/3 p-1">SALDO DE CUENTA:</div>
+                <div className="w-2/3 p-1">{t('accountStatement.view.balanceTitle')}:</div>
                 <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
@@ -49,7 +51,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
             </div>
              <div className="w-[280px] text-xs mt-2">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
-                <div className="w-2/3 p-1">PAGO URGENTE FACTURAS:</div>
+                <div className="w-2/3 p-1">{t('accountStatement.view.urgentPayment')}:</div>
                 <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
@@ -62,30 +64,30 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
 
         <section className="border border-black p-2 mb-4 text-xs">
           <div className="grid grid-cols-[auto,1fr] gap-x-2">
-            <strong>CLIENTE FACTURACIÓN:</strong>
+            <strong>{t('accountStatement.view.billingCustomer')}:</strong>
             <span className="font-bold">{data.customer.name.toUpperCase()}</span>
-            <strong>DIRECCIÓN:</strong>
+            <strong>{t('accountStatement.view.address')}:</strong>
             <span>{data.customer.address}</span>
-            <strong>CIUDAD:</strong>
+            <strong>{t('accountStatement.view.city')}:</strong>
             <span>{data.customer.estadoCiudad}, {data.customer.pais}</span>
           </div>
         </section>
 
         <section>
           <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-center bg-gray-200 border-t border-l border-r border-black text-xs">
-            <div className="p-1 border-r border-black">FECHA</div>
-            <div className="p-1 border-r border-black">FACTURA #</div>
-            <div className="p-1 border-r border-black">CLIENTE</div>
-            <div className="p-1 border-r border-black">CARGOS</div>
-            <div className="p-1 border-r border-black">CRÉDITOS/DÉBITOS</div>
-            <div className="p-1 border-r border-black">PAGOS</div>
-            <div className="p-1">SALDO</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.date')}</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.invoiceNo')}</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.customer')}</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.charges')}</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.creditsDebits')}</div>
+            <div className="p-1 border-r border-black">{t('accountStatement.view.payments')}</div>
+            <div className="p-1">{t('accountStatement.view.balance')}</div>
           </div>
           <div className="border-l border-r border-b border-black text-xs">
             {Object.entries(groupedInvoices).map(([month, invoices]) => (
               <React.Fragment key={month}>
                 <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] bg-gray-100 font-bold">
-                  <div className="p-1 border-b border-black col-span-7">PENDIENTE {month.toUpperCase()}</div>
+                  <div className="p-1 border-b border-black col-span-7">{t('accountStatement.view.pendingMonth', { month: month.toUpperCase() })}</div>
                 </div>
                 {invoices.map(invoice => (
                    <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
@@ -103,7 +105,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
           </div>
 
            <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-xs bg-gray-200 border-b border-l border-r border-black">
-              <div className="p-1 border-r border-black col-span-3 text-center">TOTAL PENDIENTE</div>
+              <div className="p-1 border-r border-black col-span-3 text-center">{t('accountStatement.view.totalPending')}</div>
               <div className="p-1 border-r border-black text-right">${data.invoices.reduce((acc, inv) => acc + inv.total, 0).toFixed(2)}</div>
               <div className="p-1 border-r border-black text-right">${(data.totalCredits - data.totalDebits).toFixed(2)}</div>
               <div className="p-1 border-r border-black text-right">${data.totalPayments.toFixed(2)}</div>
@@ -112,13 +114,13 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
         </section>
 
         <footer className="mt-6 text-xs">
-          <h4 className="font-bold text-center mb-2">POLÍTICA DE CRÉDITO</h4>
+          <h4 className="font-bold text-center mb-2">{t('accountStatement.view.creditPolicyTitle')}</h4>
           <div className="border border-black p-2 space-y-1">
-            <p>Al trabajar con <strong>JCW FLOWERS</strong>, el cliente acepta cumplir con las siguientes reglas de política de crédito.</p>
-            <p>1. Envíe toda la información a tiempo; un cliente tiene <strong>máximo 8 días</strong> para enviar la información desde que la finca entregó las cajas en la agencia de carga.</p>
-            <p>2. Fotos: de las flores, ramos, etiqueta, cajas, etc. Número de Factura, Día de Envío, Número de Guía Aérea (AWB), Fecha de llegada al destino final, Foto del código UPC.</p>
-            <p>3. En caso de que aprobemos un crédito, será solo por el costo de las flores, no aceptamos ningún costo de transporte ni ningún otro cargo.</p>
-            <p><strong>NOTA. Si un cliente no envía toda la información anterior, JCW FLOWERS</strong> no podrá procesar los créditos, y el crédito será rechazado.</p>
+            <p>{t('accountStatement.view.policy1')}</p>
+            <p>{t('accountStatement.view.policy2')}</p>
+            <p>{t('accountStatement.view.policy3')}</p>
+            <p>{t('accountStatement.view.policy4')}</p>
+            <p><strong>{t('accountStatement.view.policyNoteTitle')}</strong>{t('accountStatement.view.policyNote')}</p>
           </div>
         </footer>
       </CardContent>
