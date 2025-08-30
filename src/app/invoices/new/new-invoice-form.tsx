@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -693,7 +694,7 @@ export function NewInvoiceForm() {
                                         const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
 
                                         const totalStems = stemsPerBunch * bunchesPerBox;
-                                        const totalValue = totalStems * salePrice;
+                                        const totalValue = (totalStems * salePrice).toFixed(2);
                                         
                                         let differencePercent = '0 %';
                                         if (purchasePrice > 0) {
@@ -767,7 +768,7 @@ export function NewInvoiceForm() {
                                                 <TableCell><FormField control={form.control} name={`${bunchPath}.purchasePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
                                                 <TableCell><FormField control={form.control} name={`${bunchPath}.salePrice`} render={({ field }) => <Input type="number" step="0.01" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
                                                 <TableCell><Input readOnly disabled value={totalStems} className="w-24 bg-muted/50 py-2" /></TableCell>
-                                                <TableCell><Input readOnly disabled value={`$${totalValue.toFixed(2)}`} className="w-24 bg-muted/50 py-2" /></TableCell>
+                                                <TableCell><Input readOnly disabled value={`$${totalValue}`} className="w-24 bg-muted/50 py-2" /></TableCell>
                                                 <TableCell><Input readOnly disabled value={differencePercent} className="w-28 bg-muted/50 py-2" /></TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-1">
@@ -807,5 +808,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    
