@@ -294,10 +294,12 @@ export function NewInvoiceForm() {
       });
       return { ...restOfItem, bunches: cleanedBunches };
     });
+
+    const { id: formId, ...dataToSave } = values;
   
     const processedInvoice: Omit<Invoice, 'id'> & { id?: string } = {
-      ...values,
-      id: isEditing ? values.id : undefined,
+      ...dataToSave,
+      id: isEditing ? formId : undefined,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -314,7 +316,8 @@ export function NewInvoiceForm() {
           description: "La factura ha sido actualizada correctamente.",
         });
       } else {
-        await addInvoice(processedInvoice);
+        const { id, ...invoiceToAdd } = processedInvoice;
+        await addInvoice(invoiceToAdd);
         toast({
           title: t('invoices.new.toast.successTitle'),
           description: t('invoices.new.toast.successDescription'),
