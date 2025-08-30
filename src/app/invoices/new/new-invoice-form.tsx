@@ -687,13 +687,14 @@ export function NewInvoiceForm() {
                                     {Array.isArray(lineItem.bunches) && lineItem.bunches.map((bunch, bunchIndex) => {
                                         rowCounter++;
                                         const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
+                                        const lineItemPath = `items.${lineItemIndex}` as const;
                                         
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
+                                        const numberOfBunches = form.watch(`${lineItemPath}.numberOfBunches`) || 0;
 
-                                        const totalStems = stemsPerBunch * bunchesPerBox;
+                                        const totalStems = stemsPerBunch * numberOfBunches;
                                         const totalValue = (totalStems * salePrice).toFixed(2);
                                         
                                         let differencePercent = '0 %';
