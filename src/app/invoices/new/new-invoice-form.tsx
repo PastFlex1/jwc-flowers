@@ -693,8 +693,9 @@ export function NewInvoiceForm() {
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
                                         const numberOfBunches = form.watch(`${lineItemPath}.numberOfBunches`) || 0;
+                                        const boxNumber = form.watch(`${lineItemPath}.boxNumber`) || 0;
 
-                                        const totalStems = stemsPerBunch * numberOfBunches;
+                                        const totalStems = stemsPerBunch * numberOfBunches * boxNumber;
                                         const totalValue = (totalStems * salePrice).toFixed(2);
                                         
                                         let differencePercent = '0 %';
