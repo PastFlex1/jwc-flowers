@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -123,7 +124,8 @@ export function AccountsPayableClient() {
         if (!item.bunches) return acc;
         return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
             const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
-            return bunchAcc + (stems * bunch.purchasePrice); // Use purchase price for payables
+            // For accounts payable, always use the purchase price
+            return bunchAcc + (stems * bunch.purchasePrice);
         }, 0);
     }, 0);
 
