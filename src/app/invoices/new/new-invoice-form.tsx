@@ -97,41 +97,43 @@ export function NewInvoiceForm() {
   });
 
   useEffect(() => {
-    if (isAppDataLoading) return;
+    if (isAppDataLoading || isFormReady) return;
 
     if (editId) {
-      const invoiceToEdit = invoices.find(inv => inv.id === editId);
-      if (invoiceToEdit) {
-        const dataToLoad = {
-          ...invoiceToEdit,
-          farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
-          flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
-          items: invoiceToEdit.items.map(item => ({
-            ...item,
-            id: item.id || uuidv4(),
-            bunches: item.bunches.map(bunch => ({
-              ...bunch,
-              id: bunch.id || uuidv4(),
-            })),
-          })),
-        };
-        form.reset(dataToLoad);
-      }
+        const invoiceToEdit = invoices.find(inv => inv.id === editId);
+        if (invoiceToEdit) {
+            const dataToLoad = {
+              ...invoiceToEdit,
+              farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
+              flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
+              items: invoiceToEdit.items.map(item => ({
+                ...item,
+                id: item.id || uuidv4(),
+                bunches: item.bunches.map(bunch => ({
+                  ...bunch,
+                  id: bunch.id || uuidv4(),
+                })),
+              })),
+            };
+            form.reset(dataToLoad);
+            setIsFormReady(true);
+        }
     } else {
         const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
         if (savedData) {
-          try {
-            const parsed = JSON.parse(savedData);
-            if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
-            if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
-            form.reset(parsed);
-          } catch (e) {
-            console.error("Could not parse saved form data:", e);
-          }
-      }
+            try {
+                const parsed = JSON.parse(savedData);
+                if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
+                if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
+                form.reset(parsed);
+            } catch (e) {
+                console.error("Could not parse saved form data:", e);
+                form.reset({});
+            }
+        }
+        setIsFormReady(true);
     }
-    setIsFormReady(true);
-  }, [editId, invoices, isAppDataLoading, form.reset, form]);
+  }, [editId, invoices, isAppDataLoading, form, isFormReady]);
 
 
   useEffect(() => {
@@ -286,11 +288,12 @@ export function NewInvoiceForm() {
       });
       return { ...restOfItem, bunches: cleanedBunches };
     });
-
-    const { id, ...dataToSave } = values;
   
+    const dataToSave = { ...values };
+
     const invoiceData = {
       ...dataToSave,
+      id: editId || undefined,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -301,13 +304,15 @@ export function NewInvoiceForm() {
 
     try {
       if (editId) {
-        await updateInvoice(editId, invoiceData);
+        const { id, ...updateData } = invoiceData;
+        await updateInvoice(editId, updateData);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",
         });
       } else {
-        await addInvoice(invoiceData);
+        const { id, ...createData } = invoiceData;
+        await addInvoice(createData);
         toast({
           title: t('invoices.new.toast.successTitle'),
           description: t('invoices.new.toast.successDescription'),
@@ -334,7 +339,14 @@ export function NewInvoiceForm() {
   }
 
   if (!isFormReady) {
-    return <div>Loading form...</div>;
+    return (
+        <div className="flex h-[80vh] w-full items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                <p className="text-muted-foreground">Cargando datos de factura...</p>
+            </div>
+        </div>
+    );
   }
   
   return (

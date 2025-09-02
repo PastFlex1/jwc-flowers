@@ -1,6 +1,7 @@
 
 
 
+
 import { db } from '@/lib/firebase';
 import type { Invoice, LineItem, Customer, Consignatario, Carguera, Pais } from '@/lib/types';
 import {
@@ -107,15 +108,15 @@ export async function addInvoice(invoiceData: Omit<Invoice, 'id'>): Promise<stri
   return docRef.id;
 }
 
-export async function updateInvoice(id: string, invoiceData: Partial<Omit<Invoice, 'id' | 'status'>>): Promise<void> {
+export async function updateInvoice(id: string, invoiceData: Partial<Omit<Invoice, 'id'>>): Promise<void> {
   if (!db) throw new Error("Firebase is not configured. Check your .env file.");
   const invoiceDoc = doc(db, 'invoices', id);
   const dataToUpdate: any = { ...invoiceData };
   
-  if (dataToUpdate.farmDepartureDate) {
+  if (dataToUpdate.farmDepartureDate && typeof dataToUpdate.farmDepartureDate === 'string') {
     dataToUpdate.farmDepartureDate = Timestamp.fromDate(new Date(dataToUpdate.farmDepartureDate));
   }
-  if (dataToUpdate.flightDate) {
+  if (dataToUpdate.flightDate && typeof dataToUpdate.flightDate === 'string') {
     dataToUpdate.flightDate = Timestamp.fromDate(new Date(dataToUpdate.flightDate));
   }
 
@@ -127,3 +128,5 @@ export async function deleteInvoice(id: string): Promise<void> {
   const invoiceDoc = doc(db, 'invoices', id);
   await deleteDoc(invoiceDoc);
 }
+
+    
