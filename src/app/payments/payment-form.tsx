@@ -87,7 +87,7 @@ export function PaymentForm({
   useEffect(() => {
     if (selectedEntityId) {
         const entityInvoices = invoices.filter(inv => {
-          const isCorrectType = inv.type === paymentType;
+          const isCorrectType = inv.type === paymentType || inv.type === 'both';
           const isNotPaid = inv.status !== 'Paid';
           
           let isCorrectEntity = false;
