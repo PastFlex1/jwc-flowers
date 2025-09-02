@@ -86,7 +86,7 @@ export function NewInvoiceForm() {
 
   const editId = searchParams.get('edit');
   
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!!editId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
@@ -103,51 +103,41 @@ export function NewInvoiceForm() {
   
   useEffect(() => {
     if (!isMounted) return;
-
-    let dataToLoad: Partial<InvoiceFormValues> | null = null;
-    let isEditMode = false;
   
     if (editId) {
+      setIsEditing(true);
       const invoiceToEdit = invoices.find(inv => inv.id === editId);
       if (invoiceToEdit) {
-        dataToLoad = {
+        const dataToLoad = {
           ...invoiceToEdit,
           farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
           flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
           items: invoiceToEdit.items.map(item => ({
             ...item,
-            id: uuidv4(),
+            id: item.id || uuidv4(),
             bunches: item.bunches.map(bunch => ({
               ...bunch,
-              id: uuidv4(),
+              id: bunch.id || uuidv4(),
             })),
           })),
         };
-        isEditMode = true;
-      } else {
-        router.push('/invoices/new');
+        form.reset(dataToLoad);
       }
     } else {
+      setIsEditing(false);
       const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (savedData) {
         try {
           const parsed = JSON.parse(savedData);
           if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
           if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
-          dataToLoad = parsed;
+          form.reset(parsed);
         } catch (e) {
           console.error("Could not parse saved form data:", e);
-          dataToLoad = { items: [] };
         }
-      } else {
-        dataToLoad = { items: [] };
       }
-      isEditMode = false;
     }
-  
-    setIsEditing(isEditMode);
-    form.reset(dataToLoad as InvoiceFormValues);
-  }, [editId, invoices, router, isMounted, form]);
+  }, [editId, invoices, isMounted, form.reset, form]);
 
 
   useEffect(() => {
@@ -701,10 +691,10 @@ export function NewInvoiceForm() {
                                         const salePrice = form.watch(`${bunchPath}.salePrice`) || 0;
                                         const purchasePrice = form.watch(`${bunchPath}.purchasePrice`) || 0;
                                         const stemsPerBunch = form.watch(`${bunchPath}.stemsPerBunch`) || 0;
-                                        const numberOfBunches = form.watch(`${lineItemPath}.numberOfBunches`) || 0;
+                                        const bunchesPerBox = form.watch(`${bunchPath}.bunchesPerBox`) || 0;
                                         const boxNumber = form.watch(`${lineItemPath}.boxNumber`) || 0;
 
-                                        const totalStems = stemsPerBunch * numberOfBunches * boxNumber;
+                                        const totalStems = stemsPerBunch * bunchesPerBox * boxNumber;
                                         const totalValue = (totalStems * salePrice).toFixed(2);
                                         
                                         let differencePercent = '0 %';
