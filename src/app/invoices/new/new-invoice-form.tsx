@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format, toDate, parseISO } from 'date-fns';
+import { format, toDate, parseISO, addDays } from 'date-fns';
 import { CalendarIcon, Trash2, PlusCircle, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -159,6 +159,14 @@ export function NewInvoiceForm() {
     }
   }, [isMounted, form, isEditing]);
 
+  const farmDepartureDate = form.watch('farmDepartureDate');
+
+  useEffect(() => {
+    if (farmDepartureDate) {
+      const nextDay = addDays(new Date(farmDepartureDate), 1);
+      form.setValue('flightDate', nextDay, { shouldValidate: true });
+    }
+  }, [farmDepartureDate, form]);
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
     control: form.control,
@@ -295,11 +303,10 @@ export function NewInvoiceForm() {
       return { ...restOfItem, bunches: cleanedBunches };
     });
 
-    const { id: formId, ...dataToSave } = values;
+    const { id, ...dataToSave } = values;
   
-    const processedInvoice: Omit<Invoice, 'id'> & { id?: string } = {
+    const invoiceData = {
       ...dataToSave,
-      id: isEditing ? formId : undefined,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
@@ -307,17 +314,16 @@ export function NewInvoiceForm() {
       status: 'Pending',
       items: cleanedItems as LineItem[],
     };
-  
+
     try {
-      if (isEditing && processedInvoice.id) {
-        await updateInvoice(processedInvoice.id, processedInvoice);
+      if (isEditing && id) {
+        await updateInvoice(id, invoiceData);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",
         });
       } else {
-        const { id, ...invoiceToAdd } = processedInvoice;
-        await addInvoice(invoiceToAdd);
+        await addInvoice(invoiceData);
         toast({
           title: t('invoices.new.toast.successTitle'),
           description: t('invoices.new.toast.successDescription'),
