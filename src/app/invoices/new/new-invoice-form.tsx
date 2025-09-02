@@ -81,31 +81,25 @@ export function NewInvoiceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isLoading: isAppDataLoading } = useAppData();
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
   
-  const [isEditing, setIsEditing] = useState(!!editId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const [isFormReady, setIsFormReady] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
   });
-  
+
   useEffect(() => {
-    if (!isMounted) return;
-  
+    if (isAppDataLoading) return;
+
     if (editId) {
-      setIsEditing(true);
       const invoiceToEdit = invoices.find(inv => inv.id === editId);
       if (invoiceToEdit) {
         const dataToLoad = {
@@ -124,30 +118,30 @@ export function NewInvoiceForm() {
         form.reset(dataToLoad);
       }
     } else {
-      setIsEditing(false);
-      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
-          if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
-          form.reset(parsed);
-        } catch (e) {
-          console.error("Could not parse saved form data:", e);
-        }
+        const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            if (parsed.farmDepartureDate) parsed.farmDepartureDate = parseISO(parsed.farmDepartureDate);
+            if (parsed.flightDate) parsed.flightDate = parseISO(parsed.flightDate);
+            form.reset(parsed);
+          } catch (e) {
+            console.error("Could not parse saved form data:", e);
+          }
       }
     }
-  }, [editId, invoices, isMounted, form.reset, form]);
+    setIsFormReady(true);
+  }, [editId, invoices, isAppDataLoading, form.reset, form]);
 
 
   useEffect(() => {
-    if (isMounted && !isEditing) {
+    if (isFormReady && !editId) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
     }
-  }, [isMounted, form, isEditing]);
+  }, [isFormReady, form, editId]);
 
   const farmDepartureDate = form.watch('farmDepartureDate');
 
@@ -306,8 +300,8 @@ export function NewInvoiceForm() {
     };
 
     try {
-      if (isEditing && id) {
-        await updateInvoice(id, invoiceData);
+      if (editId) {
+        await updateInvoice(editId, invoiceData);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",
@@ -329,7 +323,7 @@ export function NewInvoiceForm() {
       console.error('Error saving invoice:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       toast({
-        title: isEditing ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
+        title: editId ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
         description: `No se pudo guardar la factura: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
@@ -339,15 +333,15 @@ export function NewInvoiceForm() {
     }
   }
 
-  if (!isMounted) {
+  if (!isFormReady) {
     return <div>Loading form...</div>;
   }
   
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight font-headline">{isEditing ? "Editar Factura" : "Nueva Factura"}</h2>
-        <p className="text-muted-foreground">{isEditing ? "Modifique los detalles de la factura." : "Crear una nueva factura de venta o compra."}</p>
+        <h2 className="text-3xl font-bold tracking-tight font-headline">{editId ? "Editar Factura" : "Nueva Factura"}</h2>
+        <p className="text-muted-foreground">{editId ? "Modifique los detalles de la factura." : "Crear una nueva factura de venta o compra."}</p>
       </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -801,7 +795,7 @@ export function NewInvoiceForm() {
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? t('common.saving') : (isEditing ? 'Guardar Cambios' : t('invoices.new.save'))}
+              {isSubmitting ? t('common.saving') : (editId ? 'Guardar Cambios' : t('invoices.new.save'))}
             </Button>
           </div>
         </form>
@@ -809,3 +803,5 @@ export function NewInvoiceForm() {
     </div>
   );
 }
+
+    
