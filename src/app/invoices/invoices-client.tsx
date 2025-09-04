@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -232,7 +233,7 @@ export function InvoicesClient() {
                                 <span className="sr-only">Editar Factura</span>
                               </Button>
                             </Link>
-                            <Link href={`/invoices/duplicate/${invoice.id}`} passHref>
+                            <Link href={`/invoices/new?duplicate=${invoice.id}`} passHref>
                               <Button variant="ghost" size="icon" title="Duplicar Factura">
                                 <Copy className="h-4 w-4" />
                                 <span className="sr-only">Duplicar Factura</span>

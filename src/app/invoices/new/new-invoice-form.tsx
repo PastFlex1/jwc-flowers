@@ -85,38 +85,46 @@ export function NewInvoiceForm() {
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
+  const duplicateId = searchParams.get('duplicate');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
-  const [isFormReady, setIsFormReady] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
   });
 
-  useEffect(() => {
-    if (isAppDataLoading || isFormReady) return;
+  const loadInvoiceData = useCallback((invoice: Invoice, isDuplicating: boolean) => {
+    const dataToLoad = {
+        ...invoice,
+        farmDepartureDate: invoice.farmDepartureDate ? parseISO(invoice.farmDepartureDate) : new Date(),
+        flightDate: invoice.flightDate ? parseISO(invoice.flightDate) : new Date(),
+        items: invoice.items.map(item => ({
+            ...item,
+            id: uuidv4(),
+            bunches: item.bunches.map(bunch => ({
+                ...bunch,
+                id: uuidv4(),
+            })),
+        })),
+        id: isDuplicating ? undefined : invoice.id,
+        invoiceNumber: isDuplicating ? '' : invoice.invoiceNumber,
+    };
+    form.reset(dataToLoad);
+    setHasLoaded(true);
+  }, [form]);
 
-    if (editId) {
-        const invoiceToEdit = invoices.find(inv => inv.id === editId);
-        if (invoiceToEdit) {
-            const dataToLoad = {
-              ...invoiceToEdit,
-              farmDepartureDate: invoiceToEdit.farmDepartureDate ? parseISO(invoiceToEdit.farmDepartureDate) : new Date(),
-              flightDate: invoiceToEdit.flightDate ? parseISO(invoiceToEdit.flightDate) : new Date(),
-              items: invoiceToEdit.items.map(item => ({
-                ...item,
-                id: item.id || uuidv4(),
-                bunches: item.bunches.map(bunch => ({
-                  ...bunch,
-                  id: bunch.id || uuidv4(),
-                })),
-              })),
-            };
-            form.reset(dataToLoad);
-            setIsFormReady(true);
+  useEffect(() => {
+    if (isAppDataLoading || hasLoaded) return;
+
+    const idToLoad = editId || duplicateId;
+    if (idToLoad) {
+        const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
+        if (invoiceToLoad) {
+            loadInvoiceData(invoiceToLoad, !!duplicateId);
         }
     } else {
         const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -131,24 +139,24 @@ export function NewInvoiceForm() {
                 form.reset({});
             }
         }
-        setIsFormReady(true);
+        setHasLoaded(true);
     }
-  }, [editId, invoices, isAppDataLoading, form, isFormReady]);
+  }, [editId, duplicateId, invoices, isAppDataLoading, hasLoaded, loadInvoiceData]);
 
 
   useEffect(() => {
-    if (isFormReady && !editId) {
+    if (hasLoaded && !editId && !duplicateId) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
     }
-  }, [isFormReady, form, editId]);
+  }, [hasLoaded, form, editId, duplicateId]);
 
   const farmDepartureDate = form.watch('farmDepartureDate');
 
   useEffect(() => {
-    if (farmDepartureDate) {
+    if (farmDepartureDate && form.isDirty('farmDepartureDate')) {
       const nextDay = addDays(new Date(farmDepartureDate), 1);
       form.setValue('flightDate', nextDay, { shouldValidate: true });
     }
@@ -200,20 +208,22 @@ export function NewInvoiceForm() {
       setFilteredMarcaciones(relatedMarcaciones);
       
       const currentConsignatario = form.getValues('consignatarioId');
-      if (!relatedConsignatarios.some(c => c.id === currentConsignatario)) {
+      if (form.isDirty('customerId') || !currentConsignatario) {
           form.setValue('consignatarioId', '');
       }
       
       const currentMarcacion = form.getValues('reference');
-      if (!relatedMarcaciones.some(m => m.numeroMarcacion === currentMarcacion)) {
+      if (form.isDirty('customerId') || !currentMarcacion) {
         form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
       }
 
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
-      form.setValue('consignatarioId', '');
-      form.setValue('reference', '');
+       if (form.isDirty('customerId')) {
+        form.setValue('consignatarioId', '');
+        form.setValue('reference', '');
+      }
     }
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
 
@@ -280,39 +290,27 @@ export function NewInvoiceForm() {
   async function onSubmit(values: InvoiceFormValues) {
     setIsSubmitting(true);
   
-    const cleanedItems = values.items.map(item => {
-      const { id, ...restOfItem } = item;
-      const cleanedBunches = item.bunches.map(bunch => {
-        const { id, ...restOfBunch } = bunch;
-        return restOfBunch;
-      });
-      return { ...restOfItem, bunches: cleanedBunches };
-    });
-  
-    const dataToSave = { ...values };
+    const { id, ...dataToSubmit } = values;
 
     const invoiceData = {
-      ...dataToSave,
-      id: editId || undefined,
+      ...dataToSubmit,
       consignatarioId: values.consignatarioId || '',
       reference: values.reference || '',
       farmDepartureDate: values.farmDepartureDate.toISOString(),
       flightDate: values.flightDate.toISOString(),
       status: 'Pending',
-      items: cleanedItems as LineItem[],
+      items: values.items as LineItem[],
     };
 
     try {
-      if (editId) {
-        const { id, ...updateData } = invoiceData;
-        await updateInvoice(editId, updateData);
+      if (id) {
+        await updateInvoice(id, invoiceData);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",
         });
       } else {
-        const { id, ...createData } = invoiceData;
-        await addInvoice(createData);
+        await addInvoice(invoiceData);
         toast({
           title: t('invoices.new.toast.successTitle'),
           description: t('invoices.new.toast.successDescription'),
@@ -328,7 +326,7 @@ export function NewInvoiceForm() {
       console.error('Error saving invoice:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
       toast({
-        title: editId ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
+        title: id ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
         description: `No se pudo guardar la factura: ${errorMessage}.`,
         variant: 'destructive',
         duration: 10000,
@@ -338,7 +336,7 @@ export function NewInvoiceForm() {
     }
   }
 
-  if (!isFormReady) {
+  if (!hasLoaded) {
     return (
         <div className="flex h-[80vh] w-full items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -815,5 +813,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    
