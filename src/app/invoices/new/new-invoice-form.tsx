@@ -81,7 +81,7 @@ export function NewInvoiceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isLoading: isAppDataLoading } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isAppDataLoading } = useAppData();
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
@@ -91,40 +91,34 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
-  const [hasLoaded, setHasLoaded] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
   });
-  
-  const loadInvoiceData = useCallback((invoice: Invoice, isDuplicating: boolean) => {
-      const dataToLoad = {
-          ...invoice,
-          farmDepartureDate: invoice.farmDepartureDate ? parseISO(invoice.farmDepartureDate) : new Date(),
-          flightDate: invoice.flightDate ? parseISO(invoice.flightDate) : new Date(),
-          items: invoice.items.map(item => ({
-              ...item,
-              id: uuidv4(), // Assign new ID for react key
-              bunches: item.bunches.map(bunch => ({
-                  ...bunch,
-                  id: uuidv4(), // Assign new ID for react key
-              })),
-          })),
-          id: isDuplicating ? undefined : invoice.id,
-          invoiceNumber: isDuplicating ? '' : invoice.invoiceNumber,
-      };
-      form.reset(dataToLoad);
-      setHasLoaded(true);
-  }, [form]);
 
   useEffect(() => {
-    if (isAppDataLoading || hasLoaded) return;
-    
+    if (isAppDataLoading) return;
+
     if (idToLoad) {
         const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
         if (invoiceToLoad) {
-            loadInvoiceData(invoiceToLoad, !!duplicateId);
+            const dataToLoad = {
+                ...invoiceToLoad,
+                id: duplicateId ? undefined : invoiceToLoad.id,
+                invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
+                farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
+                flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
+                items: invoiceToLoad.items.map(item => ({
+                    ...item,
+                    id: uuidv4(),
+                    bunches: item.bunches.map(bunch => ({
+                        ...bunch,
+                        id: uuidv4(),
+                    })),
+                })),
+            };
+            form.reset(dataToLoad);
         }
     } else {
         const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
@@ -139,18 +133,18 @@ export function NewInvoiceForm() {
                 form.reset({});
             }
         }
-        setHasLoaded(true);
     }
-  }, [idToLoad, duplicateId, invoices, isAppDataLoading, hasLoaded, loadInvoiceData]);
+  }, [idToLoad, duplicateId, isAppDataLoading, invoices, form, toast, router]);
+
 
   useEffect(() => {
-    if (hasLoaded && !editId && !duplicateId) {
+    if (!idToLoad && !isAppDataLoading) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
       return () => subscription.unsubscribe();
     }
-  }, [hasLoaded, form, editId, duplicateId]);
+  }, [isAppDataLoading, form, idToLoad]);
 
   const farmDepartureDate = form.watch('farmDepartureDate');
 
@@ -159,7 +153,7 @@ export function NewInvoiceForm() {
       const nextDay = addDays(new Date(farmDepartureDate), 1);
       form.setValue('flightDate', nextDay, { shouldValidate: true });
     }
-  }, [farmDepartureDate, form.setValue, form.formState.dirtyFields.farmDepartureDate]);
+  }, [farmDepartureDate, form]);
 
   const { fields: lineItems, append: appendLineItem, remove: removeLineItem, update } = useFieldArray({
     control: form.control,
@@ -207,13 +201,9 @@ export function NewInvoiceForm() {
       setFilteredMarcaciones(relatedMarcaciones);
       
       const currentConsignatario = form.getValues('consignatarioId');
-      if (form.formState.dirtyFields.customerId || !currentConsignatario) {
+      if (form.formState.dirtyFields.customerId) {
           form.setValue('consignatarioId', '');
-      }
-      
-      const currentMarcacion = form.getValues('reference');
-      if (form.formState.dirtyFields.customerId || !currentMarcacion) {
-        form.setValue('reference', relatedMarcaciones.length === 1 ? relatedMarcaciones[0].numeroMarcacion : '');
+          form.setValue('reference', '');
       }
 
     } else {
@@ -224,7 +214,7 @@ export function NewInvoiceForm() {
         form.setValue('reference', '');
       }
     }
-  }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form.setValue, form.getValues, form.formState.dirtyFields.customerId]);
+  }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
 
 
   const handleAddLineItem = () => {
@@ -302,8 +292,8 @@ export function NewInvoiceForm() {
     };
 
     try {
-      if (id) {
-        await updateInvoice(id, invoiceData);
+      if (editId) {
+        await updateInvoice(editId, invoiceData);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",
@@ -335,7 +325,7 @@ export function NewInvoiceForm() {
     }
   }
 
-  if (idToLoad && !hasLoaded) {
+  if (isAppDataLoading) {
     return (
         <div className="flex h-[80vh] w-full items-center justify-center">
             <div className="flex flex-col items-center gap-4">
