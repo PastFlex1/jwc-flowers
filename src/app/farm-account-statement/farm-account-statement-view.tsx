@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -83,7 +82,18 @@ export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps
             <div className="p-1">SALDO</div>
           </div>
           <div className="border-l border-r border-b border-black text-xs">
-            {Object.entries(groupedInvoices).map(([month, invoices]) => (
+            {Object.entries(groupedInvoices).map(([month, invoices]) => {
+              const monthlyTotals = invoices.reduce(
+                (acc, inv) => {
+                  acc.total += inv.total;
+                  acc.creditsDebits += inv.credits - inv.debits;
+                  acc.payments += inv.payments;
+                  acc.balance += inv.balance;
+                  return acc;
+                },
+                { total: 0, creditsDebits: 0, payments: 0, balance: 0 }
+              );
+              return (
               <React.Fragment key={month}>
                 <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] bg-gray-100 font-bold">
                   <div className="p-1 border-b border-black col-span-7">PENDIENTE {month.toUpperCase()}</div>
@@ -99,8 +109,15 @@ export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps
                     <div className="p-1 text-right font-semibold">${invoice.balance.toFixed(2)}</div>
                    </div>
                 ))}
+                 <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-xs bg-gray-100 border-b border-black">
+                    <div className="p-1 border-r border-black col-span-3 text-center">TOTAL {month.toUpperCase()}</div>
+                    <div className="p-1 border-r border-black text-right">${monthlyTotals.total.toFixed(2)}</div>
+                    <div className="p-1 border-r border-black text-right">${monthlyTotals.creditsDebits.toFixed(2)}</div>
+                    <div className="p-1 border-r border-black text-right">${monthlyTotals.payments.toFixed(2)}</div>
+                    <div className="p-1 text-right">${monthlyTotals.balance.toFixed(2)}</div>
+                </div>
               </React.Fragment>
-            ))}
+            )})}
           </div>
 
            <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-xs bg-gray-200 border-b border-l border-r border-black">
