@@ -3,6 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import type { StatementData } from './farm-account-statement-client';
 
 type FarmAccountStatementViewProps = {
@@ -12,7 +13,7 @@ type FarmAccountStatementViewProps = {
 export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps) {
 
   const groupedInvoices = data.invoices.reduce((acc, invoice) => {
-    const month = format(parseISO(invoice.flightDate), 'MMMM yyyy');
+    const month = format(parseISO(invoice.flightDate), 'yyyy-MM');
     if (!acc[month]) {
       acc[month] = [];
     }
@@ -93,10 +94,11 @@ export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps
                 },
                 { total: 0, creditsDebits: 0, payments: 0, balance: 0 }
               );
+              const monthName = format(parseISO(`${month}-02`), "MMMM yyyy", { locale: es });
               return (
               <React.Fragment key={month}>
                 <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] bg-gray-100 font-bold">
-                  <div className="p-1 border-b border-black col-span-7">PENDIENTE {month.toUpperCase()}</div>
+                  <div className="p-1 border-b border-black col-span-7">PENDIENTE {monthName.toUpperCase()}</div>
                 </div>
                 {invoices.map(invoice => (
                    <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
@@ -110,7 +112,7 @@ export function FarmAccountStatementView({ data }: FarmAccountStatementViewProps
                    </div>
                 ))}
                  <div className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] font-bold text-xs bg-gray-100 border-b border-black">
-                    <div className="p-1 border-r border-black col-span-3 text-center">TOTAL {month.toUpperCase()}</div>
+                    <div className="p-1 border-r border-black col-span-3 text-center">TOTAL {monthName.toUpperCase()}</div>
                     <div className="p-1 border-r border-black text-right">${monthlyTotals.total.toFixed(2)}</div>
                     <div className="p-1 border-r border-black text-right">${monthlyTotals.creditsDebits.toFixed(2)}</div>
                     <div className="p-1 border-r border-black text-right">${monthlyTotals.payments.toFixed(2)}</div>

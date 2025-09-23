@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppData } from '@/context/app-data-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -11,6 +10,8 @@ import { FarmAccountStatementView } from './farm-account-statement-view';
 import FarmAccountStatementDownloadButton from './farm-account-statement-download';
 import FarmAccountStatementExcelButton from './farm-account-statement-download-excel';
 import SendFarmDocumentsDialog from './send-documents-dialog';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export type StatementData = {
   finca: Finca;
@@ -25,7 +26,19 @@ export type StatementData = {
 export function FarmAccountStatementClient() {
   const { fincas, invoices, creditNotes, debitNotes, payments } = useAppData();
   const [selectedFincaId, setSelectedFincaId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+
+  const availableMonths = useMemo(() => {
+    if (!selectedFincaId) return [];
+    const fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
+    const months = new Set(fincaInvoices.map(inv => format(parseISO(inv.flightDate), 'yyyy-MM')));
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [selectedFincaId, invoices]);
+
+  useEffect(() => {
+    setSelectedMonth('all');
+  }, [selectedFincaId]);
 
   const statementData = useMemo((): StatementData | null => {
     if (!selectedFincaId) return null;
@@ -33,7 +46,11 @@ export function FarmAccountStatementClient() {
     const finca = fincas.find(f => f.id === selectedFincaId);
     if (!finca) return null;
 
-    const fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
+    let fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
+
+    if (selectedMonth !== 'all') {
+      fincaInvoices = fincaInvoices.filter(inv => format(parseISO(inv.flightDate), 'yyyy-MM') === selectedMonth);
+    }
 
     const processedInvoices = fincaInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
@@ -83,7 +100,7 @@ export function FarmAccountStatementClient() {
       totalPayments,
       urgentPayment
     };
-  }, [selectedFincaId, fincas, invoices, creditNotes, debitNotes, payments]);
+  }, [selectedFincaId, selectedMonth, fincas, invoices, creditNotes, debitNotes, payments]);
 
   return (
     <>
@@ -107,9 +124,9 @@ export function FarmAccountStatementClient() {
             <CardTitle>Seleccionar Finca</CardTitle>
             <CardDescription>Elija una finca/proveedor de la lista para generar su estado de cuenta.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-4">
             <Select onValueChange={setSelectedFincaId}>
-              <SelectTrigger className="w-full md:w-1/2 lg:w-1/3">
+              <SelectTrigger className="w-full md:w-auto md:min-w-[300px]">
                 <SelectValue placeholder="Seleccione una finca..." />
               </SelectTrigger>
               <SelectContent>
@@ -120,11 +137,32 @@ export function FarmAccountStatementClient() {
                 ))}
               </SelectContent>
             </Select>
+            {selectedFincaId && availableMonths.length > 0 && (
+              <Select onValueChange={setSelectedMonth} value={selectedMonth}>
+                <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
+                  <SelectValue placeholder="Filtrar por mes..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los Meses</SelectItem>
+                  {availableMonths.map(month => (
+                    <SelectItem key={month} value={month}>
+                      {format(parseISO(`${month}-02`), "MMMM yyyy", { locale: es })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </CardContent>
         </Card>
         
-        {statementData && (
+        {statementData && statementData.invoices.length > 0 && (
           <FarmAccountStatementView data={statementData} />
+        )}
+
+        {selectedFincaId && (!statementData || statementData.invoices.length === 0) && (
+            <div className="text-center py-12 text-muted-foreground">
+                <p>No se encontraron facturas para el período seleccionado.</p>
+            </div>
         )}
 
         {!selectedFincaId && (

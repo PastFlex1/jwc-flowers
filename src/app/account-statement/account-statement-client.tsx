@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAppData } from '@/context/app-data-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,6 +11,8 @@ import AccountStatementDownloadButton from './account-statement-download';
 import AccountStatementExcelButton from './account-statement-download-excel';
 import SendDocumentsDialog from './send-documents-dialog';
 import { useTranslation } from '@/context/i18n-context';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export type StatementData = {
   customer: Customer;
@@ -26,8 +27,20 @@ export type StatementData = {
 export function AccountStatementClient() {
   const { customers, invoices, creditNotes, debitNotes, payments } = useAppData();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const { t } = useTranslation();
+
+  const availableMonths = useMemo(() => {
+    if (!selectedCustomerId) return [];
+    const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
+    const months = new Set(customerInvoices.map(inv => format(parseISO(inv.flightDate), 'yyyy-MM')));
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [selectedCustomerId, invoices]);
+
+  useEffect(() => {
+    setSelectedMonth('all');
+  }, [selectedCustomerId]);
 
   const statementData = useMemo((): StatementData | null => {
     if (!selectedCustomerId) return null;
@@ -35,7 +48,11 @@ export function AccountStatementClient() {
     const customer = customers.find(c => c.id === selectedCustomerId);
     if (!customer) return null;
 
-    const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
+    let customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
+    
+    if (selectedMonth !== 'all') {
+      customerInvoices = customerInvoices.filter(inv => format(parseISO(inv.flightDate), 'yyyy-MM') === selectedMonth);
+    }
 
     const processedInvoices = customerInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
@@ -85,7 +102,7 @@ export function AccountStatementClient() {
       totalPayments,
       urgentPayment
     };
-  }, [selectedCustomerId, customers, invoices, creditNotes, debitNotes, payments]);
+  }, [selectedCustomerId, selectedMonth, customers, invoices, creditNotes, debitNotes, payments]);
 
   return (
     <>
@@ -109,9 +126,9 @@ export function AccountStatementClient() {
             <CardTitle>{t('accountStatement.selectCustomer')}</CardTitle>
             <CardDescription>{t('accountStatement.selectCustomerDescription')}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-4">
             <Select onValueChange={setSelectedCustomerId}>
-              <SelectTrigger className="w-full md:w-1/2 lg:w-1/3">
+              <SelectTrigger className="w-full md:w-auto md:min-w-[300px]">
                 <SelectValue placeholder={t('accountStatement.selectCustomerPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
@@ -122,11 +139,33 @@ export function AccountStatementClient() {
                 ))}
               </SelectContent>
             </Select>
+
+            {selectedCustomerId && availableMonths.length > 0 && (
+              <Select onValueChange={setSelectedMonth} value={selectedMonth}>
+                <SelectTrigger className="w-full md:w-auto md:min-w-[200px]">
+                  <SelectValue placeholder="Filtrar por mes..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los Meses</SelectItem>
+                  {availableMonths.map(month => (
+                    <SelectItem key={month} value={month}>
+                      {format(parseISO(`${month}-02`), "MMMM yyyy", { locale: es })}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </CardContent>
         </Card>
         
-        {statementData && (
+        {statementData && statementData.invoices.length > 0 && (
           <AccountStatementView data={statementData} />
+        )}
+
+        {selectedCustomerId && (!statementData || statementData.invoices.length === 0) && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>No se encontraron facturas para el período seleccionado.</p>
+          </div>
         )}
 
         {!selectedCustomerId && (
