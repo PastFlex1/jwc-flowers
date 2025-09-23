@@ -19,6 +19,16 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
@@ -91,6 +101,7 @@ export function NewInvoiceForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
+  const [itemToDelete, setItemToDelete] = useState<{ lineItemIndex: number; bunchIndex: number } | null>(null);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -120,8 +131,6 @@ export function NewInvoiceForm() {
       };
       form.reset(dataToLoad);
     } else if (!isAppDataLoading) {
-      // If we've finished loading but found no invoice, maybe show a toast and redirect.
-      // For now, just log it. This might happen with a stale URL.
       console.warn(`Invoice with id ${idToLoad} not found.`);
     }
   }, [idToLoad, duplicateId, isAppDataLoading, invoices, form]);
@@ -167,8 +176,8 @@ export function NewInvoiceForm() {
   const uniqueProducts = useMemo(() => {
     const unique = new Map<string, { id: string; price: number; tallosPorRamo: number }>();
     productos.filter(p => p.estado === 'Activo').forEach(p => {
-        if (!unique.has(p.nombre)) {
-            unique.set(p.nombre, { id: p.id, price: p.precio, tallosPorRamo: p.tallosPorRamo });
+        if (!unique.has(p.variedad)) {
+            unique.set(p.variedad, { id: p.id, price: p.precio, tallosPorRamo: p.tallosPorRamo });
         }
     });
     return Array.from(unique.entries()).map(([name, data]) => ({ name, ...data }));
@@ -177,12 +186,12 @@ export function NewInvoiceForm() {
 
   const getVarietiesForProduct = useCallback((productName: string) => {
     if (!productName) return [];
-    return [...new Set(productos.filter(p => p.nombre === productName && p.estado === 'Activo').map(p => p.variedad))];
+    return [...new Set(productos.filter(p => p.variedad === productName && p.estado === 'Activo').map(p => p.nombre))];
   }, [productos]);
   
   const getColorsForVariety = useCallback((productName: string, varietyName: string) => {
     if (!productName || !varietyName) return [];
-    return productos.filter(p => p.nombre === productName && p.variedad === varietyName && p.estado === 'Activo').map(p => ({
+    return productos.filter(p => p.variedad === productName && p.nombre === varietyName && p.estado === 'Activo').map(p => ({
         color: p.nombreColor,
         productoId: p.id,
         tallosPorRamo: p.tallosPorRamo
@@ -263,34 +272,34 @@ export function NewInvoiceForm() {
     update(lineItemIndex, { ...lineItem, bunches: newBunches });
   };
 
-  const handleRemoveBunch = (lineItemIndex: number, bunchIndex: number) => {
+  const confirmRemoveBunch = () => {
+    if (itemToDelete) {
+      const { lineItemIndex, bunchIndex } = itemToDelete;
       const lineItem = form.getValues(`items.${lineItemIndex}`);
       if (lineItem.bunches.length <= 1) {
-          removeLineItem(lineItemIndex);
+        removeLineItem(lineItemIndex);
       } else {
-          const newBunches = lineItem.bunches.filter((_, i) => i !== bunchIndex);
-          update(lineItemIndex, { ...lineItem, bunches: newBunches });
+        const newBunches = lineItem.bunches.filter((_, i) => i !== bunchIndex);
+        update(lineItemIndex, { ...lineItem, bunches: newBunches });
       }
-  };
-
-  const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
-    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
-    form.setValue(`${bunchPath}.variety`, '');
-    form.setValue(`${bunchPath}.color`, '');
-    form.setValue(`${bunchPath}.productoId`, '');
-    const productInfo = productos.find(p => p.nombre === productName);
-    if(productInfo) {
-      form.setValue(`${bunchPath}.stemsPerBunch`, productInfo.tallosPorRamo);
     }
+    setItemToDelete(null);
   };
 
-  const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
+  const handleProductChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
+    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
+    form.setValue(`${bunchPath}.product`, '');
+    form.setValue(`${bunchPath}.color`, '');
+    form.setValue(`${bunchPath}.productoId`, '');
+  };
+
+  const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
     const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
-
-    const productName = form.getValues(`${bunchPath}.product`);
-    const colors = getColorsForVariety(productName, varietyName);
+  
+    const varietyName = form.getValues(`${bunchPath}.variety`);
+    const colors = getColorsForVariety(varietyName, productName);
     
     if (colors.length === 1) {
       const singleColor = colors[0];
@@ -369,6 +378,7 @@ export function NewInvoiceForm() {
   }
   
   return (
+    <>
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight font-headline">{editId ? "Editar Factura" : "Nueva Factura"}</h2>
@@ -729,10 +739,10 @@ export function NewInvoiceForm() {
                                             differencePercent = '∞ %';
                                         }
 
-                                        const selectedProduct = form.watch(`${bunchPath}.product`);
                                         const selectedVariety = form.watch(`${bunchPath}.variety`);
-                                        const varieties = getVarietiesForProduct(selectedProduct);
-                                        const colors = getColorsForVariety(selectedProduct, selectedVariety);
+                                        const selectedProduct = form.watch(`${bunchPath}.product`);
+                                        const varieties = getVarietiesForProduct(selectedVariety);
+                                        const colors = getColorsForVariety(selectedVariety, selectedProduct);
 
                                         return (
                                             <TableRow key={bunch.id}>
@@ -770,14 +780,14 @@ export function NewInvoiceForm() {
                                                         />
                                                     ) : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
-                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedProduct}>
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
+                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedVariety}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                                                     </Select>
@@ -787,7 +797,7 @@ export function NewInvoiceForm() {
                                                         field.onChange(value); 
                                                         const colorData = colors.find(c => c.color === value); 
                                                         handleColorChange(lineItemIndex, bunchIndex, colorData); 
-                                                    }} value={field.value ?? ''} disabled={!selectedVariety}>
+                                                    }} value={field.value ?? ''} disabled={!selectedProduct}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
                                                         <SelectContent>{colors.map(c => <SelectItem key={c.productoId} value={c.color}>{c.color}</SelectItem>)}</SelectContent>
                                                     </Select>
@@ -807,7 +817,7 @@ export function NewInvoiceForm() {
                                                                 <PlusCircle className="h-4 w-4" />
                                                             </Button>
                                                         )}
-                                                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveBunch(lineItemIndex, bunchIndex)}>
+                                                        <Button type="button" variant="ghost" size="icon" onClick={() => setItemToDelete({ lineItemIndex, bunchIndex })}>
                                                             <Trash2 className="h-4 w-4 text-destructive" />
                                                         </Button>
                                                     </div>
@@ -836,5 +846,24 @@ export function NewInvoiceForm() {
         </form>
       </Form>
     </div>
+    <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. ¿Está seguro de que desea eliminar esta fila?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveBunch} variant="destructive">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
+
+    
