@@ -38,6 +38,7 @@ import {
   Notebook,
   CreditCard,
   Banknote,
+  BookClock,
 } from 'lucide-react';
 import { useTranslation } from '@/context/i18n-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -94,6 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: '/debit-notes', label: 'Notas de Débito', icon: FileText },
     { href: '/account-statement', label: 'Estado de Cuenta Cliente', icon: Users },
     { href: '/farm-account-statement', label: 'Estado de Cuenta Finca', icon: Building },
+    { href: '/historical-account-statement', label: 'Estado de Cuenta Histórico', icon: BookClock },
     { href: '/payments', label: 'Registrar Pago', icon: Banknote },
     { href: '/record-purchase-payment', label: 'Registrar Pago Compra', icon: CreditCard },
   ];
