@@ -17,6 +17,8 @@ type InvoiceDetailViewProps = {
 
 export function InvoiceDetailView({ invoice, customer, consignatario, carguera, pais, financials }: InvoiceDetailViewProps) {
   
+  const isNational = customer?.type === 'National';
+
   const totals = useMemo(() => {
     let totalBoxes = invoice?.items?.length || 0;
     let totalBunches = 0;
@@ -38,6 +40,13 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
       }
     });
 
+    if (isNational) {
+        const iva = totalFob * 0.15;
+        const totalConIva = totalFob + iva;
+        return { totalBoxes, totalBunches, totalStems, totalFob, iva, totalConIva };
+    }
+
+
     const totalPayments = financials.payments.reduce((acc, p) => acc + p.amount, 0);
     const totalCredits = financials.creditNotes.reduce((acc, cn) => acc + cn.amount, 0);
     const totalDebits = financials.debitNotes.reduce((acc, dn) => acc + dn.amount, 0);
@@ -46,7 +55,7 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
 
 
     return { totalBoxes, totalBunches, totalStems, totalFob, totalPayments, totalCredits, totalDebits, balance };
-  }, [invoice, financials]);
+  }, [invoice, financials, isNational]);
 
 
   const renderItemRow = (item: LineItem, index: number) => {
@@ -175,26 +184,45 @@ export function InvoiceDetailView({ invoice, customer, consignatario, carguera, 
                     make a claim and that we do not accept credits for freight or handling charges in any case.
                 </p>
                 <div className="text-sm space-y-px w-56">
-                    <div className="flex border border-gray-400">
-                        <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
-                        <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
-                    </div>
-                    <div className="flex border-b border-l border-r border-gray-400">
-                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Créditos</div>
-                        <div className="p-1 text-right w-1/2">${totals.totalCredits.toFixed(2)}</div>
-                    </div>
-                    <div className="flex border-b border-l border-r border-gray-400">
-                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Débitos</div>
-                        <div className="p-1 text-right w-1/2">${totals.totalDebits.toFixed(2)}</div>
-                    </div>
-                    <div className="flex border-b border-l border-r border-gray-400">
-                        <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Pagos</div>
-                        <div className="p-1 text-right w-1/2">${totals.totalPayments.toFixed(2)}</div>
-                    </div>
-                    <div className="flex border border-gray-400 bg-gray-100">
-                        <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">SALDO</div>
-                        <div className="p-1 text-right w-1/2 font-bold text-red-600">${totals.balance.toFixed(2)}</div>
-                    </div>
+                    {isNational ? (
+                         <>
+                            <div className="flex border border-gray-400">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">SUBTOTAL</div>
+                                <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                            </div>
+                            <div className="flex border-b border-l border-r border-gray-400">
+                                <div className="p-1 w-1/2 border-r border-gray-400 text-xs">IVA 15%</div>
+                                <div className="p-1 text-right w-1/2">${('iva' in totals && totals.iva) ? totals.iva.toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div className="flex border border-gray-400 bg-gray-100">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL</div>
+                                <div className="p-1 text-right w-1/2 font-bold text-red-600">${('totalConIva' in totals && totals.totalConIva) ? totals.totalConIva.toFixed(2) : '0.00'}</div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                             <div className="flex border border-gray-400">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
+                                <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                            </div>
+                            <div className="flex border-b border-l border-r border-gray-400">
+                                <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Créditos</div>
+                                <div className="p-1 text-right w-1/2">${('totalCredits' in totals && totals.totalCredits) ? totals.totalCredits.toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div className="flex border-b border-l border-r border-gray-400">
+                                <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Débitos</div>
+                                <div className="p-1 text-right w-1/2">${('totalDebits' in totals && totals.totalDebits) ? totals.totalDebits.toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div className="flex border-b border-l border-r border-gray-400">
+                                <div className="p-1 w-1/2 border-r border-gray-400 text-xs">Pagos</div>
+                                <div className="p-1 text-right w-1/2">${('totalPayments' in totals && totals.totalPayments) ? totals.totalPayments.toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div className="flex border border-gray-400 bg-gray-100">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">SALDO</div>
+                                <div className="p-1 text-right w-1/2 font-bold text-red-600">${('balance' in totals && totals.balance) ? totals.balance.toFixed(2) : '0.00'}</div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </footer>
           </CardContent>

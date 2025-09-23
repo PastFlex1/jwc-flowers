@@ -15,6 +15,8 @@ type InvoicePdfViewProps = {
 // This is a server-safe component for PDF rendering. No hooks allowed.
 export function InvoicePdfView({ invoice, customer, consignatario, carguera, pais }: InvoicePdfViewProps) {
   
+  const isNational = customer?.type === 'National';
+
   const calculateTotals = () => {
     let totalBoxes = invoice?.items?.length || 0;
     let totalBunches = 0;
@@ -35,6 +37,12 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
         });
       }
     });
+
+    if (isNational) {
+        const iva = totalFob * 0.15;
+        const totalConIva = totalFob + iva;
+        return { totalBoxes, totalBunches, totalStems, totalFob, iva, totalConIva };
+    }
 
     return { totalBoxes, totalBunches, totalStems, totalFob };
   };
@@ -153,11 +161,28 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
                     All prices are FOB Quito. Please remember that you have 10 days after the date on the invoice to
                     make a claim and that we do not accept credits for freight or handling charges in any case.
                 </p>
-                <div className="text-sm">
-                    <div className="flex border border-gray-400 w-56">
-                         <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
-                         <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
-                    </div>
+                 <div className="text-sm space-y-px w-56">
+                    {isNational ? (
+                         <>
+                            <div className="flex border border-gray-400">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">SUBTOTAL</div>
+                                <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                            </div>
+                            <div className="flex border-b border-l border-r border-gray-400">
+                                <div className="p-1 w-1/2 border-r border-gray-400 text-xs">IVA 15%</div>
+                                <div className="p-1 text-right w-1/2">${('iva' in totals && totals.iva) ? totals.iva.toFixed(2) : '0.00'}</div>
+                            </div>
+                            <div className="flex border border-gray-400 bg-gray-100">
+                                <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL</div>
+                                <div className="p-1 text-right w-1/2 font-bold">${('totalConIva' in totals && totals.totalConIva) ? totals.totalConIva.toFixed(2) : '0.00'}</div>
+                            </div>
+                        </>
+                    ) : (
+                         <div className="flex border border-gray-400 w-56">
+                            <div className="p-1 font-bold w-1/2 border-r border-gray-400 text-xs">TOTAL FOB</div>
+                            <div className="p-1 text-right w-1/2 font-bold">${totals.totalFob.toFixed(2)}</div>
+                        </div>
+                    )}
                 </div>
             </footer>
           </CardContent>
