@@ -21,7 +21,7 @@ const formSchema = z.object({
   invoiceId: z.string().min(1, { message: "Por favor seleccione una factura." }),
   amount: z.coerce.number().gt(0, { message: "El monto debe ser mayor que cero." }),
   paymentDate: z.date({ required_error: "La fecha es requerida." }),
-  paymentMethod: z.enum(['Efectivo', 'Transferencia', 'Cheque', 'Tarjeta de Crédito', 'Tarjeta de Débito']),
+  paymentMethod: z.enum(['Efectivo', 'Transferencia', 'Cheque', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Transferencia Internacional']),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -283,6 +283,7 @@ export function PaymentForm({
                       <SelectContent>
                         <SelectItem value="Efectivo">Efectivo</SelectItem>
                         <SelectItem value="Transferencia">Transferencia</SelectItem>
+                        <SelectItem value="Transferencia Internacional">Transferencia Internacional</SelectItem>
                         <SelectItem value="Cheque">Cheque</SelectItem>
                         <SelectItem value="Tarjeta de Crédito">Tarjeta de Crédito</SelectItem>
                         <SelectItem value="Tarjeta de Débito">Tarjeta de Débito</SelectItem>

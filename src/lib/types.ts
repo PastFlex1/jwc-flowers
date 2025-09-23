@@ -152,7 +152,7 @@ export interface Payment {
   invoiceId: string;
   amount: number;
   paymentDate: string; // ISO string
-  paymentMethod: 'Efectivo' | 'Transferencia' | 'Cheque' | 'Tarjeta de Crédito' | 'Tarjeta de Débito';
+  paymentMethod: 'Efectivo' | 'Transferencia' | 'Cheque' | 'Tarjeta de Crédito' | 'Tarjeta de Débito' | 'Transferencia Internacional';
   reference?: string;
   notes?: string;
 }
