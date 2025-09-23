@@ -34,7 +34,7 @@ const bunchItemSchema = z.object({
   productoId: z.string().min(1, 'Product is required.'),
   product: z.string().min(1, 'Product name is required'),
   variety: z.string().min(1, 'Variety is required.'),
-  color: z.string().min(1, 'Color is required.'),
+  color: z.string(),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
@@ -98,30 +98,38 @@ export function NewInvoiceForm() {
   });
 
   useEffect(() => {
-    if (isAppDataLoading) return;
+    if (isAppDataLoading || !idToLoad) return;
+  
+    const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
+  
+    if (invoiceToLoad) {
+      const dataToLoad = {
+        ...invoiceToLoad,
+        id: duplicateId ? undefined : invoiceToLoad.id,
+        invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
+        farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
+        flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
+        items: invoiceToLoad.items.map(item => ({
+          ...item,
+          id: uuidv4(),
+          bunches: item.bunches.map(bunch => ({
+            ...bunch,
+            id: uuidv4(),
+          })),
+        })),
+      };
+      form.reset(dataToLoad);
+    } else if (!isAppDataLoading) {
+      // If we've finished loading but found no invoice, maybe show a toast and redirect.
+      // For now, just log it. This might happen with a stale URL.
+      console.warn(`Invoice with id ${idToLoad} not found.`);
+    }
+  }, [idToLoad, duplicateId, isAppDataLoading, invoices, form]);
 
-    if (idToLoad) {
-        const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
-        if (invoiceToLoad) {
-            const dataToLoad = {
-                ...invoiceToLoad,
-                id: duplicateId ? undefined : invoiceToLoad.id,
-                invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
-                farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
-                flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
-                items: invoiceToLoad.items.map(item => ({
-                    ...item,
-                    id: uuidv4(),
-                    bunches: item.bunches.map(bunch => ({
-                        ...bunch,
-                        id: uuidv4(),
-                    })),
-                })),
-            };
-            form.reset(dataToLoad);
-        }
-    } else {
-        const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+
+  useEffect(() => {
+    if (!idToLoad && !isAppDataLoading) {
+      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
@@ -133,12 +141,6 @@ export function NewInvoiceForm() {
                 form.reset({});
             }
         }
-    }
-  }, [idToLoad, duplicateId, isAppDataLoading, invoices, form, toast, router]);
-
-
-  useEffect(() => {
-    if (!idToLoad && !isAppDataLoading) {
       const subscription = form.watch((value) => {
         sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
       });
@@ -176,11 +178,6 @@ export function NewInvoiceForm() {
   const getVarietiesForProduct = useCallback((productName: string) => {
     if (!productName) return [];
     return [...new Set(productos.filter(p => p.nombre === productName && p.estado === 'Activo').map(p => p.variedad))];
-  }, [productos]);
-
-  const getColorsForVariety = useCallback((productName: string, variety: string) => {
-    if (!productName || !variety) return [];
-    return [...new Set(productos.filter(p => p.nombre === productName && p.variedad === variety && p.estado === 'Activo').map(p => p.nombreColor))];
   }, [productos]);
 
   const selectedCustomerId = form.watch('customerId');
@@ -661,7 +658,6 @@ export function NewInvoiceForm() {
                                 <TableHead className="w-24"># Ramos</TableHead>
                                 <TableHead className="min-w-[150px]">Producto</TableHead>
                                 <TableHead className="min-w-[150px]">Variedad</TableHead>
-                                <TableHead className="min-w-[150px]">Color</TableHead>
                                 <TableHead className="w-24">Long.</TableHead>
                                 <TableHead className="w-24">Tallos/Ramo</TableHead>
                                 <TableHead className="w-24">Ramos/Caja</TableHead>
@@ -698,9 +694,7 @@ export function NewInvoiceForm() {
                                         }
 
                                         const selectedProduct = form.watch(`${bunchPath}.product`);
-                                        const selectedVariety = form.watch(`${bunchPath}.variety`);
                                         const varieties = getVarietiesForProduct(selectedProduct);
-                                        const colors = getColorsForVariety(selectedProduct, selectedVariety);
 
                                         return (
                                             <TableRow key={bunch.id}>
@@ -748,12 +742,6 @@ export function NewInvoiceForm() {
                                                      <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedProduct}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                                                    </Select>
-                                                )}/></TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
-                                                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedVariety}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
-                                                        <SelectContent>{colors.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
                                                 <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>

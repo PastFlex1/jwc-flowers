@@ -59,10 +59,9 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
                  <div key={bunch.id || bunchIndex} className="contents text-[10px] leading-tight">
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunchIndex === 0 ? item.boxNumber : ''}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunchIndex === 0 ? item.boxType.toUpperCase() : ''}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-left">{bunchIndex === 0 ? invoice.reference : ''}</div>
+                    <div className="border-b border-l border-gray-400 p-1 text-left">{invoice.reference}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.product}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.variety}</div>
-                    <div className="border-b border-l border-gray-400 p-1 text-left">{bunch.color}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.length}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{totalStemsForBunch}</div>
                     <div className="border-b border-l border-gray-400 p-1 text-center">{bunch.bunchesPerBox}</div>
@@ -127,13 +126,12 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
 
             {/* Items Table */}
             <section>
-                <div className="grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,0.8fr,45px,45px,55px,55px,65px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-400 text-[9px] leading-tight">
+                <div className="grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,45px,45px,55px,55px,65px] font-bold text-center bg-gray-100 border-t border-l border-r border-gray-400 text-[9px] leading-tight">
                     <div className="p-1 border-r border-gray-400">CAJAS</div>
                     <div className="p-1 border-r border-gray-400">TIPO</div>
                     <div className="p-1 border-r border-gray-400 text-left">MARCA</div>
                     <div className="p-1 border-r border-gray-400 text-left">NOMBRE DE LA FLOR</div>
                     <div className="p-1 border-r border-gray-400 text-left">VARIEDAD</div>
-                    <div className="p-1 border-r border-gray-400 text-left">COLOR</div>
                     <div className="p-1 border-r border-gray-400">LONG.</div>
                     <div className="p-1 border-r border-gray-400">TALLOS</div>
                     <div className="p-1 border-r border-gray-400">BUNCHES</div>
@@ -141,13 +139,13 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
                     <div className="p-1">TOTAL</div>
                 </div>
                 
-                <div className="border-l border-r border-b border-gray-400 grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,0.8fr,45px,45px,55px,55px,65px]">
+                <div className="border-l border-r border-b border-gray-400 grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,45px,45px,55px,55px,65px]">
                     {invoice.items.map((item, index) => renderItemRow(item, index))}
                 </div>
                 
-                 <div className="grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,0.8fr,45px,45px,55px,55px,65px] font-bold text-center bg-gray-100 border-l border-r border-b border-gray-400 text-xs">
+                 <div className="grid grid-cols-[30px,40px,0.8fr,1.5fr,1fr,45px,45px,55px,55px,65px] font-bold text-center bg-gray-100 border-l border-r border-b border-gray-400 text-xs">
                     <div className="p-1 border-r border-gray-400 text-center">{totals.totalBoxes}</div>
-                    <div className="p-1 border-r border-gray-400 col-span-6 text-center">TOTALES</div>
+                    <div className="p-1 border-r border-gray-400 col-span-5 text-center">TOTALES</div>
                     <div className="p-1 border-r border-gray-400">{totals.totalStems}</div>
                     <div className="p-1 border-r border-gray-400">{totals.totalBunches}</div>
                     <div className="p-1 border-r border-gray-400"></div> {/* unit price */}
