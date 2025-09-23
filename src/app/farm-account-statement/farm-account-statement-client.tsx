@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import type { Finca, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { FarmAccountStatementView } from './farm-account-statement-view';
 import FarmAccountStatementDownloadButton from './farm-account-statement-download';
+import FarmAccountStatementExcelButton from './farm-account-statement-download-excel';
 import SendFarmDocumentsDialog from './send-documents-dialog';
 
 export type StatementData = {
@@ -95,6 +96,7 @@ export function FarmAccountStatementClient() {
           {statementData && (
              <div className="flex gap-2">
                 <FarmAccountStatementDownloadButton data={statementData} />
+                <FarmAccountStatementExcelButton data={statementData} />
                 <Button variant="outline" onClick={() => setIsSendDialogOpen(true)}>Enviar Documentos</Button>
             </div>
           )}

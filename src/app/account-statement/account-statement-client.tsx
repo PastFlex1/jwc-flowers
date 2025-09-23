@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import type { Customer, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { AccountStatementView } from './account-statement-view';
 import AccountStatementDownloadButton from './account-statement-download';
+import AccountStatementExcelButton from './account-statement-download-excel';
 import SendDocumentsDialog from './send-documents-dialog';
 import { useTranslation } from '@/context/i18n-context';
 
@@ -97,6 +98,7 @@ export function AccountStatementClient() {
           {statementData && (
              <div className="flex gap-2">
                 <AccountStatementDownloadButton data={statementData} />
+                <AccountStatementExcelButton data={statementData} />
                 <Button variant="outline" onClick={() => setIsSendDialogOpen(true)}>{t('accountStatement.sendDocuments')}</Button>
             </div>
           )}
