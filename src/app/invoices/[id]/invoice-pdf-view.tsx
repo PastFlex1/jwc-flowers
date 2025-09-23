@@ -130,7 +130,7 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
                     <div className="p-1 border-r border-gray-400">CAJAS</div>
                     <div className="p-1 border-r border-gray-400">TIPO</div>
                     <div className="p-1 border-r border-gray-400 text-left">MARCA</div>
-                    <div className="p-1 border-r border-gray-400 text-left">NOMBRE DE LA FLOR</div>
+                    <div className="p-1 border-r border-gray-400 text-left">PRODUCTO</div>
                     <div className="p-1 border-r border-gray-400 text-left">VARIEDAD</div>
                     <div className="p-1 border-r border-gray-400">LONG.</div>
                     <div className="p-1 border-r border-gray-400">TALLOS</div>
