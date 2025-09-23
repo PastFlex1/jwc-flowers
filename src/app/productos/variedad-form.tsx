@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
-  nombre: z.string().min(2, { message: "El nombre de la variedad debe tener al menos 2 caracteres." }),
+  nombre: z.string().min(2, { message: "El nombre del producto debe tener al menos 2 caracteres." }),
 });
 
 type VariedadFormProps = {
@@ -36,7 +36,7 @@ export function VariedadForm({ onSubmit, onClose, isSubmitting }: VariedadFormPr
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nombre de la Variedad</FormLabel>
+              <FormLabel>Nombre del Producto</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., Rosas" {...field} />
               </FormControl>
@@ -50,7 +50,7 @@ export function VariedadForm({ onSubmit, onClose, isSubmitting }: VariedadFormPr
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : 'Añadir Variedad'}
+                {isSubmitting ? 'Guardando...' : 'Añadir Producto'}
             </Button>
         </div>
       </form>

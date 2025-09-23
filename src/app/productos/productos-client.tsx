@@ -259,15 +259,15 @@ export function ProductosClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">PRODUCTOS</h2>
-            <p className="text-muted-foreground">Administra tus variedades y productos.</p>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">VARIEDADES</h2>
+            <p className="text-muted-foreground">Administra tus productos y variedades.</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleOpenVariedadDialog}>
-              <Plus className="mr-2 h-4 w-4" /> Añadir Variedad
+              <Plus className="mr-2 h-4 w-4" /> Añadir Producto
             </Button>
             <Button onClick={() => handleOpenProductoDialog()}>
-              <Plus className="mr-2 h-4 w-4" /> Añadir Producto
+              <Plus className="mr-2 h-4 w-4" /> Añadir Variedad
             </Button>
           </div>
         </div>
@@ -275,7 +275,7 @@ export function ProductosClient() {
         <Dialog open={isProductoDialogOpen} onOpenChange={(open) => !open && handleCloseProductoDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingProducto ? 'Editar Producto' : 'Añadir Nuevo Producto'}</DialogTitle>
+              <DialogTitle>{editingProducto ? 'Editar Variedad' : 'Añadir Nueva Variedad'}</DialogTitle>
             </DialogHeader>
             <ProductoForm 
               onSubmit={handleProductoFormSubmit}
@@ -290,7 +290,7 @@ export function ProductosClient() {
         <Dialog open={isVariedadDialogOpen} onOpenChange={(open) => !open && handleCloseVariedadDialog()}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Añadir Nueva Variedad</DialogTitle>
+              <DialogTitle>Añadir Nuevo Producto</DialogTitle>
             </DialogHeader>
             <VariedadForm 
               onSubmit={handleVariedadFormSubmit}
@@ -303,18 +303,18 @@ export function ProductosClient() {
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center">
-                    <CardTitle>Lista de Variedades</CardTitle>
+                    <CardTitle>Lista de Productos</CardTitle>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Buscar variedad..."
+                            placeholder="Buscar producto..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10 w-64"
                         />
                     </div>
                 </div>
-                <CardDescription>Una lista de todas tus variedades de productos.</CardDescription>
+                <CardDescription>Una lista de todos tus productos y sus variedades.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -330,13 +330,13 @@ export function ProductosClient() {
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm text-muted-foreground">
-                        {productos.filter(p => p.variedad === variedad.nombre).length} productos
+                        {productos.filter(p => p.variedad === variedad.nombre).length} variedades
                       </div>
                     </CardContent>
                     <CardFooter>
                        <Button variant="outline" className="w-full" onClick={() => handleViewProducts(variedad)}>
                         <Eye className="mr-2 h-4 w-4" />
-                        Ver Productos
+                        Ver Variedades
                       </Button>
                     </CardFooter>
                   </Card>
@@ -352,13 +352,13 @@ export function ProductosClient() {
           onPointerDownOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle>Productos de la Variedad: {selectedVariedad?.nombre}</DialogTitle>
+            <DialogTitle>Variedades del Producto: {selectedVariedad?.nombre}</DialogTitle>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>PRODUCTO</TableHead>
+                    <TableHead>VARIEDAD</TableHead>
                     <TableHead>COLOR</TableHead>
                     <TableHead>N° TALLOS</TableHead>
                     <TableHead>BARRAS</TableHead>
@@ -424,7 +424,7 @@ export function ProductosClient() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás totalmente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente la variedad.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -439,7 +439,7 @@ export function ProductosClient() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás totalmente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la variedad.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -77,11 +77,11 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, var
           name="variedad"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Variedad</FormLabel>
+              <FormLabel>Producto</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccione una variedad" />
+                      <SelectValue placeholder="Seleccione un producto" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -101,7 +101,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, var
           name="nombre"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Producto</FormLabel>
+              <FormLabel>Variedad</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., ABSOLUT IN PINK" {...field} />
               </FormControl>
@@ -167,7 +167,7 @@ export function ProductoForm({ onSubmit, onClose, initialData, isSubmitting, var
             </Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Producto')}
+                {isSubmitting ? 'Guardando...' : (initialData ? 'Guardar Cambios' : 'Añadir Variedad')}
             </Button>
         </div>
       </form>
