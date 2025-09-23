@@ -193,6 +193,7 @@ export function NewInvoiceForm() {
 
   const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
+    const { dirtyFields } = form.formState;
     if (selectedCustomerId) {
       const customer = customers.find((c) => c.id === selectedCustomerId);
       if (customer) {
@@ -209,7 +210,7 @@ export function NewInvoiceForm() {
       setFilteredMarcaciones(relatedMarcaciones);
       
       const currentConsignatario = form.getValues('consignatarioId');
-      if (form.formState.dirtyFields.customerId) {
+      if (dirtyFields.customerId) {
           form.setValue('consignatarioId', '');
           form.setValue('reference', '');
       }
@@ -217,7 +218,7 @@ export function NewInvoiceForm() {
     } else {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
-       if (form.formState.dirtyFields.customerId) {
+       if (dirtyFields.customerId) {
         form.setValue('consignatarioId', '');
         form.setValue('reference', '');
       }
@@ -284,8 +285,19 @@ export function NewInvoiceForm() {
   };
 
   const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
-      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
-      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, '');
+    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}`;
+    form.setValue(`${bunchPath}.color`, '');
+    form.setValue(`${bunchPath}.productoId`, '');
+
+    const productName = form.getValues(`${bunchPath}.product`);
+    const colors = getColorsForVariety(productName, varietyName);
+    
+    if (colors.length === 1) {
+      const singleColor = colors[0];
+      form.setValue(`${bunchPath}.color`, singleColor.nombreColor);
+      form.setValue(`${bunchPath}.productoId`, singleColor.productoId);
+      form.setValue(`${bunchPath}.stemsPerBunch`, singleColor.tallosPorRamo);
+    }
   };
 
   const handleColorChange = (lineItemIndex: number, bunchIndex: number, colorData: any) => {
