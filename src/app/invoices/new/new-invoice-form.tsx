@@ -34,7 +34,7 @@ const bunchItemSchema = z.object({
   productoId: z.string().min(1, 'Product is required.'),
   product: z.string().min(1, 'Product name is required'),
   variety: z.string().min(1, 'Variety is required.'),
-  color: z.string(),
+  color: z.string().min(1, 'Color is required.'),
   length: z.coerce.number().positive('Must be > 0'),
   stemsPerBunch: z.coerce.number().positive('Must be > 0'),
   bunchesPerBox: z.coerce.number().min(0, 'Must be >= 0'),
@@ -179,6 +179,17 @@ export function NewInvoiceForm() {
     if (!productName) return [];
     return [...new Set(productos.filter(p => p.nombre === productName && p.estado === 'Activo').map(p => p.variedad))];
   }, [productos]);
+  
+  const getColorsForVariety = useCallback((productName: string, varietyName: string) => {
+    if (!productName || !varietyName) return [];
+    return productos.filter(p => p.nombre === productName && p.variedad === varietyName && p.estado === 'Activo').map(p => ({
+        color: p.color,
+        nombreColor: p.nombreColor,
+        tallosPorRamo: p.tallosPorRamo,
+        productoId: p.id
+    }));
+  }, [productos]);
+
 
   const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
@@ -263,12 +274,25 @@ export function NewInvoiceForm() {
   };
 
   const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
+    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
+    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
+    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, '');
     const productInfo = productos.find(p => p.nombre === productName);
-    if (productInfo) {
-      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, productInfo.id);
+    if(productInfo) {
       form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, productInfo.tallosPorRamo);
-      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
     }
+  };
+
+  const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
+      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, '');
+  };
+
+  const handleColorChange = (lineItemIndex: number, bunchIndex: number, colorData: any) => {
+      if (colorData) {
+          form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, colorData.productoId);
+          form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, colorData.tallosPorRamo);
+      }
   };
 
 
@@ -655,8 +679,9 @@ export function NewInvoiceForm() {
                                 <TableHead className="w-24">Nº Caja</TableHead>
                                 <TableHead className="w-32">Tipo Caja</TableHead>
                                 <TableHead className="w-24"># Ramos</TableHead>
-                                <TableHead className="min-w-[150px]">Variedad</TableHead>
                                 <TableHead className="min-w-[150px]">Producto</TableHead>
+                                <TableHead className="min-w-[150px]">Variedad</TableHead>
+                                <TableHead className="min-w-[150px]">Color</TableHead>
                                 <TableHead className="w-24">Long.</TableHead>
                                 <TableHead className="w-24">Tallos/Ramo</TableHead>
                                 <TableHead className="w-24">Ramos/Caja</TableHead>
@@ -693,7 +718,9 @@ export function NewInvoiceForm() {
                                         }
 
                                         const selectedProduct = form.watch(`${bunchPath}.product`);
+                                        const selectedVariety = form.watch(`${bunchPath}.variety`);
                                         const varieties = getVarietiesForProduct(selectedProduct);
+                                        const colors = getColorsForVariety(selectedProduct, selectedVariety);
 
                                         return (
                                             <TableRow key={bunch.id}>
@@ -733,14 +760,20 @@ export function NewInvoiceForm() {
                                                 </TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
-                                                     <Select onValueChange={field.onChange} value={field.value ?? ''} disabled={!selectedProduct}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedProduct}>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                )}/></TableCell>
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
+                                                    <Select onValueChange={(value) => { field.onChange(value); const colorData = colors.find(c => c.nombreColor === value); handleColorChange(lineItemIndex, bunchIndex, colorData); }} value={field.value ?? ''} disabled={!selectedVariety}>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{colors.map(c => <SelectItem key={c.productoId} value={c.nombreColor}>{c.nombreColor}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
                                                 <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
@@ -789,5 +822,3 @@ export function NewInvoiceForm() {
     </div>
   );
 }
-
-    
