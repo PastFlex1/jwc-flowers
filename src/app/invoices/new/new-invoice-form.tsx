@@ -183,10 +183,9 @@ export function NewInvoiceForm() {
   const getColorsForVariety = useCallback((productName: string, varietyName: string) => {
     if (!productName || !varietyName) return [];
     return productos.filter(p => p.nombre === productName && p.variedad === varietyName && p.estado === 'Activo').map(p => ({
-        color: p.color,
-        nombreColor: p.nombreColor,
-        tallosPorRamo: p.tallosPorRamo,
-        productoId: p.id
+        color: p.nombreColor,
+        productoId: p.id,
+        tallosPorRamo: p.tallosPorRamo
     }));
   }, [productos]);
 
@@ -275,17 +274,18 @@ export function NewInvoiceForm() {
   };
 
   const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
-    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.variety`, '');
-    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.color`, '');
-    form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, '');
+    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
+    form.setValue(`${bunchPath}.variety`, '');
+    form.setValue(`${bunchPath}.color`, '');
+    form.setValue(`${bunchPath}.productoId`, '');
     const productInfo = productos.find(p => p.nombre === productName);
     if(productInfo) {
-      form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, productInfo.tallosPorRamo);
+      form.setValue(`${bunchPath}.stemsPerBunch`, productInfo.tallosPorRamo);
     }
   };
 
   const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
-    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}`;
+    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
 
@@ -294,17 +294,17 @@ export function NewInvoiceForm() {
     
     if (colors.length === 1) {
       const singleColor = colors[0];
-      form.setValue(`${bunchPath}.color`, singleColor.nombreColor);
-      form.setValue(`${bunchPath}.productoId`, singleColor.productoId);
-      form.setValue(`${bunchPath}.stemsPerBunch`, singleColor.tallosPorRamo);
+      form.setValue(`${bunchPath}.color`, singleColor.color);
+      handleColorChange(lineItemIndex, bunchIndex, singleColor);
     }
   };
 
   const handleColorChange = (lineItemIndex: number, bunchIndex: number, colorData: any) => {
-      if (colorData) {
-          form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.productoId`, colorData.productoId);
-          form.setValue(`items.${lineItemIndex}.bunches.${bunchIndex}.stemsPerBunch`, colorData.tallosPorRamo);
-      }
+    const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
+    if (colorData) {
+        form.setValue(`${bunchPath}.productoId`, colorData.productoId);
+        form.setValue(`${bunchPath}.stemsPerBunch`, colorData.tallosPorRamo);
+    }
   };
 
 
@@ -770,22 +770,27 @@ export function NewInvoiceForm() {
                                                         />
                                                     ) : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
-                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedProduct}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
-                                                        <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                                                    </Select>
-                                                )}/></TableCell>
+                                                
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
+                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedProduct}>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                                        <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                                                    </Select>
+                                                )}/></TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.color`} render={({ field }) => (
-                                                    <Select onValueChange={(value) => { field.onChange(value); const colorData = colors.find(c => c.nombreColor === value); handleColorChange(lineItemIndex, bunchIndex, colorData); }} value={field.value ?? ''} disabled={!selectedVariety}>
+                                                    <Select onValueChange={(value) => { 
+                                                        field.onChange(value); 
+                                                        const colorData = colors.find(c => c.color === value); 
+                                                        handleColorChange(lineItemIndex, bunchIndex, colorData); 
+                                                    }} value={field.value ?? ''} disabled={!selectedVariety}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
-                                                        <SelectContent>{colors.map(c => <SelectItem key={c.productoId} value={c.nombreColor}>{c.nombreColor}</SelectItem>)}</SelectContent>
+                                                        <SelectContent>{colors.map(c => <SelectItem key={c.productoId} value={c.color}>{c.color}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
                                                 <TableCell><FormField control={form.control} name={`${bunchPath}.length`} render={({ field }) => <Input type="number" {...field} value={field.value ?? 0} className="w-24 py-2"/>}/></TableCell>
