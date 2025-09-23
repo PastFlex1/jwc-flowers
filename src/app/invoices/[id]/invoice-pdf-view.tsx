@@ -94,7 +94,7 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
                     <div className="w-full text-[10px] border border-gray-400">
                         <div className="flex">
                             <div className="w-1/3 border-r border-gray-400 p-1 font-bold">DATE:</div>
-                            <div className="w-2/3 p-1 text-center">{format(parseISO(invoice.flightDate), 'MM/dd/yyyy')}</div>
+                            <div className="w-2/3 p-1 text-center">{format(parseISO(invoice.farmDepartureDate), 'MM/dd/yyyy')}</div>
                         </div>
                         <div className="flex border-t border-gray-400">
                             <div className="w-1/3 border-r border-gray-400 p-1 font-bold">No.</div>
@@ -117,10 +117,10 @@ export function InvoicePdfView({ invoice, customer, consignatario, carguera, pai
             {/* Client Info Section */}
             <section className="border border-gray-400 p-2 mb-4 text-[10px]">
                 <div className="grid grid-cols-[auto,1fr] gap-x-2 gap-y-1">
-                    <strong>Name Client:</strong> <span>{customer?.name}</span>
+                    <strong>Name Client:</strong> <span>{consignatario?.nombreConsignatario || customer?.name}</span>
                     <strong>Agency:</strong> <span>{carguera?.nombreCarguera}</span>
-                    <strong>Address:</strong> <span>{customer?.address}</span>
-                    <strong>Country:</strong> <span>{pais?.nombre}</span>
+                    <strong>Address:</strong> <span>{consignatario?.direccion || customer?.address}</span>
+                    <strong>Country:</strong> <span>{consignatario?.pais || pais?.nombre}</span>
                 </div>
             </section>
 
