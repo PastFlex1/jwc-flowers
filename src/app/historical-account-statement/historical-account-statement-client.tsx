@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import type { Customer, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import { HistoricalAccountStatementView } from './historical-account-statement-view';
-import AccountStatementDownloadButton from '../account-statement/account-statement-download';
-import AccountStatementExcelButton from '../account-statement/account-statement-download-excel';
-import SendDocumentsDialog from '../account-statement/send-documents-dialog';
+import HistoricalAccountStatementDownloadButton from './historical-account-statement-download';
+import HistoricalAccountStatementExcelButton from './historical-account-statement-download-excel';
+import HistoricalSendDocumentsDialog from './historical-send-documents-dialog';
 import { useTranslation } from '@/context/i18n-context';
 
 export type StatementData = {
@@ -96,8 +96,8 @@ export function HistoricalAccountStatementClient() {
           </div>
           {statementData && (
              <div className="flex gap-2">
-                <AccountStatementDownloadButton data={statementData} />
-                <AccountStatementExcelButton data={statementData} />
+                <HistoricalAccountStatementDownloadButton data={statementData} />
+                <HistoricalAccountStatementExcelButton data={statementData} />
                 <Button variant="outline" onClick={() => setIsSendDialogOpen(true)}>{t('accountStatement.sendDocuments')}</Button>
             </div>
           )}
@@ -142,7 +142,7 @@ export function HistoricalAccountStatementClient() {
       </div>
       
       {statementData && (
-        <SendDocumentsDialog 
+        <HistoricalSendDocumentsDialog 
           isOpen={isSendDialogOpen}
           onClose={() => setIsSendDialogOpen(false)}
           customer={statementData.customer}

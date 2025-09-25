@@ -29,7 +29,7 @@ export function HistoricalAccountStatementView({ data }: HistoricalAccountStatem
   );
 
   return (
-    <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="statement-to-print">
+    <Card className="p-6 bg-white text-black shadow-lg border print:shadow-none print:border-0" id="historical-statement-to-print">
       <CardContent className="p-0 text-sm leading-tight">
         <header className="flex justify-between items-start mb-6">
           <div className="w-1/2">
