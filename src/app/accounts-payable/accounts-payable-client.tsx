@@ -96,7 +96,8 @@ export function AccountsPayableClient() {
             invoice.invoiceNumber,
             farmName,
             invoice.status,
-            format(parseISO(invoice.farmDepartureDate), 'PPP')
+            format(parseISO(invoice.farmDepartureDate), 'PPP'),
+            format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy')
         ];
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
