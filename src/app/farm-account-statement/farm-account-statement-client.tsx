@@ -21,6 +21,7 @@ export type StatementData = {
   totalDebits: number;
   totalPayments: number;
   urgentPayment: number;
+  statementDate: string;
 };
 
 export function FarmAccountStatementClient() {
@@ -32,7 +33,7 @@ export function FarmAccountStatementClient() {
   const availableMonths = useMemo(() => {
     if (!selectedFincaId) return [];
     const fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
-    const months = new Set(fincaInvoices.map(inv => format(parseISO(inv.flightDate), 'yyyy-MM')));
+    const months = new Set(fincaInvoices.map(inv => format(parseISO(inv.farmDepartureDate), 'yyyy-MM')));
     return Array.from(months).sort((a, b) => b.localeCompare(a));
   }, [selectedFincaId, invoices]);
 
@@ -49,8 +50,13 @@ export function FarmAccountStatementClient() {
     let fincaInvoices = invoices.filter(inv => inv.farmId === selectedFincaId && (inv.type === 'purchase' || inv.type === 'both'));
 
     if (selectedMonth !== 'all') {
-      fincaInvoices = fincaInvoices.filter(inv => format(parseISO(inv.flightDate), 'yyyy-MM') === selectedMonth);
+      fincaInvoices = fincaInvoices.filter(inv => format(parseISO(inv.farmDepartureDate), 'yyyy-MM') === selectedMonth);
     }
+    
+    if (fincaInvoices.length === 0) return null;
+    
+    const sortedInvoices = fincaInvoices.sort((a, b) => new Date(b.farmDepartureDate).getTime() - new Date(a.farmDepartureDate).getTime());
+    const latestInvoiceDate = sortedInvoices[0].farmDepartureDate;
 
     const processedInvoices = fincaInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
@@ -93,12 +99,13 @@ export function FarmAccountStatementClient() {
 
     return {
       finca,
-      invoices: processedInvoices.sort((a, b) => new Date(a.flightDate).getTime() - new Date(b.flightDate).getTime()),
+      invoices: processedInvoices.sort((a, b) => new Date(a.farmDepartureDate).getTime() - new Date(b.farmDepartureDate).getTime()),
       totalOutstanding,
       totalCredits,
       totalDebits,
       totalPayments,
-      urgentPayment
+      urgentPayment,
+      statementDate: latestInvoiceDate,
     };
   }, [selectedFincaId, selectedMonth, fincas, invoices, creditNotes, debitNotes, payments]);
 

@@ -20,6 +20,7 @@ export type StatementData = {
   totalDebits: number;
   totalPayments: number;
   urgentPayment: number;
+  statementDate: string;
 };
 
 export function HistoricalAccountStatementClient() {
@@ -36,6 +37,11 @@ export function HistoricalAccountStatementClient() {
 
     let customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
     
+    if (customerInvoices.length === 0) return null;
+
+    const sortedInvoices = customerInvoices.sort((a, b) => new Date(b.farmDepartureDate).getTime() - new Date(a.farmDepartureDate).getTime());
+    const latestInvoiceDate = sortedInvoices[0].farmDepartureDate;
+
     const processedInvoices = customerInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
         if (!item.bunches) return acc;
@@ -77,12 +83,13 @@ export function HistoricalAccountStatementClient() {
 
     return {
       customer,
-      invoices: processedInvoices.sort((a, b) => new Date(a.flightDate).getTime() - new Date(b.flightDate).getTime()),
+      invoices: processedInvoices.sort((a, b) => new Date(a.farmDepartureDate).getTime() - new Date(b.farmDepartureDate).getTime()),
       totalOutstanding,
       totalCredits,
       totalDebits,
       totalPayments,
-      urgentPayment
+      urgentPayment,
+      statementDate: latestInvoiceDate,
     };
   }, [selectedCustomerId, customers, invoices, creditNotes, debitNotes, payments]);
 

@@ -48,7 +48,7 @@ export function HistoricalAccountStatementView({ data }: HistoricalAccountStatem
             <div className="w-[280px] text-xs mt-4">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
                 <div className="w-2/3 p-1">{t('accountStatement.view.balanceTitle')}:</div>
-                <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
+                <div className="w-1/3 p-1 text-center">{format(parseISO(data.statementDate), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
                 <div className="w-2/3 p-1"></div>
@@ -58,7 +58,7 @@ export function HistoricalAccountStatementView({ data }: HistoricalAccountStatem
              <div className="w-[280px] text-xs mt-2">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
                 <div className="w-2/3 p-1">{t('accountStatement.view.urgentPayment')}:</div>
-                <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
+                <div className="w-1/3 p-1 text-center">{format(parseISO(data.statementDate), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
                 <div className="w-2/3 p-1"></div>
@@ -95,7 +95,7 @@ export function HistoricalAccountStatementView({ data }: HistoricalAccountStatem
             </div>
             {allInvoices.map(invoice => (
                 <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
-                <div className="p-1 text-center">{format(parseISO(invoice.flightDate), 'dd/MM/yyyy')}</div>
+                <div className="p-1 text-center">{format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy')}</div>
                 <div className="p-1 text-center">{invoice.invoiceNumber}</div>
                 <div className="p-1">{data.customer.name}</div>
                 <div className="p-1 text-right">${invoice.total.toFixed(2)}</div>

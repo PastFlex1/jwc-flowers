@@ -22,6 +22,7 @@ export type StatementData = {
   totalDebits: number;
   totalPayments: number;
   urgentPayment: number;
+  statementDate: string;
 };
 
 export function AccountStatementClient() {
@@ -41,7 +42,7 @@ export function AccountStatementClient() {
   const availableMonths = useMemo(() => {
     if (!selectedCustomerId) return [];
     const customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
-    const months = new Set(customerInvoices.map(inv => format(parseISO(inv.flightDate), 'yyyy-MM')));
+    const months = new Set(customerInvoices.map(inv => format(parseISO(inv.farmDepartureDate), 'yyyy-MM')));
     return Array.from(months).sort((a, b) => b.localeCompare(a));
   }, [selectedCustomerId, invoices]);
 
@@ -58,8 +59,14 @@ export function AccountStatementClient() {
     let customerInvoices = invoices.filter(inv => inv.customerId === selectedCustomerId && (inv.type === 'sale' || inv.type === 'both'));
     
     if (selectedMonth !== 'all') {
-      customerInvoices = customerInvoices.filter(inv => format(parseISO(inv.flightDate), 'yyyy-MM') === selectedMonth);
+      customerInvoices = customerInvoices.filter(inv => format(parseISO(inv.farmDepartureDate), 'yyyy-MM') === selectedMonth);
     }
+    
+    if (customerInvoices.length === 0) return null;
+    
+    const sortedInvoices = customerInvoices.sort((a, b) => new Date(b.farmDepartureDate).getTime() - new Date(a.farmDepartureDate).getTime());
+    const latestInvoiceDate = sortedInvoices[0].farmDepartureDate;
+
 
     const processedInvoices = customerInvoices.map(invoice => {
        const invoiceSubtotal = invoice.items.reduce((acc, item) => {
@@ -105,12 +112,13 @@ export function AccountStatementClient() {
 
     return {
       customer,
-      invoices: processedInvoices.sort((a, b) => new Date(a.flightDate).getTime() - new Date(b.flightDate).getTime()),
+      invoices: processedInvoices.sort((a, b) => new Date(a.farmDepartureDate).getTime() - new Date(b.farmDepartureDate).getTime()),
       totalOutstanding,
       totalCredits,
       totalDebits,
       totalPayments,
-      urgentPayment
+      urgentPayment,
+      statementDate: latestInvoiceDate
     };
   }, [selectedCustomerId, selectedMonth, customers, invoices, creditNotes, debitNotes, payments, consignatarioMap]);
 

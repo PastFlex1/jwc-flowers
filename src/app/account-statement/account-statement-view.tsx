@@ -14,7 +14,7 @@ type AccountStatementViewProps = {
 export function AccountStatementView({ data }: AccountStatementViewProps) {
   const { t } = useTranslation();
   const groupedInvoices = data.invoices.reduce((acc, invoice) => {
-    const month = format(parseISO(invoice.flightDate), 'yyyy-MM');
+    const month = format(parseISO(invoice.farmDepartureDate), 'yyyy-MM');
     if (!acc[month]) {
       acc[month] = [];
     }
@@ -42,7 +42,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
             <div className="w-[280px] text-xs mt-4">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
                 <div className="w-2/3 p-1">{t('accountStatement.view.balanceTitle')}:</div>
-                <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
+                <div className="w-1/3 p-1 text-center">{format(parseISO(data.statementDate), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
                 <div className="w-2/3 p-1"></div>
@@ -52,7 +52,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
              <div className="w-[280px] text-xs mt-2">
               <div className="flex border border-gray-300 bg-gray-100 font-bold">
                 <div className="w-2/3 p-1">{t('accountStatement.view.urgentPayment')}:</div>
-                <div className="w-1/3 p-1 text-center">{format(new Date(), 'dd/MM/yyyy')}</div>
+                <div className="w-1/3 p-1 text-center">{format(parseISO(data.statementDate), 'dd/MM/yyyy')}</div>
               </div>
               <div className="flex border-l border-r border-b border-gray-300">
                 <div className="w-2/3 p-1"></div>
@@ -103,7 +103,7 @@ export function AccountStatementView({ data }: AccountStatementViewProps) {
                 </div>
                 {invoices.map(invoice => (
                    <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
-                    <div className="p-1 text-center">{format(parseISO(invoice.flightDate), 'dd/MM/yyyy')}</div>
+                    <div className="p-1 text-center">{format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy')}</div>
                     <div className="p-1 text-center">{invoice.invoiceNumber}</div>
                     <div className="p-1">{invoice.consigneeName}</div>
                     <div className="p-1 text-right">${invoice.total.toFixed(2)}</div>
