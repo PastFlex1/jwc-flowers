@@ -97,7 +97,7 @@ export function HistoricalAccountStatementView({ data }: HistoricalAccountStatem
                 <div key={invoice.id} className="grid grid-cols-[100px,100px,1fr,100px,100px,100px,100px] border-b border-gray-300">
                 <div className="p-1 text-center">{format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy')}</div>
                 <div className="p-1 text-center">{invoice.invoiceNumber}</div>
-                <div className="p-1">{data.customer.name}</div>
+                <div className="p-1">{invoice.consigneeName}</div>
                 <div className="p-1 text-right">${invoice.total.toFixed(2)}</div>
                 <div className="p-1 text-right">${(invoice.credits - invoice.debits).toFixed(2)}</div>
                 <div className="p-1 text-right">${invoice.payments.toFixed(2)}</div>

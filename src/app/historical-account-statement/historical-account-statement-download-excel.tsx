@@ -32,9 +32,9 @@ export default function HistoricalAccountStatementExcelButton({ data }: Historic
 
       data.invoices.forEach(invoice => {
         ws_data.push([
-          format(parseISO(invoice.flightDate), 'dd/MM/yyyy'),
+          format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy'),
           invoice.invoiceNumber,
-          data.customer.name,
+          invoice.consigneeName,
           invoice.total,
           invoice.credits - invoice.debits,
           invoice.payments,
