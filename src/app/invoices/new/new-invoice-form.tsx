@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -701,8 +700,8 @@ export function NewInvoiceForm() {
                                 <TableHead className="w-24">Nº Caja</TableHead>
                                 <TableHead className="w-32">Tipo Caja</TableHead>
                                 <TableHead className="w-24"># Ramos</TableHead>
-                                <TableHead className="min-w-[150px]">Variedad</TableHead>
                                 <TableHead className="min-w-[150px]">Producto</TableHead>
+                                <TableHead className="min-w-[150px]">Variedad</TableHead>
                                 <TableHead className="min-w-[150px]">Color</TableHead>
                                 <TableHead className="w-24">Long.</TableHead>
                                 <TableHead className="w-24">Tallos/Ramo</TableHead>
@@ -782,13 +781,13 @@ export function NewInvoiceForm() {
                                                 </TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
                                                 <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                      <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedVariety}>
-                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
+                                                        <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )}/></TableCell>
