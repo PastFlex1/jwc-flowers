@@ -1,5 +1,3 @@
-
-
 import { db } from '@/lib/firebase';
 import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
 import {
@@ -14,6 +12,7 @@ import {
   type QueryDocumentSnapshot,
   Timestamp,
   getDoc,
+  writeBatch,
 } from 'firebase/firestore';
 
 const paymentFromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Payment => {
@@ -67,9 +66,10 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
 
     const subtotal = invoiceData.items.reduce((acc, item) => {
       if (!item.bunches) return acc;
+      const priceField = invoiceData.type === 'purchase' ? 'purchasePrice' : 'salePrice';
       return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
         const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
-        return bunchAcc + (stems * bunch.salePrice);
+        return bunchAcc + (stems * bunch[priceField]);
       }, 0);
     }, 0);
 
@@ -99,7 +99,9 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
     if (newBalance <= 0.01) {
         newStatus = 'Paid';
     } else {
-        newStatus = 'Pending';
+        const dueDate = new Date(invoiceData.flightDate);
+        dueDate.setDate(dueDate.getDate() + 30);
+        newStatus = new Date() > dueDate ? 'Overdue' : 'Pending';
     }
 
     const newPaymentRef = doc(collection(db, 'payments'));
@@ -118,4 +120,54 @@ export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<stri
    }
 
    return paymentId;
+}
+
+export async function addBulkPayment(
+  paymentData: Omit<Payment, 'id' | 'invoiceId' | 'amount'>, 
+  invoiceBalances: { invoiceId: string; balance: number; type: 'sale' | 'purchase' | 'both', flightDate: string }[],
+  totalAmountToApply: number
+): Promise<void> {
+  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+
+  const batch = writeBatch(db);
+  let remainingAmount = totalAmountToApply;
+
+  for (const { invoiceId, balance, type, flightDate } of invoiceBalances) {
+    if (remainingAmount <= 0) break;
+
+    const paymentAmountForInvoice = Math.min(remainingAmount, balance);
+    
+    const newPaymentRef = doc(collection(db, 'payments'));
+    const newPaymentData = {
+      ...paymentData,
+      invoiceId: invoiceId,
+      amount: paymentAmountForInvoice,
+      paymentDate: new Date(paymentData.paymentDate),
+    };
+    batch.set(newPaymentRef, newPaymentData);
+
+    const newBalance = balance - paymentAmountForInvoice;
+    let newStatus: 'Paid' | 'Pending' | 'Overdue';
+    if (newBalance <= 0.01) {
+        newStatus = 'Paid';
+    } else {
+       const dueDate = new Date(flightDate);
+       dueDate.setDate(dueDate.getDate() + 30);
+       newStatus = new Date() > dueDate ? 'Overdue' : 'Pending';
+    }
+
+    const invoiceRef = doc(db, 'invoices', invoiceId);
+    batch.update(invoiceRef, { status: newStatus });
+
+    remainingAmount -= paymentAmountForInvoice;
+  }
+  
+  if (remainingAmount > 0.01) {
+    // This could happen if the total amount is greater than the sum of balances.
+    // The current logic simply stops. You could add handling for this case,
+    // e.g., creating a credit for the customer, but for now we'll just log it.
+    console.warn(`Payment amount of ${totalAmountToApply} exceeded the total balance of selected invoices. $${remainingAmount.toFixed(2)} was not applied.`);
+  }
+
+  await batch.commit();
 }
