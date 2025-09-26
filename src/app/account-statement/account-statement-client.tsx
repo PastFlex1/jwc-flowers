@@ -5,7 +5,7 @@ import { useAppData } from '@/context/app-data-context';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import type { Customer, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
+import type { Customer, Invoice, CreditNote, DebitNote, BunchItem, Consignatario } from '@/lib/types';
 import { AccountStatementView } from './account-statement-view';
 import AccountStatementDownloadButton from './account-statement-download';
 import AccountStatementExcelButton from './account-statement-download-excel';
@@ -16,7 +16,7 @@ import { es } from 'date-fns/locale';
 
 export type StatementData = {
   customer: Customer;
-  invoices: (Invoice & { total: number; balance: number; credits: number; debits: number; payments: number })[];
+  invoices: (Invoice & { total: number; balance: number; credits: number; debits: number; payments: number; consigneeName?: string; })[];
   totalOutstanding: number;
   totalCredits: number;
   totalDebits: number;
@@ -25,11 +25,18 @@ export type StatementData = {
 };
 
 export function AccountStatementClient() {
-  const { customers, invoices, creditNotes, debitNotes, payments } = useAppData();
+  const { customers, invoices, creditNotes, debitNotes, payments, consignatarios } = useAppData();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
   const { t } = useTranslation();
+
+  const consignatarioMap = useMemo(() => {
+    return consignatarios.reduce((acc, c) => {
+      acc[c.id] = c.nombreConsignatario;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [consignatarios]);
 
   const availableMonths = useMemo(() => {
     if (!selectedCustomerId) return [];
@@ -73,6 +80,8 @@ export function AccountStatementClient() {
       
       const totalCharge = invoiceSubtotal + totalDebits;
       const balance = totalCharge - totalCredits - totalPayments;
+      
+      const consigneeName = invoice.consignatarioId ? consignatarioMap[invoice.consignatarioId] : customer.name;
 
       return {
         ...invoice,
@@ -81,6 +90,7 @@ export function AccountStatementClient() {
         debits: totalDebits,
         payments: totalPayments,
         balance,
+        consigneeName,
       };
     });
     
@@ -102,7 +112,7 @@ export function AccountStatementClient() {
       totalPayments,
       urgentPayment
     };
-  }, [selectedCustomerId, selectedMonth, customers, invoices, creditNotes, debitNotes, payments]);
+  }, [selectedCustomerId, selectedMonth, customers, invoices, creditNotes, debitNotes, payments, consignatarioMap]);
 
   return (
     <>
