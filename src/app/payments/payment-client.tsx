@@ -6,31 +6,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { Payment } from '@/lib/types';
-import { addPayment } from '@/services/payments';
+import { addBulkPayment } from '@/services/payments';
 
 export function PaymentClient() {
   const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
+  const handleAddBulkPayment = async (
+    paymentDetails: Omit<Payment, 'id' | 'invoiceId' | 'amount'>,
+    selectedInvoices: { invoiceId: string; balance: number; type: 'sale' | 'purchase' | 'both', flightDate: string }[],
+    totalAmount: number
+  ) => {
     setIsSubmitting(true);
     try {
-      await addPayment(data);
+      await addBulkPayment(paymentDetails, selectedInvoices, totalAmount);
       toast({
         title: "Éxito",
-        description: "El pago ha sido registrado y la factura actualizada.",
+        description: "El pago ha sido registrado y las facturas actualizadas.",
       });
       await refreshData();
-      return true;
+      return true; // Indicate success
     } catch (error) {
-      console.error("Error registering payment:", error);
+      console.error("Error registering bulk payment:", error);
       toast({
         title: "Error",
         description: "No se pudo registrar el pago.",
         variant: "destructive",
       });
-      return false;
+      return false; // Indicate failure
     } finally {
       setIsSubmitting(false);
     }
@@ -39,15 +43,15 @@ export function PaymentClient() {
   return (
     <div className="space-y-6">
       <div>
-          <h2 className="text-3xl font-bold tracking-tight font-headline">Registrar Pago</h2>
-          <p className="text-muted-foreground">Seleccione un cliente y una factura para registrar un nuevo pago.</p>
+          <h2 className="text-3xl font-bold tracking-tight font-headline">Registrar Pago a Clientes</h2>
+          <p className="text-muted-foreground">Seleccione un cliente y las facturas a las que desea aplicar un pago.</p>
       </div>
 
       <div className="grid grid-cols-1">
         <Card>
           <CardHeader>
             <CardTitle>Detalles del Pago</CardTitle>
-            <CardDescription>Complete el formulario para registrar un pago.</CardDescription>
+            <CardDescription>Complete el formulario para registrar un pago y distribuirlo entre una o varias facturas.</CardDescription>
           </CardHeader>
           <CardContent>
             <PaymentForm 
@@ -57,7 +61,7 @@ export function PaymentClient() {
               creditNotes={creditNotes}
               debitNotes={debitNotes}
               payments={payments}
-              onSubmit={handleAddPayment}
+              onSubmit={handleAddBulkPayment}
               isSubmitting={isSubmitting}
               paymentType="sale"
             />

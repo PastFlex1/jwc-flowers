@@ -6,23 +6,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { Payment } from '@/lib/types';
-import { addPayment } from '@/services/payments';
+import { addBulkPayment } from '@/services/payments';
 
 export function RecordPurchasePaymentClient() {
   const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddPayment = async (data: Omit<Payment, 'id'>) => {
+  const handleAddBulkPayment = async (
+    paymentDetails: Omit<Payment, 'id' | 'invoiceId' | 'amount'>,
+    selectedInvoices: { invoiceId: string; balance: number; type: 'sale' | 'purchase' | 'both', flightDate: string }[],
+    totalAmount: number
+  ) => {
     setIsSubmitting(true);
     try {
-      await addPayment(data);
+      await addBulkPayment(paymentDetails, selectedInvoices, totalAmount);
       toast({
         title: "Éxito",
-        description: "El pago de la compra ha sido registrado y la factura actualizada.",
+        description: "El pago de la compra ha sido registrado y la(s) factura(s) actualizada(s).",
       });
       await refreshData();
-      return true;
+      return true; // Indicate success
     } catch (error) {
       console.error("Error registering purchase payment:", error);
       toast({
@@ -30,7 +34,7 @@ export function RecordPurchasePaymentClient() {
         description: "No se pudo registrar el pago de la compra.",
         variant: "destructive",
       });
-      return false;
+       return false; // Indicate failure
     } finally {
       setIsSubmitting(false);
     }
@@ -40,7 +44,7 @@ export function RecordPurchasePaymentClient() {
     <div className="space-y-6">
       <div>
           <h2 className="text-3xl font-bold tracking-tight font-headline">Registrar Pago de Compra</h2>
-          <p className="text-muted-foreground">Seleccione un proveedor y una factura de compra para registrar un pago.</p>
+          <p className="text-muted-foreground">Seleccione un proveedor y las facturas de compra a las que desea aplicar un pago.</p>
       </div>
 
       <div className="grid grid-cols-1">
@@ -57,7 +61,7 @@ export function RecordPurchasePaymentClient() {
               creditNotes={creditNotes}
               debitNotes={debitNotes}
               payments={payments}
-              onSubmit={handleAddPayment}
+              onSubmit={handleAddBulkPayment}
               isSubmitting={isSubmitting}
               paymentType="purchase"
             />
