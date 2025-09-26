@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Edit, Trash2, Search, ChevronLeft, ChevronRight, Copy, Send } from 'lucide-react';
+import { Edit, Trash2, Search, ChevronLeft, ChevronRight, Copy, Send, Calendar as CalendarIcon, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,11 +21,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { Invoice, Customer, CreditNote, DebitNote, Payment, BunchItem } from '@/lib/types';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isSameDay } from 'date-fns';
 import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -46,6 +48,7 @@ export function InvoicesClient() {
   const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
@@ -88,21 +91,30 @@ export function InvoicesClient() {
 
   const filteredInvoices = useMemo(() => {
     const saleInvoices = invoices.filter(inv => inv.type === 'sale' || inv.type === 'both');
-    return saleInvoices.filter(invoice => {
+    
+    let filtered = saleInvoices;
+
+    if (selectedDate) {
+        filtered = filtered.filter(invoice => 
+            isSameDay(parseISO(invoice.farmDepartureDate), selectedDate)
+        );
+    }
+    
+    return filtered.filter(invoice => {
         const customerName = customerMap[invoice.customerId]?.name || '';
         const lowerCaseSearch = debouncedSearchTerm.toLowerCase();
         
+        if (!lowerCaseSearch) return true;
+
         const searchFields = [
             invoice.invoiceNumber,
             customerName,
             invoice.status,
-            format(parseISO(invoice.farmDepartureDate), 'PPP'),
-            format(parseISO(invoice.farmDepartureDate), 'dd/MM/yyyy')
         ];
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
     });
-  }, [invoices, debouncedSearchTerm, customerMap]);
+  }, [invoices, debouncedSearchTerm, customerMap, selectedDate]);
 
 
   const totalPages = Math.ceil(filteredInvoices.length / ITEMS_PER_PAGE);
@@ -175,14 +187,43 @@ export function InvoicesClient() {
             <CardDescription>{t('invoices.historyDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('invoices.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="mb-4 flex flex-wrap gap-4">
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t('invoices.searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-[240px] justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Todas las fechas</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {selectedDate && (
+                <Button variant="ghost" onClick={() => setSelectedDate(undefined)}>
+                    <XIcon className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             <div className="overflow-x-auto">
               <Table>
