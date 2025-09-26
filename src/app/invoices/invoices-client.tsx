@@ -96,7 +96,7 @@ export function InvoicesClient() {
             invoice.invoiceNumber,
             customerName,
             invoice.status,
-            format(parseISO(invoice.flightDate), 'PPP')
+            format(parseISO(invoice.farmDepartureDate), 'PPP')
         ];
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
@@ -189,7 +189,7 @@ export function InvoicesClient() {
                   <TableRow>
                     <TableHead>{t('invoices.invoiceNumber')}</TableHead>
                     <TableHead>{t('invoices.customer')}</TableHead>
-                    <TableHead>{t('invoices.flightDate')}</TableHead>
+                    <TableHead>Fecha Salida</TableHead>
                     <TableHead>{t('invoices.amount')}</TableHead>
                     <TableHead>{t('invoices.status')}</TableHead>
                     <TableHead className="text-right">{t('invoices.actions')}</TableHead>
@@ -206,7 +206,7 @@ export function InvoicesClient() {
                           </Link>
                         </TableCell>
                         <TableCell>{getCustomer(invoice.customerId)?.name || t('invoices.unknownCustomer')}</TableCell>
-                        <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
+                        <TableCell>{format(parseISO(invoice.farmDepartureDate), 'PPP')}</TableCell>
                         <TableCell>${balance.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge

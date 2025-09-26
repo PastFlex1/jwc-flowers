@@ -96,7 +96,7 @@ export function AccountsPayableClient() {
             invoice.invoiceNumber,
             farmName,
             invoice.status,
-            format(parseISO(invoice.flightDate), 'PPP')
+            format(parseISO(invoice.farmDepartureDate), 'PPP')
         ];
 
         return searchFields.some(field => field.toLowerCase().includes(lowerCaseSearch));
@@ -190,7 +190,7 @@ export function AccountsPayableClient() {
                   <TableRow>
                     <TableHead>Factura #</TableHead>
                     <TableHead>Proveedor</TableHead>
-                    <TableHead>Fecha</TableHead>
+                    <TableHead>Fecha Salida</TableHead>
                     <TableHead>Monto Pendiente</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
@@ -207,7 +207,7 @@ export function AccountsPayableClient() {
                           </Link>
                         </TableCell>
                         <TableCell>{getFinca(invoice.farmId)?.name || 'Desconocido'}</TableCell>
-                        <TableCell>{format(parseISO(invoice.flightDate), 'PPP')}</TableCell>
+                        <TableCell>{format(parseISO(invoice.farmDepartureDate), 'PPP')}</TableCell>
                         <TableCell>${balance.toFixed(2)}</TableCell>
                         <TableCell>
                           <Badge
