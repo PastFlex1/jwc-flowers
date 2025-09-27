@@ -1,6 +1,5 @@
 import type { DebitNote } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
-import { updateInvoice } from './invoices';
 
 const DEMO_LIMIT = 20;
 
