@@ -1,39 +1,29 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { DebitNote } from '@/lib/types';
-import { debitNotes as mockDebitNotes } from '@/lib/mock-data';
-import { getInvoices, updateInvoice } from './invoices';
-
-let debitNotes = [...mockDebitNotes];
+import { readDb, writeDb } from '@/lib/db-actions';
+import { updateInvoice } from './invoices';
 
 export async function getDebitNotes(): Promise<DebitNote[]> {
-  return Promise.resolve(debitNotes);
-}
-
-export async function getDebitNotesForInvoice(invoiceId: string): Promise<DebitNote[]> {
-  const notes = debitNotes.filter(note => note.invoiceId === invoiceId);
-  return Promise.resolve(notes);
+  const db = await readDb();
+  return db.debitNotes || [];
 }
 
 export async function addDebitNote(debitNoteData: Omit<DebitNote, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `dn-${Date.now()}`;
   const newNote: DebitNote = { id: newId, ...debitNoteData };
-  debitNotes.push(newNote);
-  console.log("Mock addDebitNote:", newNote);
+  db.debitNotes.push(newNote);
   
-  // Simulate transaction: update invoice status if it was paid
-  const invoices = await getInvoices();
-  const invoice = invoices.find(inv => inv.id === debitNoteData.invoiceId);
+  const invoice = db.invoices.find(inv => inv.id === debitNoteData.invoiceId);
   if (invoice && invoice.status === 'Paid') {
-    await updateInvoice(invoice.id, { status: 'Pending' });
-    console.log(`Mock: Invoice ${invoice.invoiceNumber} status updated to Pending due to new debit note.`);
+    invoice.status = 'Pending';
   }
-
-  return Promise.resolve(newId);
+  
+  await writeDb(db);
+  return newId;
 }
 
 export async function deleteDebitNote(id: string): Promise<void> {
-  debitNotes = debitNotes.filter(note => note.id !== id);
-  console.log("Mock deleteDebitNote:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.debitNotes = db.debitNotes.filter(note => note.id !== id);
+  await writeDb(db);
 }

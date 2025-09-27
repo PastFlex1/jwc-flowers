@@ -1,0 +1,163 @@
+{
+  "paises": [
+    { "id": "pais-01", "nombre": "Ecuador" },
+    { "id": "pais-02", "nombre": "Estados Unidos" },
+    { "id": "pais-03", "nombre": "Colombia" },
+    { "id": "pais-04", "nombre": "Rusia" }
+  ],
+  "vendedores": [
+    { "id": "vend-01", "nombre": "Juan Perez", "siglas": "JP" },
+    { "id": "vend-02", "nombre": "Ana Gomez", "siglas": "AG" }
+  ],
+  "customers": [
+    {
+      "id": "cust-01",
+      "type": "National",
+      "name": "Floristería La Rosa",
+      "cedula": "1712345678",
+      "pais": "Ecuador",
+      "estadoCiudad": "Pichincha",
+      "address": "Av. Amazonas 123",
+      "email": "contacto@floristerialarosa.com",
+      "phone": "0987654321",
+      "agencia": "ALIANZA LOGISTIC/G&G",
+      "vendedor": "vend-01",
+      "plazo": 15,
+      "cupo": 5000,
+      "daeId": ""
+    },
+    {
+      "id": "cust-02",
+      "type": "International",
+      "name": "USA Flowers LLC",
+      "cedula": "1234567890",
+      "pais": "Estados Unidos",
+      "estadoCiudad": "Miami, FL",
+      "address": "123 Flower St, Miami, FL",
+      "email": "purchasing@usaflowers.com",
+      "phone": "305-555-1234",
+      "agencia": "FLOWER CARGO",
+      "vendedor": "vend-02",
+      "plazo": 30,
+      "cupo": 20000,
+      "daeId": "dae-01"
+    }
+  ],
+  "fincas": [
+    {
+      "id": "finca-01",
+      "name": "Finca Rosaleda",
+      "address": "Cayambe, Ecuador",
+      "phone": "0998765432",
+      "email": "ventas@rosaleda.com",
+      "taxId": "1791234567001",
+      "productType": "Rosas"
+    },
+    {
+      "id": "finca-02",
+      "name": "Finca Girasoles",
+      "address": "Tabacundo, Ecuador",
+      "phone": "0987654321",
+      "email": "info@girasoles.com",
+      "taxId": "1798765432001",
+      "productType": "Girasoles"
+    }
+  ],
+  "cargueras": [
+    { "id": "car-01", "nombreCarguera": "ALIANZA LOGISTIC/G&G", "pais": "Internacional" },
+    { "id": "car-02", "nombreCarguera": "FLOWER CARGO", "pais": "Internacional" },
+    { "id": "car-03", "nombreCarguera": "Servientrega", "pais": "Nacional" }
+  ],
+  "consignatarios": [
+    {
+      "id": "cons-01",
+      "nombreConsignatario": "USA Flowers Miami",
+      "pais": "Estados Unidos",
+      "customerId": "cust-02",
+      "direccion": "123 Flower St, Miami, FL",
+      "provincia": "FL"
+    }
+  ],
+  "daes": [
+    { "id": "dae-01", "pais": "Estados Unidos", "numeroDae": "DAE-US-001" }
+  ],
+  "marcaciones": [
+    { "id": "marc-01", "numeroMarcacion": "USA-FLO", "cliente": "cust-02" }
+  ],
+  "provincias": [
+    { "id": "prov-01", "nombre": "Pichincha" },
+    { "id": "prov-02", "nombre": "Guayas" }
+  ],
+  "variedades": [
+    { "id": "var-01", "nombre": "Rosas" },
+    { "id": "var-02", "nombre": "Girasoles" }
+  ],
+  "productos": [
+    {
+      "id": "prod-01",
+      "nombre": "Freedom",
+      "variedad": "Rosas",
+      "barras": "RF001",
+      "color": "#FF0000",
+      "nombreColor": "Rojo",
+      "precio": 0.25,
+      "tallosPorRamo": 25,
+      "estado": "Activo"
+    },
+     {
+      "id": "prod-02",
+      "nombre": "Mondial",
+      "variedad": "Rosas",
+      "barras": "RM001",
+      "color": "#FFFFFF",
+      "nombreColor": "Blanco",
+      "precio": 0.26,
+      "tallosPorRamo": 25,
+      "estado": "Activo"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "inv-01",
+      "type": "sale",
+      "invoiceNumber": "F-001",
+      "farmDepartureDate": "2024-05-15T12:00:00.000Z",
+      "flightDate": "2024-05-16T12:00:00.000Z",
+      "sellerId": "vend-02",
+      "customerId": "cust-02",
+      "consignatarioId": "cons-01",
+      "farmId": "finca-01",
+      "carrierId": "car-02",
+      "countryId": "pais-02",
+      "reference": "USA-FLO",
+      "masterAWB": "MAWB-123",
+      "houseAWB": "HAWB-456",
+      "status": "Pending",
+      "items": [
+        {
+          "id": "li-01",
+          "boxNumber": 1,
+          "boxType": "qb",
+          "numberOfBunches": 8,
+          "bunches": [
+            {
+              "id": "bi-01",
+              "productoId": "prod-01",
+              "product": "Rosas",
+              "variety": "Freedom",
+              "color": "Rojo",
+              "length": 50,
+              "stemsPerBunch": 25,
+              "bunchesPerBox": 8,
+              "purchasePrice": 0.20,
+              "salePrice": 0.25
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "creditNotes": [],
+  "debitNotes": [],
+  "payments": []
+}

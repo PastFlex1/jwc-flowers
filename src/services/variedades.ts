@@ -1,30 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Variedad } from '@/lib/types';
-import { variedades as mockVariedades } from '@/lib/mock-data';
-
-let variedades = [...mockVariedades];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getVariedades(): Promise<Variedad[]> {
-  return Promise.resolve(variedades);
+  const db = await readDb();
+  return db.variedades || [];
 }
 
 export async function addVariedad(variedadData: Omit<Variedad, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `var-${Date.now()}`;
   const newVariedad: Variedad = { id: newId, ...variedadData };
-  variedades.push(newVariedad);
-  console.log("Mock addVariedad:", newVariedad);
-  return Promise.resolve(newId);
+  db.variedades.push(newVariedad);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateVariedad(id: string, variedadData: Partial<Omit<Variedad, 'id'>>): Promise<void> {
-  variedades = variedades.map(v => v.id === id ? { ...v, ...variedadData } : v);
-  console.log("Mock updateVariedad:", id, variedadData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.variedades.findIndex(v => v.id === id);
+  if (index > -1) {
+    db.variedades[index] = { ...db.variedades[index], ...variedadData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Variedad with id ${id} not found.`);
+  }
 }
 
 export async function deleteVariedad(id: string): Promise<void> {
-  variedades = variedades.filter(v => v.id !== id);
-  console.log("Mock deleteVariedad:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.variedades = db.variedades.filter(v => v.id !== id);
+  await writeDb(db);
 }

@@ -1,30 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Provincia } from '@/lib/types';
-import { provincias as mockProvincias } from '@/lib/mock-data';
-
-let provincias = [...mockProvincias];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getProvincias(): Promise<Provincia[]> {
-  return Promise.resolve(provincias);
+  const db = await readDb();
+  return db.provincias || [];
 }
 
 export async function addProvincia(provinciaData: Omit<Provincia, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `prov-${Date.now()}`;
   const newProvincia: Provincia = { id: newId, ...provinciaData };
-  provincias.push(newProvincia);
-  console.log("Mock addProvincia:", newProvincia);
-  return Promise.resolve(newId);
+  db.provincias.push(newProvincia);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateProvincia(id: string, provinciaData: Partial<Omit<Provincia, 'id'>>): Promise<void> {
-  provincias = provincias.map(p => p.id === id ? { ...p, ...provinciaData } : p);
-  console.log("Mock updateProvincia:", id, provinciaData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.provincias.findIndex(p => p.id === id);
+  if (index > -1) {
+    db.provincias[index] = { ...db.provincias[index], ...provinciaData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Provincia with id ${id} not found.`);
+  }
 }
 
 export async function deleteProvincia(id: string): Promise<void> {
-  provincias = provincias.filter(p => p.id !== id);
-  console.log("Mock deleteProvincia:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.provincias = db.provincias.filter(p => p.id !== id);
+  await writeDb(db);
 }

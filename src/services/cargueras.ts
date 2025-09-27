@@ -1,35 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Carguera } from '@/lib/types';
-import { cargueras as mockCargueras } from '@/lib/mock-data';
-
-let cargueras = [...mockCargueras];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getCargueras(): Promise<Carguera[]> {
-  return Promise.resolve(cargueras);
-}
-
-export async function getCargueraById(id: string): Promise<Carguera | null> {
-    const carguera = cargueras.find(c => c.id === id);
-    return Promise.resolve(carguera || null);
+  const db = await readDb();
+  return db.cargueras || [];
 }
 
 export async function addCarguera(cargueraData: Omit<Carguera, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `carguera-${Date.now()}`;
   const newCarguera: Carguera = { id: newId, ...cargueraData };
-  cargueras.push(newCarguera);
-  console.log("Mock addCarguera:", newCarguera);
-  return Promise.resolve(newId);
+  db.cargueras.push(newCarguera);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateCarguera(id: string, cargueraData: Partial<Omit<Carguera, 'id'>>): Promise<void> {
-  cargueras = cargueras.map(c => c.id === id ? { ...c, ...cargueraData } : c);
-  console.log("Mock updateCarguera:", id, cargueraData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.cargueras.findIndex(c => c.id === id);
+  if (index > -1) {
+    db.cargueras[index] = { ...db.cargueras[index], ...cargueraData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Carguera with id ${id} not found.`);
+  }
 }
 
 export async function deleteCarguera(id: string): Promise<void> {
-  cargueras = cargueras.filter(c => c.id !== id);
-  console.log("Mock deleteCarguera:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.cargueras = db.cargueras.filter(c => c.id !== id);
+  await writeDb(db);
 }

@@ -1,26 +1,10 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
-import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
-import { payments as mockPayments } from '@/lib/mock-data';
-import { getInvoices, updateInvoice } from './invoices';
-import { getCreditNotes } from './credit-notes';
-import { getDebitNotes } from './debit-notes';
-
-
-let payments = [...mockPayments];
-
-export async function getPayments(): Promise<Payment[]> {
-  return Promise.resolve(payments);
-}
-
-export async function getPaymentsForInvoice(invoiceId: string): Promise<Payment[]> {
-  const invoicePayments = payments.filter(p => p.invoiceId === invoiceId);
-  return Promise.resolve(invoicePayments);
-}
+import type { Payment, BunchItem } from '@/lib/types';
+import { readDb, writeDb } from '@/lib/db-actions';
+import { updateInvoice } from './invoices';
 
 async function updateInvoiceStatus(invoiceId: string, type: 'sale' | 'purchase' | 'both', flightDate: string) {
-    const allInvoices = await getInvoices();
-    const invoice = allInvoices.find(inv => inv.id === invoiceId);
+    const db = await readDb();
+    const invoice = db.invoices.find(inv => inv.id === invoiceId);
     if (!invoice) return;
 
     const subtotal = invoice.items.reduce((acc, item) => {
@@ -32,13 +16,9 @@ async function updateInvoiceStatus(invoiceId: string, type: 'sale' | 'purchase' 
         }, 0);
     }, 0);
 
-    const allCreditNotes = await getCreditNotes();
-    const allDebitNotes = await getDebitNotes();
-    const allPayments = await getPayments();
-
-    const totalCreditAmount = allCreditNotes.filter(cn => cn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
-    const totalDebitAmount = allDebitNotes.filter(dn => dn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
-    const totalPaidAmount = allPayments.filter(p => p.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
+    const totalCreditAmount = db.creditNotes.filter(cn => cn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
+    const totalDebitAmount = db.debitNotes.filter(dn => dn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
+    const totalPaidAmount = db.payments.filter(p => p.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
     
     const totalCharge = subtotal - totalCreditAmount + totalDebitAmount;
     const newBalance = totalCharge - totalPaidAmount;
@@ -52,8 +32,11 @@ async function updateInvoiceStatus(invoiceId: string, type: 'sale' | 'purchase' 
         newStatus = new Date() > dueDate ? 'Overdue' : 'Pending';
     }
     
-    await updateInvoice(invoiceId, { status: newStatus });
-    console.log(`Mock: Invoice ${invoiceId} status updated to ${newStatus}`);
+    // Update invoice status in the local db object before writing
+    const invoiceIndex = db.invoices.findIndex(inv => inv.id === invoiceId);
+    if (invoiceIndex > -1) {
+      db.invoices[invoiceIndex].status = newStatus;
+    }
 }
 
 export async function addBulkPayment(
@@ -61,6 +44,7 @@ export async function addBulkPayment(
   invoiceBalances: { invoiceId: string; balance: number; type: 'sale' | 'purchase' | 'both', flightDate: string }[],
   totalAmountToApply: number
 ): Promise<void> {
+  const db = await readDb();
   let remainingAmount = totalAmountToApply;
 
   for (const { invoiceId, balance, type, flightDate } of invoiceBalances) {
@@ -75,9 +59,9 @@ export async function addBulkPayment(
       invoiceId: invoiceId,
       amount: paymentAmountForInvoice,
     };
-    payments.push(newPayment);
-    console.log("Mock addPayment (bulk):", newPayment);
+    db.payments.push(newPayment);
 
+    // This updates the status in the db object we're holding.
     await updateInvoiceStatus(invoiceId, type, flightDate);
 
     remainingAmount -= paymentAmountForInvoice;
@@ -87,5 +71,6 @@ export async function addBulkPayment(
     console.warn(`Payment amount of ${totalAmountToApply} exceeded the total balance of selected invoices. $${remainingAmount.toFixed(2)} was not applied.`);
   }
 
-  return Promise.resolve();
+  // Write all changes to the file at once.
+  await writeDb(db);
 }

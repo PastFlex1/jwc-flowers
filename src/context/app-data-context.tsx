@@ -1,12 +1,11 @@
-
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
 import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment, Variedad } from '@/lib/types';
-import * as mockData from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { readDb, writeDb } from '@/lib/db-actions';
 
-type AppData = {
+export type AppData = {
   paises: Pais[];
   vendedores: Vendedor[];
   customers: Customer[];
@@ -28,7 +27,7 @@ type AppDataContextType = AppData & {
   isLoading: boolean;
   hasBeenLoaded: boolean;
   refreshData: () => Promise<void>;
-  hydrateData: (initialData: Partial<AppData>) => void;
+  updateAndRefreshData: (updatedData: Partial<AppData>) => Promise<void>;
 };
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
@@ -58,35 +57,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const fetchData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    
-    // Simulate network delay for demo
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
-        // In demo mode, we just load from the mock data file.
-        setData({
-            paises: mockData.paises,
-            vendedores: mockData.vendedores,
-            customers: mockData.customers,
-            fincas: mockData.fincas,
-            cargueras: mockData.cargueras,
-            consignatarios: mockData.consignatarios,
-            daes: mockData.daes,
-            marcaciones: mockData.marcaciones,
-            provincias: mockData.provincias,
-            invoices: mockData.invoices,
-            productos: mockData.productos,
-            variedades: mockData.variedades,
-            creditNotes: mockData.creditNotes,
-            debitNotes: mockData.debitNotes,
-            payments: mockData.payments,
-        });
-      setHasBeenLoaded(true);
+        const dbData = await readDb();
+        setData(dbData);
+        setHasBeenLoaded(true);
     } catch (error) {
-      console.error("Failed to load mock data:", error);
+      console.error("Failed to load local DB data:", error);
       toast({
         title: 'Error de Carga',
-        description: 'No se pudieron cargar los datos de demostración.',
+        description: 'No se pudo cargar la base de datos local.',
         variant: 'destructive',
       });
     } finally {
@@ -100,21 +79,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchData, hasBeenLoaded]);
 
+  const updateAndRefreshData = useCallback(async (updatedData: Partial<AppData>) => {
+    try {
+        const currentData = await readDb();
+        const newData = { ...currentData, ...updatedData };
+        await writeDb(newData);
+        await fetchData(); // Re-fetch all data to ensure UI is in sync
+    } catch (error) {
+        console.error("Failed to update and refresh data:", error);
+        toast({
+            title: 'Error de Sincronización',
+            description: 'No se pudieron guardar los cambios en la base de datos local.',
+            variant: 'destructive',
+        });
+    }
+  }, [fetchData, toast]);
 
-  const hydrateData = useCallback((initialData: Partial<AppData>) => {
-    // This function is less relevant in demo mode but kept for structure.
-    setData(prevData => ({ ...prevData, ...initialData }));
-    setHasBeenLoaded(true);
-    setIsLoading(false);
-  }, []);
 
   const value = useMemo(() => ({
     ...data,
     isLoading,
     hasBeenLoaded,
-    refreshData: fetchData, // Refresh will now just re-load mock data
-    hydrateData,
-  }), [data, isLoading, hasBeenLoaded, fetchData, hydrateData]);
+    refreshData: fetchData,
+    updateAndRefreshData,
+  }), [data, isLoading, hasBeenLoaded, fetchData, updateAndRefreshData]);
 
   return (
     <AppDataContext.Provider value={value}>

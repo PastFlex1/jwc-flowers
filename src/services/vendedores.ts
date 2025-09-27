@@ -1,30 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Vendedor } from '@/lib/types';
-import { vendedores as mockVendedores } from '@/lib/mock-data';
-
-let vendedores = [...mockVendedores];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getVendedores(): Promise<Vendedor[]> {
-  return Promise.resolve(vendedores);
+  const db = await readDb();
+  return db.vendedores || [];
 }
 
 export async function addVendedor(vendedorData: Omit<Vendedor, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `vend-${Date.now()}`;
   const newVendedor: Vendedor = { id: newId, ...vendedorData };
-  vendedores.push(newVendedor);
-  console.log("Mock addVendedor:", newVendedor);
-  return Promise.resolve(newId);
+  db.vendedores.push(newVendedor);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateVendedor(id: string, vendedorData: Partial<Omit<Vendedor, 'id'>>): Promise<void> {
-  vendedores = vendedores.map(v => v.id === id ? { ...v, ...vendedorData } : v);
-  console.log("Mock updateVendedor:", id, vendedorData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.vendedores.findIndex(v => v.id === id);
+  if (index > -1) {
+    db.vendedores[index] = { ...db.vendedores[index], ...vendedorData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Vendedor with id ${id} not found.`);
+  }
 }
 
 export async function deleteVendedor(id: string): Promise<void> {
-  vendedores = vendedores.filter(v => v.id !== id);
-  console.log("Mock deleteVendedor:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.vendedores = db.vendedores.filter(v => v.id !== id);
+  await writeDb(db);
 }

@@ -1,30 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Finca } from '@/lib/types';
-import { fincas as mockFincas } from '@/lib/mock-data';
-
-let fincas = [...mockFincas];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getFincas(): Promise<Finca[]> {
-  return Promise.resolve(fincas);
+  const db = await readDb();
+  return db.fincas || [];
 }
 
 export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `finca-${Date.now()}`;
   const newFinca: Finca = { id: newId, ...fincaData };
-  fincas.push(newFinca);
-  console.log("Mock addFinca:", newFinca);
-  return Promise.resolve(newId);
+  db.fincas.push(newFinca);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateFinca(id: string, fincaData: Partial<Omit<Finca, 'id'>>): Promise<void> {
-  fincas = fincas.map(f => f.id === id ? { ...f, ...fincaData } : f);
-  console.log("Mock updateFinca:", id, fincaData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.fincas.findIndex(f => f.id === id);
+  if (index > -1) {
+    db.fincas[index] = { ...db.fincas[index], ...fincaData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Finca with id ${id} not found.`);
+  }
 }
 
 export async function deleteFinca(id: string): Promise<void> {
-  fincas = fincas.filter(f => f.id !== id);
-  console.log("Mock deleteFinca:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.fincas = db.fincas.filter(f => f.id !== id);
+  await writeDb(db);
 }

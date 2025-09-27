@@ -1,35 +1,33 @@
-// This service is now mocked for the demo version.
-// It no longer interacts with a database.
 import type { Consignatario } from '@/lib/types';
-import { consignatarios as mockConsignatarios } from '@/lib/mock-data';
-
-let consignatarios = [...mockConsignatarios];
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export async function getConsignatarios(): Promise<Consignatario[]> {
-  return Promise.resolve(consignatarios);
-}
-
-export async function getConsignatarioById(id: string): Promise<Consignatario | null> {
-    const consignatario = consignatarios.find(c => c.id === id);
-    return Promise.resolve(consignatario || null);
+  const db = await readDb();
+  return db.consignatarios || [];
 }
 
 export async function addConsignatario(consignatarioData: Omit<Consignatario, 'id'>): Promise<string> {
+  const db = await readDb();
   const newId = `consignatario-${Date.now()}`;
   const newConsignatario: Consignatario = { id: newId, ...consignatarioData };
-  consignatarios.push(newConsignatario);
-  console.log("Mock addConsignatario:", newConsignatario);
-  return Promise.resolve(newId);
+  db.consignatarios.push(newConsignatario);
+  await writeDb(db);
+  return newId;
 }
 
 export async function updateConsignatario(id: string, consignatarioData: Partial<Omit<Consignatario, 'id'>>): Promise<void> {
-  consignatarios = consignatarios.map(c => c.id === id ? { ...c, ...consignatarioData } : c);
-  console.log("Mock updateConsignatario:", id, consignatarioData);
-  return Promise.resolve();
+  const db = await readDb();
+  const index = db.consignatarios.findIndex(c => c.id === id);
+  if (index > -1) {
+    db.consignatarios[index] = { ...db.consignatarios[index], ...consignatarioData };
+    await writeDb(db);
+  } else {
+    throw new Error(`Consignatario with id ${id} not found.`);
+  }
 }
 
 export async function deleteConsignatario(id: string): Promise<void> {
-  consignatarios = consignatarios.filter(c => c.id !== id);
-  console.log("Mock deleteConsignatario:", id);
-  return Promise.resolve();
+  const db = await readDb();
+  db.consignatarios = db.consignatarios.filter(c => c.id !== id);
+  await writeDb(db);
 }
