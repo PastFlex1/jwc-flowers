@@ -105,10 +105,13 @@ export function NewInvoiceForm() {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
     mode: 'onBlur',
+    defaultValues: {
+      items: [],
+    }
   });
 
   useEffect(() => {
-    if (idToLoad && !isAppDataLoading) {
+    if (idToLoad && !isAppDataLoading && invoices.length > 0) {
       const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
       if (invoiceToLoad) {
         const dataToLoad = {
@@ -217,7 +220,9 @@ export function NewInvoiceForm() {
       
       const currentConsignatario = form.getValues('consignatarioId');
       if (dirtyFields.customerId) {
-          form.setValue('consignatarioId', '');
+          if (!relatedConsignatarios.find(rc => rc.id === currentConsignatario)) {
+            form.setValue('consignatarioId', '');
+          }
           form.setValue('reference', '');
       }
 
@@ -286,7 +291,7 @@ export function NewInvoiceForm() {
 
   const handleProductChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
     const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
-    form.setValue(`${bunchPath}.product`, '');
+    form.setValue(`${bunchPath}.variety`, '');
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
   };
@@ -296,7 +301,7 @@ export function NewInvoiceForm() {
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
   
-    const varietyName = form.getValues(`${bunchPath}.variety`);
+    const varietyName = form.getValues(`${bunchPath}.product`);
     const colors = getColorsForVariety(varietyName, productName);
     
     if (colors.length === 1) {
@@ -398,7 +403,7 @@ export function NewInvoiceForm() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col md:flex-row gap-4"
                       >
                         <FormItem className="flex items-center space-x-3 space-y-0">
@@ -737,10 +742,10 @@ export function NewInvoiceForm() {
                                             differencePercent = '∞ %';
                                         }
 
-                                        const selectedVariety = form.watch(`${bunchPath}.variety`);
                                         const selectedProduct = form.watch(`${bunchPath}.product`);
-                                        const varieties = getVarietiesForProduct(selectedVariety);
-                                        const colors = getColorsForVariety(selectedVariety, selectedProduct);
+                                        const selectedVariety = form.watch(`${bunchPath}.variety`);
+                                        const varieties = getVarietiesForProduct(selectedProduct);
+                                        const colors = getColorsForVariety(selectedProduct, selectedVariety);
 
                                         return (
                                             <TableRow key={bunch.id}>
