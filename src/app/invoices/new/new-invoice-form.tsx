@@ -109,17 +109,20 @@ export function NewInvoiceForm() {
       items: [],
     }
   });
-
+  
+  // Effect to load existing invoice for editing/duplicating
   useEffect(() => {
-    if (idToLoad && !isAppDataLoading && invoices.length > 0) {
+    if (idToLoad && !isAppDataLoading) {
       const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
       if (invoiceToLoad) {
-        const dataToLoad = {
+        const dataForForm = {
           ...invoiceToLoad,
-          id: duplicateId ? undefined : invoiceToLoad.id,
-          invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
-          farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
-          flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
+          id: duplicateId ? undefined : invoiceToLoad.id, // clear ID if duplicating
+          invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber, // clear invoice number if duplicating
+          farmDepartureDate: parseISO(invoiceToLoad.farmDepartureDate),
+          flightDate: parseISO(invoiceToLoad.flightDate),
+          consignatarioId: invoiceToLoad.consignatarioId || '',
+          reference: invoiceToLoad.reference || '',
           items: invoiceToLoad.items.map(item => ({
             ...item,
             id: uuidv4(),
@@ -129,7 +132,7 @@ export function NewInvoiceForm() {
             })),
           })),
         };
-        form.reset(dataToLoad);
+        form.reset(dataForForm);
       } else {
         console.warn(`Invoice with id ${idToLoad} not found.`);
       }
@@ -137,9 +140,10 @@ export function NewInvoiceForm() {
   }, [idToLoad, isAppDataLoading, invoices, form, duplicateId]);
 
 
+  // Effect for session storage, only for new invoices
   useEffect(() => {
-    if (!idToLoad && !isAppDataLoading) {
-      const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (!idToLoad) {
+        const savedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
         if (savedData) {
             try {
                 const parsed = JSON.parse(savedData);
@@ -151,12 +155,15 @@ export function NewInvoiceForm() {
                 form.reset({});
             }
         }
-      const subscription = form.watch((value) => {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
-      });
-      return () => subscription.unsubscribe();
     }
-  }, [isAppDataLoading, form, idToLoad]);
+    const subscription = form.watch((value) => {
+      if (!idToLoad) {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(value));
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, idToLoad]);
+
 
   const farmDepartureDate = form.watch('farmDepartureDate');
 
@@ -202,38 +209,30 @@ export function NewInvoiceForm() {
 
   const selectedCustomerId = form.watch('customerId');
   useEffect(() => {
-    const { dirtyFields } = form.formState;
-    if (selectedCustomerId) {
-      const customer = customers.find((c) => c.id === selectedCustomerId);
-      if (customer) {
-        const country = paises.find((p) => p.nombre === customer.pais);
-        if (country) {
-          form.setValue('countryId', country.id, { shouldValidate: true });
-        }
-      }
-
-      const relatedConsignatarios = consignatarios.filter((c) => c.customerId === selectedCustomerId);
-      setFilteredConsignatarios(relatedConsignatarios);
-
-      const relatedMarcaciones = marcaciones.filter((m) => m.cliente === selectedCustomerId);
-      setFilteredMarcaciones(relatedMarcaciones);
-      
-      const currentConsignatario = form.getValues('consignatarioId');
-      if (dirtyFields.customerId) {
-          if (!relatedConsignatarios.find(rc => rc.id === currentConsignatario)) {
-            form.setValue('consignatarioId', '');
-          }
-          form.setValue('reference', '');
-      }
-
-    } else {
+    if (!selectedCustomerId) {
       setFilteredConsignatarios([]);
       setFilteredMarcaciones([]);
-       if (dirtyFields.customerId) {
-        form.setValue('consignatarioId', '');
-        form.setValue('reference', '');
+      return;
+    }
+
+    const customer = customers.find((c) => c.id === selectedCustomerId);
+    if (customer) {
+      const country = paises.find((p) => p.nombre === customer.pais);
+      if (country) {
+        form.setValue('countryId', country.id, { shouldValidate: true });
       }
     }
+    
+    setFilteredConsignatarios(consignatarios.filter((c) => c.customerId === selectedCustomerId));
+    setFilteredMarcaciones(marcaciones.filter((m) => m.cliente === selectedCustomerId));
+
+    // Only reset consignatario/reference if the customer was changed by the user,
+    // not when the form is first loaded.
+    if (form.formState.dirtyFields.customerId) {
+      form.setValue('consignatarioId', '');
+      form.setValue('reference', '');
+    }
+
   }, [selectedCustomerId, customers, paises, consignatarios, marcaciones, form]);
 
 
@@ -289,20 +288,26 @@ export function NewInvoiceForm() {
     setItemToDelete(null);
   };
 
-  const handleProductChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
+  const handleProductChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
     const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
     form.setValue(`${bunchPath}.variety`, '');
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
+
+    const varieties = getVarietiesForProduct(productName);
+    if(varieties.length === 1){
+        form.setValue(`${bunchPath}.variety`, varieties[0]);
+        handleVarietyChange(lineItemIndex, bunchIndex, varieties[0]);
+    }
   };
 
-  const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, productName: string) => {
+  const handleVarietyChange = (lineItemIndex: number, bunchIndex: number, varietyName: string) => {
     const bunchPath = `items.${lineItemIndex}.bunches.${bunchIndex}` as const;
     form.setValue(`${bunchPath}.color`, '');
     form.setValue(`${bunchPath}.productoId`, '');
   
-    const varietyName = form.getValues(`${bunchPath}.product`);
-    const colors = getColorsForVariety(varietyName, productName);
+    const productName = form.getValues(`${bunchPath}.product`);
+    const colors = getColorsForVariety(productName, varietyName);
     
     if (colors.length === 1) {
       const singleColor = colors[0];
@@ -868,5 +873,3 @@ export function NewInvoiceForm() {
     </>
   );
 }
-
-    
