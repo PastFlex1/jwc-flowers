@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Consignatario } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 
@@ -36,6 +38,7 @@ export function ConsignatariosClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingConsignatario, setEditingConsignatario] = useState<Consignatario | null>(null);
   const [consignatarioToDelete, setConsignatarioToDelete] = useState<Consignatario | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const customerMap = useMemo(() => {
@@ -80,14 +83,17 @@ export function ConsignatariosClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: 'Error Saving',
-        description: `Could not save the consignee: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error Saving',
+          description: `Could not save the consignee: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -230,6 +236,8 @@ export function ConsignatariosClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 
 type PaisFormData = Omit<Pais, 'id'> & { id?: string };
@@ -37,6 +39,7 @@ export function PaisClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPais, setEditingPais] = useState<Pais | null>(null);
   const [paisToDelete, setPaisToDelete] = useState<Pais | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const totalPages = Math.ceil(paises.length / ITEMS_PER_PAGE);
@@ -74,14 +77,17 @@ export function PaisClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting country:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: 'Error Saving',
-        description: `Could not save the country: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error Saving',
+          description: `Could not save the country: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -211,6 +217,8 @@ export function PaisClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

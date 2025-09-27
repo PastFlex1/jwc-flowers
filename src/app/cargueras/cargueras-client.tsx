@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 
@@ -36,6 +38,7 @@ export function CarguerasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCarguera, setEditingCarguera] = useState<Carguera | null>(null);
   const [cargueraToDelete, setCargueraToDelete] = useState<Carguera | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const totalPages = Math.ceil(cargueras.length / ITEMS_PER_PAGE);
@@ -73,14 +76,17 @@ export function CarguerasClient() {
         await refreshData();
         handleCloseDialog();
     } catch (error) {
-        console.error("Error submitting form:", error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        toast({
-            title: t('common.errorSaving'),
-            description: t('cargueras.toast.error', { error: errorMessage }),
-            variant: 'destructive',
-            duration: 10000,
-        });
+        if (errorMessage.includes('Límite de demostración alcanzado')) {
+            setIsDemoLimitDialogOpen(true);
+        } else {
+            toast({
+                title: t('common.errorSaving'),
+                description: t('cargueras.toast.error', { error: errorMessage }),
+                variant: 'destructive',
+                duration: 10000,
+            });
+        }
     } finally {
         setIsSubmitting(false);
     }
@@ -212,6 +218,8 @@ export function CarguerasClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

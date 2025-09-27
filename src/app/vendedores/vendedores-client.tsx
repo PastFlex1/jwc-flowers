@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -21,6 +22,7 @@ import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 
@@ -35,6 +37,7 @@ export function VendedoresClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState<Vendedor | null>(null);
   const [vendedorToDelete, setVendedorToDelete] = useState<Vendedor | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const totalPages = Math.ceil(vendedores.length / ITEMS_PER_PAGE);
@@ -72,14 +75,17 @@ export function VendedoresClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting seller:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: 'Error Saving',
-        description: `Could not save the seller: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error Saving',
+          description: `Could not save the seller: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -197,6 +203,8 @@ export function VendedoresClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

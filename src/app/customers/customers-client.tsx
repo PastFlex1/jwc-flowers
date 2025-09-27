@@ -24,6 +24,7 @@ import { CustomerForm } from './customer-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 import { Badge } from '@/components/ui/badge';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 function useDebounce<T>(value: T, delay: number): T {
     const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -53,6 +54,7 @@ export function CustomersClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredCustomers = useMemo(() => {
@@ -102,14 +104,17 @@ export function CustomersClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting customer:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-          title: 'Error Saving',
-          description: `Could not save the customer: ${errorMessage}.`,
-          variant: 'destructive',
-          duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+            title: 'Error Saving',
+            description: `Could not save the customer: ${errorMessage}.`,
+            variant: 'destructive',
+            duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -253,6 +258,8 @@ export function CustomersClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

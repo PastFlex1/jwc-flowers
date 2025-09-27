@@ -27,6 +27,7 @@ import { ProductoForm } from './producto-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 import { VariedadForm } from './variedad-form';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type ProductoFormData = Omit<Producto, 'id'> & { id?: string };
 type VariedadFormData = Omit<Variedad, 'id'> & { id?: string };
@@ -60,6 +61,7 @@ export function ProductosClient() {
   const [selectedVariedad, setSelectedVariedad] = useState<Variedad | null>(null);
   const [isViewProductsDialogOpen, setIsViewProductsDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
 
 
   const { toast } = useToast();
@@ -123,14 +125,17 @@ export function ProductosClient() {
         setIsViewProductsDialogOpen(false);
       }
     } catch (error) {
-      console.error("Error submitting product:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar el producto: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error al Guardar',
+          description: `No se pudo guardar el producto: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -144,14 +149,17 @@ export function ProductosClient() {
       await refreshData();
       handleCloseVariedadDialog();
     } catch (error) {
-      console.error("Error submitting variety:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Guardar',
-        description: `No se pudo guardar la variedad: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error al Guardar',
+          description: `No se pudo guardar la variedad: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -448,6 +456,8 @@ export function ProductosClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -35,6 +36,7 @@ import { useTranslation } from '@/context/i18n-context';
 import { addInvoice, updateInvoice } from '@/services/invoices';
 import type { Invoice, BunchItem, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 const SESSION_STORAGE_KEY = 'newInvoiceFormData';
 
@@ -101,6 +103,7 @@ export function NewInvoiceForm() {
   const [filteredConsignatarios, setFilteredConsignatarios] = useState<typeof consignatarios>([]);
   const [filteredMarcaciones, setFilteredMarcaciones] = useState<typeof marcaciones>([]);
   const [itemToDelete, setItemToDelete] = useState<{ lineItemIndex: number; bunchIndex: number } | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceSchema),
@@ -361,14 +364,17 @@ export function NewInvoiceForm() {
       router.push(destination);
 
     } catch (error) {
-      console.error('Error saving invoice:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      toast({
-        title: id ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
-        description: `No se pudo guardar la factura: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: id ? 'Error al Actualizar' : t('invoices.new.toast.errorTitle'),
+          description: `No se pudo guardar la factura: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -870,6 +876,7 @@ export function NewInvoiceForm() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

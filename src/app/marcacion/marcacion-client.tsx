@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 
@@ -36,6 +38,7 @@ export function MarcacionClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMarcacion, setEditingMarcacion] = useState<Marcacion | null>(null);
   const [marcacionToDelete, setMarcacionToDelete] = useState<Marcacion | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
   
   const customerMap = useMemo(() => {
@@ -80,14 +83,17 @@ export function MarcacionClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting marking:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: 'Error Saving',
-        description: `Could not save the marking: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error Saving',
+          description: `Could not save the marking: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -220,6 +226,8 @@ export function MarcacionClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

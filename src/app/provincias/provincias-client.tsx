@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Provincia } from '@/lib/types';
 import { ProvinciaForm } from './provincia-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 
@@ -36,6 +38,7 @@ export function ProvinciasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProvincia, setEditingProvincia] = useState<Provincia | null>(null);
   const [provinciaToDelete, setProvinciaToDelete] = useState<Provincia | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
   
   const totalPages = Math.ceil(provincias.length / ITEMS_PER_PAGE);
@@ -74,14 +77,17 @@ export function ProvinciasClient() {
         await refreshData();
         handleCloseDialog();
     } catch (error) {
-        console.error("Error submitting province:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
         toast({
             title: 'Error Saving',
             description: `Could not save the province: ${errorMessage}.`,
             variant: 'destructive',
             duration: 10000,
         });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -211,6 +217,8 @@ export function ProvinciasClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

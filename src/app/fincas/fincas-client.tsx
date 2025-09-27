@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -22,6 +23,7 @@ import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 
@@ -36,6 +38,7 @@ export function FincasClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
   const [fincaToDelete, setFincaToDelete] = useState<Finca | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const totalPages = Math.ceil(fincas.length / ITEMS_PER_PAGE);
@@ -74,14 +77,17 @@ export function FincasClient() {
       await refreshData();
       handleCloseDialog();
     } catch (error) {
-      console.error("Error submitting farm:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: 'Error Saving',
-        description: `Could not save the farm: ${errorMessage}.`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: 'Error Saving',
+          description: `Could not save the farm: ${errorMessage}.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -219,6 +225,8 @@ export function FincasClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

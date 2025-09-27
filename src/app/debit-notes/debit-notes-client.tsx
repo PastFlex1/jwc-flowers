@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -23,6 +24,7 @@ import { DebitNoteForm } from './debit-note-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 import { format, parseISO } from 'date-fns';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type DebitNoteFormData = Omit<DebitNote, 'id'>;
 
@@ -37,6 +39,7 @@ export function DebitNotesClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<DebitNote | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -71,14 +74,17 @@ export function DebitNotesClient() {
       toast({ title: t('common.success'), description: t('debitNotes.toast.added') });
       await refreshData();
     } catch (error) {
-      console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: t('common.errorSaving'),
-        description: t('debitNotes.toast.error', { error: errorMessage }),
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: t('common.errorSaving'),
+          description: t('debitNotes.toast.error', { error: errorMessage }),
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
       handleCloseDialog();
@@ -212,6 +218,8 @@ export function DebitNotesClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }

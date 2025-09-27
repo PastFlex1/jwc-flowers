@@ -24,6 +24,7 @@ import { CreditNoteForm } from './credit-note-form';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
 import { format, parseISO } from 'date-fns';
+import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 type CreditNoteFormData = Omit<CreditNote, 'id'>;
 
@@ -38,6 +39,7 @@ export function CreditNotesClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<CreditNote | null>(null);
+  const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,14 +74,17 @@ export function CreditNotesClient() {
       toast({ title: t('common.success'), description: t('creditNotes.toast.added') });
       await refreshData();
     } catch (error) {
-      console.error("Error submitting form:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      toast({
-        title: t('common.errorSaving'),
-        description: t('creditNotes.toast.error', { error: errorMessage }),
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.includes('Límite de demostración alcanzado')) {
+        setIsDemoLimitDialogOpen(true);
+      } else {
+        toast({
+          title: t('common.errorSaving'),
+          description: t('creditNotes.toast.error', { error: errorMessage }),
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setIsSubmitting(false);
       handleCloseDialog();
@@ -213,6 +218,8 @@ export function CreditNotesClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <DemoLimitDialog isOpen={isDemoLimitDialogOpen} onClose={() => setIsDemoLimitDialogOpen(false)} />
     </>
   );
 }
