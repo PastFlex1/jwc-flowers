@@ -1,4 +1,4 @@
-import { type Customer, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera, type Vendedor } from './types';
+import { type Customer, type Invoice, type Finca, type Marcacion, type Pais, type Provincia, type Dae, type Carguera, type Vendedor, type Consignatario, type Producto, type Variedad, type CreditNote, type DebitNote, type Payment } from './types';
 
 // Data is now fetched from Firestore. These are exported as empty arrays 
 // to avoid breaking imports in components during migration.
@@ -9,6 +9,13 @@ export const vendedores: Vendedor[] = [];
 export const marcaciones: Marcacion[] = [];
 export const paises: Pais[] = [];
 export const daes: Dae[] = [];
+export const consignatarios: Consignatario[] = [];
+export const productos: Producto[] = [];
+export const variedades: Variedad[] = [];
+export const creditNotes: CreditNote[] = [];
+export const debitNotes: DebitNote[] = [];
+export const payments: Payment[] = [];
+
 
 export const provincias: Provincia[] = [
     { id: 'prov-01', nombre: 'El Oro' },
@@ -65,6 +72,3 @@ export const cargueras: Carguera[] = [
     { id: 'car-24', nombreCarguera: 'VALUE CARGO', pais: 'Internacional' },
     { id: 'car-25', nombreCarguera: 'WORLD WIDE', pais: 'Internacional' },
 ];
-
-
-
