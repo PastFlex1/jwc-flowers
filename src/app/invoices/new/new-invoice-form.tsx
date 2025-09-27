@@ -90,7 +90,7 @@ export function NewInvoiceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isAppDataLoading } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isLoading: isAppDataLoading } = useAppData();
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
@@ -108,31 +108,30 @@ export function NewInvoiceForm() {
   });
 
   useEffect(() => {
-    if (isAppDataLoading || !idToLoad) return;
-  
-    const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
-  
-    if (invoiceToLoad) {
-      const dataToLoad = {
-        ...invoiceToLoad,
-        id: duplicateId ? undefined : invoiceToLoad.id,
-        invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
-        farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
-        flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
-        items: invoiceToLoad.items.map(item => ({
-          ...item,
-          id: uuidv4(),
-          bunches: item.bunches.map(bunch => ({
-            ...bunch,
+    if (idToLoad && !isAppDataLoading) {
+      const invoiceToLoad = invoices.find(inv => inv.id === idToLoad);
+      if (invoiceToLoad) {
+        const dataToLoad = {
+          ...invoiceToLoad,
+          id: duplicateId ? undefined : invoiceToLoad.id,
+          invoiceNumber: duplicateId ? '' : invoiceToLoad.invoiceNumber,
+          farmDepartureDate: invoiceToLoad.farmDepartureDate ? parseISO(invoiceToLoad.farmDepartureDate) : new Date(),
+          flightDate: invoiceToLoad.flightDate ? parseISO(invoiceToLoad.flightDate) : new Date(),
+          items: invoiceToLoad.items.map(item => ({
+            ...item,
             id: uuidv4(),
+            bunches: item.bunches.map(bunch => ({
+              ...bunch,
+              id: uuidv4(),
+            })),
           })),
-        })),
-      };
-      form.reset(dataToLoad);
-    } else if (!isAppDataLoading) {
-      console.warn(`Invoice with id ${idToLoad} not found.`);
+        };
+        form.reset(dataToLoad);
+      } else {
+        console.warn(`Invoice with id ${idToLoad} not found.`);
+      }
     }
-  }, [idToLoad, duplicateId, isAppDataLoading, invoices, form]);
+  }, [idToLoad, isAppDataLoading, invoices, form, duplicateId]);
 
 
   useEffect(() => {
@@ -779,14 +778,14 @@ export function NewInvoiceForm() {
                                                         />
                                                     ) : null}
                                                 </TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
                                                     <Select onValueChange={(value) => { field.onChange(value); handleProductChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Producto" /></SelectTrigger></FormControl>
                                                         <SelectContent>{uniqueProducts.map(p => <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>)}</SelectContent>
                                                     </Select>
                                                 )} /></TableCell>
-                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.product`} render={({ field }) => (
-                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedVariety}>
+                                                <TableCell className="min-w-[150px]"><FormField control={form.control} name={`${bunchPath}.variety`} render={({ field }) => (
+                                                     <Select onValueChange={(value) => { field.onChange(value); handleVarietyChange(lineItemIndex, bunchIndex, value); }} value={field.value ?? ''} disabled={!selectedProduct}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Variedad" /></SelectTrigger></FormControl>
                                                         <SelectContent>{varieties.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
                                                     </Select>
@@ -796,7 +795,7 @@ export function NewInvoiceForm() {
                                                         field.onChange(value); 
                                                         const colorData = colors.find(c => c.color === value); 
                                                         handleColorChange(lineItemIndex, bunchIndex, colorData); 
-                                                    }} value={field.value ?? ''} disabled={!selectedProduct}>
+                                                    }} value={field.value ?? ''} disabled={!selectedVariety}>
                                                         <FormControl><SelectTrigger className="py-2"><SelectValue placeholder="Color" /></SelectTrigger></FormControl>
                                                         <SelectContent>{colors.map(c => <SelectItem key={c.productoId} value={c.color}>{c.color}</SelectItem>)}</SelectContent>
                                                     </Select>
