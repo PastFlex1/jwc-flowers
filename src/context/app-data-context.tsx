@@ -57,7 +57,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   const fetchData = useCallback(async (): Promise<void> => {
-    if (isLoading && !hasBeenLoaded) return;
     setIsLoading(true);
     
     // Simulate network delay for demo
@@ -93,7 +92,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     } finally {
         setIsLoading(false);
     }
-  }, [toast, isLoading, hasBeenLoaded]);
+  }, [toast]);
   
   useEffect(() => {
     if (!hasBeenLoaded) {
