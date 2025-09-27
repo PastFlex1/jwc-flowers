@@ -1,6 +1,8 @@
 import type { Pais } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 10;
+
 export async function getPaises(): Promise<Pais[]> {
   const db = await readDb();
   return db.paises || [];
@@ -8,6 +10,9 @@ export async function getPaises(): Promise<Pais[]> {
 
 export async function addPais(paisData: Omit<Pais, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.paises.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} países.`);
+  }
   const newId = `pais-${Date.now()}`;
   const newPais: Pais = { id: newId, ...paisData };
   db.paises.push(newPais);

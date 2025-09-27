@@ -1,6 +1,8 @@
 import type { Consignatario } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 10;
+
 export async function getConsignatarios(): Promise<Consignatario[]> {
   const db = await readDb();
   return db.consignatarios || [];
@@ -8,6 +10,9 @@ export async function getConsignatarios(): Promise<Consignatario[]> {
 
 export async function addConsignatario(consignatarioData: Omit<Consignatario, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.consignatarios.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} consignatarios.`);
+  }
   const newId = `consignatario-${Date.now()}`;
   const newConsignatario: Consignatario = { id: newId, ...consignatarioData };
   db.consignatarios.push(newConsignatario);

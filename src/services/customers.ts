@@ -1,6 +1,8 @@
 import type { Customer } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 5;
+
 export async function getCustomers(): Promise<Customer[]> {
   const db = await readDb();
   return db.customers || [];
@@ -8,6 +10,9 @@ export async function getCustomers(): Promise<Customer[]> {
 
 export async function addCustomer(customerData: Omit<Customer, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.customers.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} clientes.`);
+  }
   const newId = `customer-${Date.now()}`;
   const newCustomer: Customer = { id: newId, ...customerData };
   db.customers.push(newCustomer);

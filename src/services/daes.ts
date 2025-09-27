@@ -1,6 +1,8 @@
 import type { Dae } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 10;
+
 export async function getDaes(): Promise<Dae[]> {
   const db = await readDb();
   return db.daes || [];
@@ -8,6 +10,9 @@ export async function getDaes(): Promise<Dae[]> {
 
 export async function addDae(daeData: Omit<Dae, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.daes.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} DAEs.`);
+  }
   const newId = `dae-${Date.now()}`;
   const newDae: Dae = { id: newId, ...daeData };
   db.daes.push(newDae);

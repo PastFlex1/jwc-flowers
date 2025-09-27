@@ -1,6 +1,8 @@
 import type { Producto } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 20;
+
 export async function getProductos(): Promise<Producto[]> {
   const db = await readDb();
   return db.productos || [];
@@ -8,6 +10,9 @@ export async function getProductos(): Promise<Producto[]> {
 
 export async function addProducto(productoData: Omit<Producto, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.productos.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} productos/variedades.`);
+  }
   const newId = `prod-${Date.now()}`;
   const newProducto: Producto = { id: newId, ...productoData };
   db.productos.push(newProducto);

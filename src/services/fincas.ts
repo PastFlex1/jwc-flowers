@@ -1,6 +1,8 @@
 import type { Finca } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 5;
+
 export async function getFincas(): Promise<Finca[]> {
   const db = await readDb();
   return db.fincas || [];
@@ -8,6 +10,9 @@ export async function getFincas(): Promise<Finca[]> {
 
 export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.fincas.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} fincas.`);
+  }
   const newId = `finca-${Date.now()}`;
   const newFinca: Finca = { id: newId, ...fincaData };
   db.fincas.push(newFinca);

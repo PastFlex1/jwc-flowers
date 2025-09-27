@@ -1,6 +1,8 @@
 import type { Invoice } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 5;
+
 export async function getInvoices(): Promise<Invoice[]> {
   const db = await readDb();
   return db.invoices || [];
@@ -8,6 +10,9 @@ export async function getInvoices(): Promise<Invoice[]> {
 
 export async function addInvoice(invoiceData: Omit<Invoice, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.invoices.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} facturas.`);
+  }
   const newId = `invoice-${Date.now()}`;
   const newInvoice: Invoice = { id: newId, ...invoiceData };
   db.invoices.unshift(newInvoice);

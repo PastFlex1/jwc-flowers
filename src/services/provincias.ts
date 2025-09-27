@@ -1,6 +1,8 @@
 import type { Provincia } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 10;
+
 export async function getProvincias(): Promise<Provincia[]> {
   const db = await readDb();
   return db.provincias || [];
@@ -8,6 +10,9 @@ export async function getProvincias(): Promise<Provincia[]> {
 
 export async function addProvincia(provinciaData: Omit<Provincia, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.provincias.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} provincias.`);
+  }
   const newId = `prov-${Date.now()}`;
   const newProvincia: Provincia = { id: newId, ...provinciaData };
   db.provincias.push(newProvincia);

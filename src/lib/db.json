@@ -1,13 +1,33 @@
 {
   "paises": [
-    { "id": "pais-01", "nombre": "Ecuador" },
-    { "id": "pais-02", "nombre": "Estados Unidos" },
-    { "id": "pais-03", "nombre": "Colombia" },
-    { "id": "pais-04", "nombre": "Rusia" }
+    {
+      "id": "pais-01",
+      "nombre": "Ecuador"
+    },
+    {
+      "id": "pais-02",
+      "nombre": "Estados Unidos"
+    },
+    {
+      "id": "pais-03",
+      "nombre": "Colombia"
+    },
+    {
+      "id": "pais-04",
+      "nombre": "Rusia"
+    }
   ],
   "vendedores": [
-    { "id": "vend-01", "nombre": "Juan Perez", "siglas": "JP" },
-    { "id": "vend-02", "nombre": "Ana Gomez", "siglas": "AG" }
+    {
+      "id": "vend-01",
+      "nombre": "Juan Perez",
+      "siglas": "JP"
+    },
+    {
+      "id": "vend-02",
+      "nombre": "Ana Gomez",
+      "siglas": "AG"
+    }
   ],
   "customers": [
     {
@@ -64,9 +84,21 @@
     }
   ],
   "cargueras": [
-    { "id": "car-01", "nombreCarguera": "ALIANZA LOGISTIC/G&G", "pais": "Internacional" },
-    { "id": "car-02", "nombreCarguera": "FLOWER CARGO", "pais": "Internacional" },
-    { "id": "car-03", "nombreCarguera": "Servientrega", "pais": "Nacional" }
+    {
+      "id": "car-01",
+      "nombreCarguera": "ALIANZA LOGISTIC/G&G",
+      "pais": "Internacional"
+    },
+    {
+      "id": "car-02",
+      "nombreCarguera": "FLOWER CARGO",
+      "pais": "Internacional"
+    },
+    {
+      "id": "car-03",
+      "nombreCarguera": "Servientrega",
+      "pais": "Nacional"
+    }
   ],
   "consignatarios": [
     {
@@ -79,18 +111,42 @@
     }
   ],
   "daes": [
-    { "id": "dae-01", "pais": "Estados Unidos", "numeroDae": "DAE-US-001" }
+    {
+      "id": "dae-01",
+      "pais": "Estados Unidos",
+      "numeroDae": "DAE-US-001"
+    }
   ],
   "marcaciones": [
-    { "id": "marc-01", "numeroMarcacion": "USA-FLO", "cliente": "cust-02" }
+    {
+      "id": "marc-01",
+      "numeroMarcacion": "USA-FLO",
+      "cliente": "cust-02"
+    }
   ],
   "provincias": [
-    { "id": "prov-01", "nombre": "Pichincha" },
-    { "id": "prov-02", "nombre": "Guayas" }
+    {
+      "id": "prov-01",
+      "nombre": "Pichincha"
+    },
+    {
+      "id": "prov-02",
+      "nombre": "Guayas"
+    }
   ],
   "variedades": [
-    { "id": "var-01", "nombre": "Rosas" },
-    { "id": "var-02", "nombre": "Girasoles" }
+    {
+      "id": "var-01",
+      "nombre": "Rosas"
+    },
+    {
+      "id": "var-02",
+      "nombre": "Girasoles"
+    },
+    {
+      "id": "var-1759012062052",
+      "nombre": "Ecuador"
+    }
   ],
   "productos": [
     {
@@ -104,7 +160,7 @@
       "tallosPorRamo": 25,
       "estado": "Activo"
     },
-     {
+    {
       "id": "prod-02",
       "nombre": "Mondial",
       "variedad": "Rosas",
@@ -114,6 +170,17 @@
       "precio": 0.26,
       "tallosPorRamo": 25,
       "estado": "Activo"
+    },
+    {
+      "id": "prod-1759012156216",
+      "variedad": "Ecuador",
+      "nombre": "Tara",
+      "nombreColor": "Black",
+      "color": "#000000",
+      "tallosPorRamo": 100,
+      "barras": "",
+      "estado": "Activo",
+      "precio": 0
     }
   ],
   "invoices": [
@@ -149,7 +216,7 @@
               "length": 50,
               "stemsPerBunch": 25,
               "bunchesPerBox": 8,
-              "purchasePrice": 0.20,
+              "purchasePrice": 0.2,
               "salePrice": 0.25
             }
           ]
@@ -159,5 +226,15 @@
   ],
   "creditNotes": [],
   "debitNotes": [],
-  "payments": []
+  "payments": [
+    {
+      "id": "payment-1759012047341-0.18332982838160328",
+      "paymentDate": "2025-09-27T22:26:49.752Z",
+      "paymentMethod": "Efectivo",
+      "reference": "Pichincha",
+      "notes": "Hola",
+      "invoiceId": "inv-01",
+      "amount": 25
+    }
+  ]
 }

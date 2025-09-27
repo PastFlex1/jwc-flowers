@@ -2,6 +2,8 @@ import type { Payment, BunchItem } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 import { updateInvoice } from './invoices';
 
+const DEMO_LIMIT = 50;
+
 async function updateInvoiceStatus(invoiceId: string, type: 'sale' | 'purchase' | 'both', flightDate: string) {
     const db = await readDb();
     const invoice = db.invoices.find(inv => inv.id === invoiceId);
@@ -45,6 +47,9 @@ export async function addBulkPayment(
   totalAmountToApply: number
 ): Promise<void> {
   const db = await readDb();
+  if (db.payments.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} registros de pago.`);
+  }
   let remainingAmount = totalAmountToApply;
 
   for (const { invoiceId, balance, type, flightDate } of invoiceBalances) {

@@ -1,6 +1,8 @@
 import type { Vendedor } from '@/lib/types';
 import { readDb, writeDb } from '@/lib/db-actions';
 
+const DEMO_LIMIT = 5;
+
 export async function getVendedores(): Promise<Vendedor[]> {
   const db = await readDb();
   return db.vendedores || [];
@@ -8,6 +10,9 @@ export async function getVendedores(): Promise<Vendedor[]> {
 
 export async function addVendedor(vendedorData: Omit<Vendedor, 'id'>): Promise<string> {
   const db = await readDb();
+  if (db.vendedores.length >= DEMO_LIMIT) {
+    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} vendedores.`);
+  }
   const newId = `vend-${Date.now()}`;
   const newVendedor: Vendedor = { id: newId, ...vendedorData };
   db.vendedores.push(newVendedor);
