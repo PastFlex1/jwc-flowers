@@ -14,21 +14,11 @@ type InvoiceDetailClientProps = {
 
 export function InvoiceDetailClient({ invoiceId }: InvoiceDetailClientProps) {
   const { invoices, customers, consignatarios, cargueras, paises, payments, creditNotes, debitNotes, isLoading } = useAppData();
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    if (!isLoading) {
-      setHydrated(true);
-    }
-  }, [isLoading]);
 
   const invoiceData = useMemo(() => {
-    if (!hydrated) return null;
-
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (!invoice) return null;
 
-    // Ensure items and bunches have IDs for client-side key props, important for re-renders
     if (invoice.items && Array.isArray(invoice.items)) {
       invoice.items.forEach(item => {
         if (!item.id) item.id = uuidv4();
@@ -52,9 +42,9 @@ export function InvoiceDetailClient({ invoiceId }: InvoiceDetailClientProps) {
     };
     
     return { invoice, customer, consignatario, carguera, pais, financials };
-  }, [hydrated, invoiceId, invoices, customers, consignatarios, cargueras, paises, payments, creditNotes, debitNotes]);
+  }, [invoiceId, invoices, customers, consignatarios, cargueras, paises, payments, creditNotes, debitNotes]);
 
-  if (isLoading || !hydrated) {
+  if (isLoading) {
     return (
       <div className="flex h-[80vh] w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -67,6 +57,7 @@ export function InvoiceDetailClient({ invoiceId }: InvoiceDetailClientProps) {
 
   if (!invoiceData) {
     notFound();
+    return null; // Needed for TypeScript, but notFound will throw
   }
 
   return (
