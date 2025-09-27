@@ -1,48 +1,30 @@
-
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Variedad } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { variedades as mockVariedades } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Variedad => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    nombre: data.nombre,
-  };
-};
+let variedades = [...mockVariedades];
 
 export async function getVariedades(): Promise<Variedad[]> {
-  if (!db) return [];
-  const variedadesCollection = collection(db, 'variedades');
-  const snapshot = await getDocs(variedadesCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(variedades);
 }
 
 export async function addVariedad(variedadData: Omit<Variedad, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const variedadesCollection = collection(db, 'variedades');
-  const docRef = await addDoc(variedadesCollection, variedadData);
-  return docRef.id;
+  const newId = `var-${Date.now()}`;
+  const newVariedad: Variedad = { id: newId, ...variedadData };
+  variedades.push(newVariedad);
+  console.log("Mock addVariedad:", newVariedad);
+  return Promise.resolve(newId);
 }
 
 export async function updateVariedad(id: string, variedadData: Partial<Omit<Variedad, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const variedadDoc = doc(db, 'variedades', id);
-  await updateDoc(variedadDoc, variedadData);
+  variedades = variedades.map(v => v.id === id ? { ...v, ...variedadData } : v);
+  console.log("Mock updateVariedad:", id, variedadData);
+  return Promise.resolve();
 }
 
 export async function deleteVariedad(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const variedadDoc = doc(db, 'variedades', id);
-  await deleteDoc(variedadDoc);
+  variedades = variedades.filter(v => v.id !== id);
+  console.log("Mock deleteVariedad:", id);
+  return Promise.resolve();
 }

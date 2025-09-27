@@ -1,86 +1,39 @@
-
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { DebitNote } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  deleteDoc,
-  query,
-  where,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  Timestamp,
-  runTransaction,
-} from 'firebase/firestore';
+import { debitNotes as mockDebitNotes } from '@/lib/mock-data';
+import { getInvoices, updateInvoice } from './invoices';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): DebitNote => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  
-  const date = data.date instanceof Timestamp 
-    ? data.date.toDate().toISOString() 
-    : data.date;
-
-  return {
-    id: snapshot.id,
-    invoiceId: data.invoiceId,
-    invoiceNumber: data.invoiceNumber,
-    amount: data.amount,
-    reason: data.reason,
-    date: date,
-  };
-};
+let debitNotes = [...mockDebitNotes];
 
 export async function getDebitNotes(): Promise<DebitNote[]> {
-  if (!db) return [];
-  const debitNotesCollection = collection(db, 'debitNotes');
-  const snapshot = await getDocs(debitNotesCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(debitNotes);
 }
 
 export async function getDebitNotesForInvoice(invoiceId: string): Promise<DebitNote[]> {
-  if (!db) return [];
-  const debitNotesCollection = collection(db, 'debitNotes');
-  const q = query(debitNotesCollection, where("invoiceId", "==", invoiceId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(fromFirestore);
+  const notes = debitNotes.filter(note => note.invoiceId === invoiceId);
+  return Promise.resolve(notes);
 }
 
 export async function addDebitNote(debitNoteData: Omit<DebitNote, 'id'>): Promise<string> {
-   if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+  const newId = `dn-${Date.now()}`;
+  const newNote: DebitNote = { id: newId, ...debitNoteData };
+  debitNotes.push(newNote);
+  console.log("Mock addDebitNote:", newNote);
+  
+  // Simulate transaction: update invoice status if it was paid
+  const invoices = await getInvoices();
+  const invoice = invoices.find(inv => inv.id === debitNoteData.invoiceId);
+  if (invoice && invoice.status === 'Paid') {
+    await updateInvoice(invoice.id, { status: 'Pending' });
+    console.log(`Mock: Invoice ${invoice.invoiceNumber} status updated to Pending due to new debit note.`);
+  }
 
-   let debitNoteId = '';
-
-   await runTransaction(db, async (transaction) => {
-    // 1. Create the new debit note
-    const newDebitNoteRef = doc(collection(db, 'debitNotes'));
-    const dataWithDate = {
-      ...debitNoteData,
-      date: new Date(debitNoteData.date),
-    };
-    transaction.set(newDebitNoteRef, dataWithDate);
-    debitNoteId = newDebitNoteRef.id;
-
-    // 2. Update the related invoice's status if it's 'Paid'
-    const invoiceRef = doc(db, 'invoices', debitNoteData.invoiceId);
-    const invoiceDoc = await transaction.get(invoiceRef);
-
-    if (invoiceDoc.exists() && invoiceDoc.data().status === 'Paid') {
-      transaction.update(invoiceRef, { status: 'Pending' });
-    }
-   });
-
-   if (!debitNoteId) {
-    throw new Error("Failed to create debit note document.");
-   }
-
-   return debitNoteId;
+  return Promise.resolve(newId);
 }
 
 export async function deleteDebitNote(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const debitNoteDoc = doc(db, 'debitNotes', id);
-  await deleteDoc(debitNoteDoc);
+  debitNotes = debitNotes.filter(note => note.id !== id);
+  console.log("Mock deleteDebitNote:", id);
+  return Promise.resolve();
 }

@@ -1,8 +1,6 @@
 import type {NextConfig} from 'next';
 
-// Forcing a server restart to ensure new environment variables are loaded.
 const nextConfig: NextConfig = {
-  /* config options here */
   typescript: {
     ignoreBuildErrors: true,
   },

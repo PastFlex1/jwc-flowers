@@ -3,22 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
 import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment, Variedad } from '@/lib/types';
-import { getPaises } from '@/services/paises';
-import { getVendedores } from '@/services/vendedores';
-import { getCustomers } from '@/services/customers';
-import { getFincas } from '@/services/fincas';
-import { getCargueras } from '@/services/cargueras';
-import { getConsignatarios } from '@/services/consignatarios';
-import { getDaes } from '@/services/daes';
-import { getMarcaciones } from '@/services/marcaciones';
-import { getProvincias } from '@/services/provincias';
-import { getInvoices } from '@/services/invoices';
-import { getProductos } from '@/services/productos';
-import { getCreditNotes } from '@/services/credit-notes';
-import { getDebitNotes } from '@/services/debit-notes';
-import { getPayments } from '@/services/payments';
-import { getVariedades } from '@/services/variedades';
-import { cargueras as defaultCargueras, provincias as defaultProvincias } from '@/lib/mock-data';
+import * as mockData from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 
 type AppData = {
@@ -54,11 +39,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     vendedores: [],
     customers: [],
     fincas: [],
-    cargueras: defaultCargueras,
+    cargueras: [],
     consignatarios: [],
     daes: [],
     marcaciones: [],
-    provincias: defaultProvincias,
+    provincias: [],
     invoices: [],
     productos: [],
     variedades: [],
@@ -67,97 +52,58 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     payments: [],
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasBeenLoaded, setHasBeenLoaded] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async (): Promise<void> => {
-    if (isLoading) return;
+    if (isLoading && !hasBeenLoaded) return;
     setIsLoading(true);
+    
+    // Simulate network delay for demo
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     try {
-      const [
-        paisesData,
-        vendedoresData,
-        customersData,
-        fincasData,
-        dbCargueras,
-        consignatariosData,
-        daesData,
-        marcacionesData,
-        dbProvincias,
-        invoicesData,
-        productosData,
-        variedadesData,
-        creditNotesData,
-        debitNotesData,
-        paymentsData,
-      ] = await Promise.all([
-        getPaises(),
-        getVendedores(),
-        getCustomers(),
-        getFincas(),
-        getCargueras(),
-        getConsignatarios(),
-        getDaes(),
-        getMarcaciones(),
-        getProvincias(),
-        getInvoices(),
-        getProductos(),
-        getVariedades(),
-        getCreditNotes(),
-        getDebitNotes(),
-        getPayments(),
-      ]);
-
-      const dbCarguerasNames = new Set(dbCargueras.map(c => c.nombreCarguera.toLowerCase()));
-      const combinedCargueras = [...dbCargueras];
-      defaultCargueras.forEach(dc => {
-        if (!dbCarguerasNames.has(dc.nombreCarguera.toLowerCase())) {
-          combinedCargueras.push(dc);
-        }
-      });
-      
-      const dbProvinciasNames = new Set(dbProvincias.map(p => p.nombre.toLowerCase()));
-      const combinedProvincias = [...dbProvincias];
-      defaultProvincias.forEach(dp => {
-        if (!dbProvinciasNames.has(dp.nombre.toLowerCase())) {
-          combinedProvincias.push(dp);
-        }
-      });
-
-      setData({
-        paises: paisesData,
-        vendedores: vendedoresData,
-        customers: customersData,
-        fincas: fincasData,
-        cargueras: combinedCargueras,
-        consignatarios: consignatariosData,
-        daes: daesData,
-        marcaciones: marcacionesData,
-        provincias: combinedProvincias,
-        invoices: invoicesData,
-        productos: productosData,
-        variedades: variedadesData,
-        creditNotes: creditNotesData,
-        debitNotes: debitNotesData,
-        payments: paymentsData,
-      });
+        // In demo mode, we just load from the mock data file.
+        setData({
+            paises: mockData.paises,
+            vendedores: mockData.vendedores,
+            customers: mockData.customers,
+            fincas: mockData.fincas,
+            cargueras: mockData.cargueras,
+            consignatarios: mockData.consignatarios,
+            daes: mockData.daes,
+            marcaciones: mockData.marcaciones,
+            provincias: mockData.provincias,
+            invoices: mockData.invoices,
+            productos: mockData.productos,
+            variedades: mockData.variedades,
+            creditNotes: mockData.creditNotes,
+            debitNotes: mockData.debitNotes,
+            payments: mockData.payments,
+        });
       setHasBeenLoaded(true);
-
     } catch (error) {
-      console.error("Failed to fetch global app data:", error);
+      console.error("Failed to load mock data:", error);
       toast({
-        title: 'Error de Sincronización',
-        description: 'No se pudieron cargar algunos datos. Por favor, revise su conexión y la configuración de Firebase.',
+        title: 'Error de Carga',
+        description: 'No se pudieron cargar los datos de demostración.',
         variant: 'destructive',
-        duration: 10000,
       });
     } finally {
         setIsLoading(false);
     }
-  }, [toast, isLoading]);
+  }, [toast, isLoading, hasBeenLoaded]);
   
+  useEffect(() => {
+    if (!hasBeenLoaded) {
+        fetchData();
+    }
+  }, [fetchData, hasBeenLoaded]);
+
+
   const hydrateData = useCallback((initialData: Partial<AppData>) => {
+    // This function is less relevant in demo mode but kept for structure.
     setData(prevData => ({ ...prevData, ...initialData }));
     setHasBeenLoaded(true);
     setIsLoading(false);
@@ -167,7 +113,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     ...data,
     isLoading,
     hasBeenLoaded,
-    refreshData: fetchData,
+    refreshData: fetchData, // Refresh will now just re-load mock data
     hydrateData,
   }), [data, isLoading, hasBeenLoaded, fetchData, hydrateData]);
 

@@ -66,7 +66,7 @@ function AppShellHeader() {
             </div>
             <div className="flex flex-col items-start gap-px overflow-hidden whitespace-nowrap transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             <h2 className="text-lg font-semibold font-headline">JCW FLOWERS</h2>
-            <p className="text-sm text-muted-foreground">Para Floristas</p>
+            <p className="text-sm text-muted-foreground">Demo Version</p>
             </div>
         </Link>
       </Button>
@@ -145,8 +145,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-4 mt-auto transition-all duration-300 group-data-[collapsible=icon]:-ml-12 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
            <div className="flex items-center gap-3 w-full px-2 h-12">
               <div className="flex flex-col items-start">
-                 <span className="font-medium">{t('sidebar.devMode')}</span>
-                 <span className="text-xs text-muted-foreground">{t('sidebar.dbAccess')}</span>
+                 <span className="font-medium">Demo Mode</span>
+                 <span className="text-xs text-muted-foreground">Using local mock data</span>
               </div>
             </div>
         </SidebarFooter>

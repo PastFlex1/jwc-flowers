@@ -1,73 +1,30 @@
-
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Finca } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { fincas as mockFincas } from '@/lib/mock-data';
 
-// Helper function to convert a Firestore document to our Finca type
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Finca => {
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    name: data.name,
-    address: data.address,
-    phone: data.phone,
-    email: data.email,
-    taxId: data.taxId,
-    productType: data.productType,
-  };
-};
+let fincas = [...mockFincas];
 
-/**
- * Fetches all fincas from the Firestore collection.
- * @returns A promise that resolves to an array of Finca objects.
- */
 export async function getFincas(): Promise<Finca[]> {
-  if (!db) return [];
-  const fincasCollection = collection(db, 'fincas');
-  const snapshot = await getDocs(fincasCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(fincas);
 }
 
-/**
- * Adds a new finca to the Firestore collection.
- * @param fincaData - The finca data to add (without an id).
- * @returns A promise that resolves to the new document's id.
- */
 export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const fincasCollection = collection(db, 'fincas');
-  const docRef = await addDoc(fincasCollection, fincaData);
-  return docRef.id;
+  const newId = `finca-${Date.now()}`;
+  const newFinca: Finca = { id: newId, ...fincaData };
+  fincas.push(newFinca);
+  console.log("Mock addFinca:", newFinca);
+  return Promise.resolve(newId);
 }
 
-/**
- * Updates an existing finca in the Firestore collection.
- * @param id - The id of the finca to update.
- * @param fincaData - An object with the finca fields to update.
- * @returns A promise that resolves when the update is complete.
- */
 export async function updateFinca(id: string, fincaData: Partial<Omit<Finca, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const fincaDoc = doc(db, 'fincas', id);
-  await updateDoc(fincaDoc, fincaData);
+  fincas = fincas.map(f => f.id === id ? { ...f, ...fincaData } : f);
+  console.log("Mock updateFinca:", id, fincaData);
+  return Promise.resolve();
 }
 
-/**
- * Deletes a finca from the Firestore collection.
- * @param id - The id of the finca to delete.
- * @returns A promise that resolves when the deletion is complete.
- */
 export async function deleteFinca(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const fincaDoc = doc(db, 'fincas', id);
-  await deleteDoc(fincaDoc);
+  fincas = fincas.filter(f => f.id !== id);
+  console.log("Mock deleteFinca:", id);
+  return Promise.resolve();
 }

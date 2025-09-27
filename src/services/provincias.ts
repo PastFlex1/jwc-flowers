@@ -1,46 +1,30 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Provincia } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { provincias as mockProvincias } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Provincia => {
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    nombre: data.nombre,
-  };
-};
+let provincias = [...mockProvincias];
 
 export async function getProvincias(): Promise<Provincia[]> {
-  if (!db) return [];
-  const provinciasCollection = collection(db, 'provincias');
-  const snapshot = await getDocs(provinciasCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(provincias);
 }
 
 export async function addProvincia(provinciaData: Omit<Provincia, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const provinciasCollection = collection(db, 'provincias');
-  const docRef = await addDoc(provinciasCollection, provinciaData);
-  return docRef.id;
+  const newId = `prov-${Date.now()}`;
+  const newProvincia: Provincia = { id: newId, ...provinciaData };
+  provincias.push(newProvincia);
+  console.log("Mock addProvincia:", newProvincia);
+  return Promise.resolve(newId);
 }
 
 export async function updateProvincia(id: string, provinciaData: Partial<Omit<Provincia, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const provinciaDoc = doc(db, 'provincias', id);
-  await updateDoc(provinciaDoc, provinciaData);
+  provincias = provincias.map(p => p.id === id ? { ...p, ...provinciaData } : p);
+  console.log("Mock updateProvincia:", id, provinciaData);
+  return Promise.resolve();
 }
 
 export async function deleteProvincia(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const provinciaDoc = doc(db, 'provincias', id);
-  await deleteDoc(provinciaDoc);
+  provincias = provincias.filter(p => p.id !== id);
+  console.log("Mock deleteProvincia:", id);
+  return Promise.resolve();
 }

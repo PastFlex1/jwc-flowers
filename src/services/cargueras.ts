@@ -1,60 +1,35 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Carguera } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  type DocumentSnapshot,
-} from 'firebase/firestore';
+import { cargueras as mockCargueras } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Carguera => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    nombreCarguera: data.nombreCarguera,
-    pais: data.pais,
-  };
-};
+let cargueras = [...mockCargueras];
 
 export async function getCargueras(): Promise<Carguera[]> {
-  if (!db) return [];
-  const carguerasCollection = collection(db, 'cargueras');
-  const snapshot = await getDocs(carguerasCollection);
-  return snapshot.docs.map(doc => fromFirestore(doc));
+  return Promise.resolve(cargueras);
 }
 
 export async function getCargueraById(id: string): Promise<Carguera | null> {
-    if (!db) return null;
-    const cargueraDoc = doc(db, 'cargueras', id);
-    const snapshot = await getDoc(cargueraDoc);
-    if (snapshot.exists()) {
-        return fromFirestore(snapshot);
-    }
-    return null;
+    const carguera = cargueras.find(c => c.id === id);
+    return Promise.resolve(carguera || null);
 }
 
 export async function addCarguera(cargueraData: Omit<Carguera, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const carguerasCollection = collection(db, 'cargueras');
-  const docRef = await addDoc(carguerasCollection, cargueraData);
-  return docRef.id;
+  const newId = `carguera-${Date.now()}`;
+  const newCarguera: Carguera = { id: newId, ...cargueraData };
+  cargueras.push(newCarguera);
+  console.log("Mock addCarguera:", newCarguera);
+  return Promise.resolve(newId);
 }
 
 export async function updateCarguera(id: string, cargueraData: Partial<Omit<Carguera, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const cargueraDoc = doc(db, 'cargueras', id);
-  await updateDoc(cargueraDoc, cargueraData);
+  cargueras = cargueras.map(c => c.id === id ? { ...c, ...cargueraData } : c);
+  console.log("Mock updateCarguera:", id, cargueraData);
+  return Promise.resolve();
 }
 
 export async function deleteCarguera(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const cargueraDoc = doc(db, 'cargueras', id);
-  await deleteDoc(cargueraDoc);
+  cargueras = cargueras.filter(c => c.id !== id);
+  console.log("Mock deleteCarguera:", id);
+  return Promise.resolve();
 }

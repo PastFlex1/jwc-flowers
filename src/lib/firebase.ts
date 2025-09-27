@@ -1,34 +1,7 @@
-// Import the functions you need from the SDKs you need
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from "firebase/storage";
+// This file is intentionally left blank.
+// All Firebase and database-related functionality has been removed for the demo version.
+// The application now uses local mock data.
 
-// Your web app's Firebase configuration
-// For security, these values are stored in environment variables
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Check if all firebase config keys are provided
-const isFirebaseConfigured = Object.values(firebaseConfig).every(value => !!value && !value.includes('YOUR_'));
-
-let app;
-let db;
-let storage;
-
-// Initialize Firebase only if the config is complete
-if (isFirebaseConfigured) {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
-    storage = getStorage(app);
-} else {
-    console.warn("Firebase configuration is incomplete. App will run in offline mode. Please ensure all NEXT_PUBLIC_FIREBASE_* variables are set correctly in your .env file.");
-}
-
-
-export { app, db, storage };
+export const db = null;
+export const storage = null;
+export const app = null;

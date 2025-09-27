@@ -1,63 +1,35 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Consignatario } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  type DocumentSnapshot,
-} from 'firebase/firestore';
+import { consignatarios as mockConsignatarios } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Consignatario => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    nombreConsignatario: data.nombreConsignatario,
-    pais: data.pais,
-    customerId: data.customerId,
-    direccion: data.direccion || '',
-    provincia: data.provincia || '',
-  };
-};
+let consignatarios = [...mockConsignatarios];
 
 export async function getConsignatarios(): Promise<Consignatario[]> {
-  if (!db) return [];
-  const consignatariosCollection = collection(db, 'consignatarios');
-  const snapshot = await getDocs(consignatariosCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(consignatarios);
 }
 
 export async function getConsignatarioById(id: string): Promise<Consignatario | null> {
-    if (!db) return null;
-    const consignatarioDoc = doc(db, 'consignatarios', id);
-    const snapshot = await getDoc(consignatarioDoc);
-    if (snapshot.exists()) {
-        return fromFirestore(snapshot);
-    }
-    return null;
+    const consignatario = consignatarios.find(c => c.id === id);
+    return Promise.resolve(consignatario || null);
 }
 
 export async function addConsignatario(consignatarioData: Omit<Consignatario, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const consignatariosCollection = collection(db, 'consignatarios');
-  const docRef = await addDoc(consignatariosCollection, consignatarioData);
-  return docRef.id;
+  const newId = `consignatario-${Date.now()}`;
+  const newConsignatario: Consignatario = { id: newId, ...consignatarioData };
+  consignatarios.push(newConsignatario);
+  console.log("Mock addConsignatario:", newConsignatario);
+  return Promise.resolve(newId);
 }
 
 export async function updateConsignatario(id: string, consignatarioData: Partial<Omit<Consignatario, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const consignatarioDoc = doc(db, 'consignatarios', id);
-  await updateDoc(consignatarioDoc, consignatarioData);
+  consignatarios = consignatarios.map(c => c.id === id ? { ...c, ...consignatarioData } : c);
+  console.log("Mock updateConsignatario:", id, consignatarioData);
+  return Promise.resolve();
 }
 
 export async function deleteConsignatario(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const consignatarioDoc = doc(db, 'consignatarios', id);
-  await deleteDoc(consignatarioDoc);
+  consignatarios = consignatarios.filter(c => c.id !== id);
+  console.log("Mock deleteConsignatario:", id);
+  return Promise.resolve();
 }

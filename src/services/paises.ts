@@ -1,59 +1,35 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Pais } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  type DocumentSnapshot,
-} from 'firebase/firestore';
+import { paises as mockPaises } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Pais => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    nombre: data.nombre,
-  };
-};
+let paises = [...mockPaises];
 
 export async function getPaises(): Promise<Pais[]> {
-  if (!db) return [];
-  const paisesCollection = collection(db, 'paises');
-  const snapshot = await getDocs(paisesCollection);
-  return snapshot.docs.map(d => fromFirestore(d));
+  return Promise.resolve(paises);
 }
 
 export async function getPaisById(id: string): Promise<Pais | null> {
-    if (!db) return null;
-    const paisDoc = doc(db, 'paises', id);
-    const snapshot = await getDoc(paisDoc);
-    if (snapshot.exists()) {
-        return fromFirestore(snapshot);
-    }
-    return null;
+    const pais = paises.find(p => p.id === id);
+    return Promise.resolve(pais || null);
 }
 
 export async function addPais(paisData: Omit<Pais, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const paisesCollection = collection(db, 'paises');
-  const docRef = await addDoc(paisesCollection, paisData);
-  return docRef.id;
+  const newId = `pais-${Date.now()}`;
+  const newPais: Pais = { id: newId, ...paisData };
+  paises.push(newPais);
+  console.log("Mock addPais:", newPais);
+  return Promise.resolve(newId);
 }
 
 export async function updatePais(id: string, paisData: Partial<Omit<Pais, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const paisDoc = doc(db, 'paises', id);
-  await updateDoc(paisDoc, paisData);
+  paises = paises.map(p => p.id === id ? { ...p, ...paisData } : p);
+  console.log("Mock updatePais:", id, paisData);
+  return Promise.resolve();
 }
 
 export async function deletePais(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const paisDoc = doc(db, 'paises', id);
-  await deleteDoc(paisDoc);
+  paises = paises.filter(p => p.id !== id);
+  console.log("Mock deletePais:", id);
+  return Promise.resolve();
 }

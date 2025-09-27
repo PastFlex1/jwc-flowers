@@ -12,7 +12,7 @@ function AppLoadingScreen() {
         <div className="flex h-screen w-screen items-center justify-center bg-background">
              <div className="flex flex-col items-center gap-4">
                 <Flower2 className="h-12 w-12 text-primary animate-pulse" />
-                <p className="text-muted-foreground">Sincronizando datos...</p>
+                <p className="text-muted-foreground">Cargando datos de demostración...</p>
             </div>
         </div>
     );
@@ -20,7 +20,7 @@ function AppLoadingScreen() {
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const { isLoading: isDataLoading, refreshData, hasBeenLoaded } = useAppData();
+  const { isLoading: isDataLoading, hasBeenLoaded } = useAppData();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,26 +29,22 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
       router.replace('/login');
     }
   }, [isAuthenticated, isAuthLoading, pathname, router]);
-  
-  useEffect(() => {
-    if (isAuthenticated && !hasBeenLoaded && !isDataLoading) {
-      refreshData();
-    }
-  }, [isAuthenticated, hasBeenLoaded, isDataLoading, refreshData]);
 
   if (isAuthLoading) {
     return <AppLoadingScreen />;
   }
 
   if (isAuthenticated) {
-     if (isDataLoading) {
+     if (!hasBeenLoaded || isDataLoading) {
         return <AppLoadingScreen />;
      }
      if (pathname === '/login') {
+        // If authenticated and on login page, show loading while redirecting
         return <AppLoadingScreen />;
      }
      return <AppShell>{children}</AppShell>;
   }
 
+  // If not authenticated, render children (which should be the login page)
   return <>{children}</>;
 }

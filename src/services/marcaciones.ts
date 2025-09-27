@@ -1,47 +1,30 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Marcacion } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { marcaciones as mockMarcaciones } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Marcacion => {
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    numeroMarcacion: data.numeroMarcacion,
-    cliente: data.cliente,
-  };
-};
+let marcaciones = [...mockMarcaciones];
 
 export async function getMarcaciones(): Promise<Marcacion[]> {
-  if (!db) return [];
-  const marcacionesCollection = collection(db, 'marcaciones');
-  const snapshot = await getDocs(marcacionesCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(marcaciones);
 }
 
 export async function addMarcacion(marcacionData: Omit<Marcacion, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const marcacionesCollection = collection(db, 'marcaciones');
-  const docRef = await addDoc(marcacionesCollection, marcacionData);
-  return docRef.id;
+  const newId = `marcacion-${Date.now()}`;
+  const newMarcacion: Marcacion = { id: newId, ...marcacionData };
+  marcaciones.push(newMarcacion);
+  console.log("Mock addMarcacion:", newMarcacion);
+  return Promise.resolve(newId);
 }
 
 export async function updateMarcacion(id: string, marcacionData: Partial<Omit<Marcacion, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const marcacionDoc = doc(db, 'marcaciones', id);
-  await updateDoc(marcacionDoc, marcacionData);
+  marcaciones = marcaciones.map(m => m.id === id ? { ...m, ...marcacionData } : m);
+  console.log("Mock updateMarcacion:", id, marcacionData);
+  return Promise.resolve();
 }
 
 export async function deleteMarcacion(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const marcacionDoc = doc(db, 'marcaciones', id);
-  await deleteDoc(marcacionDoc);
+  marcaciones = marcaciones.filter(m => m.id !== id);
+  console.log("Mock deleteMarcacion:", id);
+  return Promise.resolve();
 }

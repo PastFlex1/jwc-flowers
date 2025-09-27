@@ -1,125 +1,59 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Payment, Invoice, CreditNote, DebitNote, BunchItem } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  runTransaction,
-  query,
-  where,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  Timestamp,
-  getDoc,
-  writeBatch,
-} from 'firebase/firestore';
+import { payments as mockPayments } from '@/lib/mock-data';
+import { getInvoices, updateInvoice } from './invoices';
+import { getCreditNotes } from './credit-notes';
+import { getDebitNotes } from './debit-notes';
 
-const paymentFromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Payment => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  
-  const paymentDate = data.paymentDate instanceof Timestamp 
-    ? data.paymentDate.toDate().toISOString() 
-    : data.paymentDate;
 
-  return {
-    id: snapshot.id,
-    invoiceId: data.invoiceId,
-    amount: data.amount,
-    paymentDate: paymentDate,
-    paymentMethod: data.paymentMethod,
-    reference: data.reference,
-    notes: data.notes,
-  };
-};
+let payments = [...mockPayments];
 
 export async function getPayments(): Promise<Payment[]> {
-  if (!db) return [];
-  const paymentsCollection = collection(db, 'payments');
-  const snapshot = await getDocs(paymentsCollection);
-  return snapshot.docs.map(paymentFromFirestore);
+  return Promise.resolve(payments);
 }
 
 export async function getPaymentsForInvoice(invoiceId: string): Promise<Payment[]> {
-  if (!db) return [];
-  const paymentsCollection = collection(db, 'payments');
-  const q = query(paymentsCollection, where("invoiceId", "==", invoiceId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(paymentFromFirestore);
+  const invoicePayments = payments.filter(p => p.invoiceId === invoiceId);
+  return Promise.resolve(invoicePayments);
 }
 
-export async function addPayment(paymentData: Omit<Payment, 'id'>): Promise<string> {
-   if (!db) throw new Error("Firebase is not configured. Check your .env file.");
+async function updateInvoiceStatus(invoiceId: string, type: 'sale' | 'purchase' | 'both', flightDate: string) {
+    const allInvoices = await getInvoices();
+    const invoice = allInvoices.find(inv => inv.id === invoiceId);
+    if (!invoice) return;
 
-   let paymentId = '';
-
-   await runTransaction(db, async (transaction) => {
-    const invoiceRef = doc(db, 'invoices', paymentData.invoiceId);
-    const invoiceDoc = await transaction.get(invoiceRef);
-
-    if (!invoiceDoc.exists()) {
-        throw new Error("Invoice does not exist!");
-    }
-
-    const invoiceData = invoiceDoc.data() as Omit<Invoice, 'id'>;
-
-    const subtotal = invoiceData.items.reduce((acc, item) => {
-      if (!item.bunches) return acc;
-      const priceField = invoiceData.type === 'purchase' ? 'purchasePrice' : 'salePrice';
-      return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
-        const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
-        return bunchAcc + (stems * bunch[priceField]);
-      }, 0);
+    const subtotal = invoice.items.reduce((acc, item) => {
+        if (!item.bunches) return acc;
+        const priceField = type === 'purchase' ? 'purchasePrice' : 'salePrice';
+        return acc + item.bunches.reduce((bunchAcc, bunch: BunchItem) => {
+            const stems = bunch.stemsPerBunch * bunch.bunchesPerBox;
+            return bunchAcc + (stems * bunch[priceField]);
+        }, 0);
     }, 0);
 
+    const allCreditNotes = await getCreditNotes();
+    const allDebitNotes = await getDebitNotes();
+    const allPayments = await getPayments();
 
-    const creditNotesRef = collection(db, 'creditNotes');
-    const creditQuery = query(creditNotesRef, where("invoiceId", "==", paymentData.invoiceId));
-    const creditNotesSnapshot = await getDocs(creditQuery);
-    const totalCreditAmount = creditNotesSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as CreditNote).amount, 0);
-
-    const debitNotesRef = collection(db, 'debitNotes');
-    const debitQuery = query(debitNotesRef, where("invoiceId", "==", paymentData.invoiceId));
-    const debitNotesSnapshot = await getDocs(debitQuery);
-    const totalDebitAmount = debitNotesSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as DebitNote).amount, 0);
-
-    let totalCharge = subtotal - totalCreditAmount + totalDebitAmount;
-
-
-    const paymentsRef = collection(db, 'payments');
-    const paymentQuery = query(paymentsRef, where("invoiceId", "==", paymentData.invoiceId));
-    const paymentsSnapshot = await getDocs(paymentQuery);
-    const totalPaidAmount = paymentsSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as Payment).amount, 0);
+    const totalCreditAmount = allCreditNotes.filter(cn => cn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
+    const totalDebitAmount = allDebitNotes.filter(dn => dn.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
+    const totalPaidAmount = allPayments.filter(p => p.invoiceId === invoiceId).reduce((sum, doc) => sum + doc.amount, 0);
     
-    const newTotalPaid = totalPaidAmount + paymentData.amount;
-    const newBalance = totalCharge - newTotalPaid;
+    const totalCharge = subtotal - totalCreditAmount + totalDebitAmount;
+    const newBalance = totalCharge - totalPaidAmount;
     
     let newStatus: 'Paid' | 'Pending' | 'Overdue';
     if (newBalance <= 0.01) {
         newStatus = 'Paid';
     } else {
-        const dueDate = new Date(invoiceData.flightDate);
+        const dueDate = new Date(flightDate);
         dueDate.setDate(dueDate.getDate() + 30);
         newStatus = new Date() > dueDate ? 'Overdue' : 'Pending';
     }
-
-    const newPaymentRef = doc(collection(db, 'payments'));
-    const newPaymentData = {
-        ...paymentData,
-        paymentDate: new Date(paymentData.paymentDate),
-    };
-    transaction.set(newPaymentRef, newPaymentData);
-    paymentId = newPaymentRef.id;
-
-    transaction.update(invoiceRef, { status: newStatus });
-   });
-
-   if (!paymentId) {
-     throw new Error("Failed to create payment document.");
-   }
-
-   return paymentId;
+    
+    await updateInvoice(invoiceId, { status: newStatus });
+    console.log(`Mock: Invoice ${invoiceId} status updated to ${newStatus}`);
 }
 
 export async function addBulkPayment(
@@ -127,9 +61,6 @@ export async function addBulkPayment(
   invoiceBalances: { invoiceId: string; balance: number; type: 'sale' | 'purchase' | 'both', flightDate: string }[],
   totalAmountToApply: number
 ): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-
-  const batch = writeBatch(db);
   let remainingAmount = totalAmountToApply;
 
   for (const { invoiceId, balance, type, flightDate } of invoiceBalances) {
@@ -137,37 +68,24 @@ export async function addBulkPayment(
 
     const paymentAmountForInvoice = Math.min(remainingAmount, balance);
     
-    const newPaymentRef = doc(collection(db, 'payments'));
-    const newPaymentData = {
+    const newId = `payment-${Date.now()}-${Math.random()}`;
+    const newPayment: Payment = {
+      id: newId,
       ...paymentData,
       invoiceId: invoiceId,
       amount: paymentAmountForInvoice,
-      paymentDate: new Date(paymentData.paymentDate),
     };
-    batch.set(newPaymentRef, newPaymentData);
+    payments.push(newPayment);
+    console.log("Mock addPayment (bulk):", newPayment);
 
-    const newBalance = balance - paymentAmountForInvoice;
-    let newStatus: 'Paid' | 'Pending' | 'Overdue';
-    if (newBalance <= 0.01) {
-        newStatus = 'Paid';
-    } else {
-       const dueDate = new Date(flightDate);
-       dueDate.setDate(dueDate.getDate() + 30);
-       newStatus = new Date() > dueDate ? 'Overdue' : 'Pending';
-    }
-
-    const invoiceRef = doc(db, 'invoices', invoiceId);
-    batch.update(invoiceRef, { status: newStatus });
+    await updateInvoiceStatus(invoiceId, type, flightDate);
 
     remainingAmount -= paymentAmountForInvoice;
   }
   
   if (remainingAmount > 0.01) {
-    // This could happen if the total amount is greater than the sum of balances.
-    // The current logic simply stops. You could add handling for this case,
-    // e.g., creating a credit for the customer, but for now we'll just log it.
     console.warn(`Payment amount of ${totalAmountToApply} exceeded the total balance of selected invoices. $${remainingAmount.toFixed(2)} was not applied.`);
   }
 
-  await batch.commit();
+  return Promise.resolve();
 }

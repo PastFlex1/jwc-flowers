@@ -1,47 +1,30 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Dae } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { daes as mockDaes } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Dae => {
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    pais: data.pais,
-    numeroDae: data.numeroDae,
-  };
-};
+let daes = [...mockDaes];
 
 export async function getDaes(): Promise<Dae[]> {
-  if (!db) return [];
-  const daesCollection = collection(db, 'daes');
-  const snapshot = await getDocs(daesCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(daes);
 }
 
 export async function addDae(daeData: Omit<Dae, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const daesCollection = collection(db, 'daes');
-  const docRef = await addDoc(daesCollection, daeData);
-  return docRef.id;
+  const newId = `dae-${Date.now()}`;
+  const newDae: Dae = { id: newId, ...daeData };
+  daes.push(newDae);
+  console.log("Mock addDae:", newDae);
+  return Promise.resolve(newId);
 }
 
 export async function updateDae(id: string, daeData: Partial<Omit<Dae, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const daeDoc = doc(db, 'daes', id);
-  await updateDoc(daeDoc, daeData);
+  daes = daes.map(d => d.id === id ? { ...d, ...daeData } : d);
+  console.log("Mock updateDae:", id, daeData);
+  return Promise.resolve();
 }
 
 export async function deleteDae(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const daeDoc = doc(db, 'daes', id);
-  await deleteDoc(daeDoc);
+  daes = daes.filter(d => d.id !== id);
+  console.log("Mock deleteDae:", id);
+  return Promise.resolve();
 }

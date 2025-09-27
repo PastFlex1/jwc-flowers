@@ -1,71 +1,35 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Customer } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-  type DocumentSnapshot,
-} from 'firebase/firestore';
+import { customers as mockCustomers } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData> | DocumentSnapshot<DocumentData>): Customer => {
-  const data = snapshot.data();
-   if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    type: data.type || 'National',
-    name: data.name,
-    cedula: data.cedula,
-    pais: data.pais,
-    estadoCiudad: data.estadoCiudad,
-    address: data.address,
-    email: data.email,
-    phone: data.phone,
-    agencia: data.agencia,
-    vendedor: data.vendedor,
-    plazo: data.plazo,
-    cupo: data.cupo,
-    daeId: data.daeId,
-  };
-};
+let customers = [...mockCustomers];
 
 export async function getCustomers(): Promise<Customer[]> {
-  if (!db) return [];
-  const customersCollection = collection(db, 'customers');
-  const snapshot = await getDocs(customersCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(customers);
 }
 
 export async function getCustomerById(id: string): Promise<Customer | null> {
-  if (!db) return null;
-  const customerDoc = doc(db, 'customers', id);
-  const snapshot = await getDoc(customerDoc);
-  if (snapshot.exists()) {
-    return fromFirestore(snapshot);
-  }
-  return null;
+  const customer = customers.find(c => c.id === id);
+  return Promise.resolve(customer || null);
 }
 
 export async function addCustomer(customerData: Omit<Customer, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const customersCollection = collection(db, 'customers');
-  const docRef = await addDoc(customersCollection, customerData);
-  return docRef.id;
+  const newId = `customer-${Date.now()}`;
+  const newCustomer: Customer = { id: newId, ...customerData };
+  customers.push(newCustomer);
+  console.log("Mock addCustomer:", newCustomer);
+  return Promise.resolve(newId);
 }
 
 export async function updateCustomer(id: string, customerData: Partial<Omit<Customer, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const customerDoc = doc(db, 'customers', id);
-  await updateDoc(customerDoc, customerData);
+  customers = customers.map(c => c.id === id ? { ...c, ...customerData } : c);
+  console.log("Mock updateCustomer:", id, customerData);
+  return Promise.resolve();
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const customerDoc = doc(db, 'customers', id);
-  await deleteDoc(customerDoc);
+  customers = customers.filter(c => c.id !== id);
+  console.log("Mock deleteCustomer:", id);
+  return Promise.resolve();
 }

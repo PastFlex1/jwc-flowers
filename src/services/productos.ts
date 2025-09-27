@@ -1,57 +1,30 @@
-
-
-
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Producto } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { productos as mockProductos } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Producto => {
-  const data = snapshot.data();
-  if (!data) throw new Error("Document data not found");
-  return {
-    id: snapshot.id,
-    nombre: data.nombre || '',
-    variedad: data.variedad || '',
-    barras: data.barras || '',
-    color: data.color || '#000000',
-    nombreColor: data.nombreColor || '',
-    precio: data.precio || 0,
-    tallosPorRamo: data.tallosPorRamo || 0,
-    estado: data.estado || 'Activo',
-  };
-};
+let productos = [...mockProductos];
 
 export async function getProductos(): Promise<Producto[]> {
-  if (!db) return [];
-  const productosCollection = collection(db, 'productos');
-  const snapshot = await getDocs(productosCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(productos);
 }
 
 export async function addProducto(productoData: Omit<Producto, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const productosCollection = collection(db, 'productos');
-  const docRef = await addDoc(productosCollection, productoData);
-  return docRef.id;
+  const newId = `prod-${Date.now()}`;
+  const newProducto: Producto = { id: newId, ...productoData };
+  productos.push(newProducto);
+  console.log("Mock addProducto:", newProducto);
+  return Promise.resolve(newId);
 }
 
 export async function updateProducto(id: string, productoData: Partial<Omit<Producto, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const productoDoc = doc(db, 'productos', id);
-  await updateDoc(productoDoc, productoData);
+  productos = productos.map(p => p.id === id ? { ...p, ...productoData } as Producto : p);
+  console.log("Mock updateProducto:", id, productoData);
+  return Promise.resolve();
 }
 
 export async function deleteProducto(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const productoDoc = doc(db, 'productos', id);
-  await deleteDoc(productoDoc);
+  productos = productos.filter(p => p.id !== id);
+  console.log("Mock deleteProducto:", id);
+  return Promise.resolve();
 }

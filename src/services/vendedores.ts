@@ -1,47 +1,30 @@
-import { db } from '@/lib/firebase';
+// This service is now mocked for the demo version.
+// It no longer interacts with a database.
 import type { Vendedor } from '@/lib/types';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  type DocumentData,
-  type QueryDocumentSnapshot,
-} from 'firebase/firestore';
+import { vendedores as mockVendedores } from '@/lib/mock-data';
 
-const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Vendedor => {
-  const data = snapshot.data();
-  return {
-    id: snapshot.id,
-    nombre: data.nombre,
-    siglas: data.siglas,
-  };
-};
+let vendedores = [...mockVendedores];
 
 export async function getVendedores(): Promise<Vendedor[]> {
-  if (!db) return [];
-  const vendedoresCollection = collection(db, 'vendedores');
-  const snapshot = await getDocs(vendedoresCollection);
-  return snapshot.docs.map(fromFirestore);
+  return Promise.resolve(vendedores);
 }
 
 export async function addVendedor(vendedorData: Omit<Vendedor, 'id'>): Promise<string> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const vendedoresCollection = collection(db, 'vendedores');
-  const docRef = await addDoc(vendedoresCollection, vendedorData);
-  return docRef.id;
+  const newId = `vend-${Date.now()}`;
+  const newVendedor: Vendedor = { id: newId, ...vendedorData };
+  vendedores.push(newVendedor);
+  console.log("Mock addVendedor:", newVendedor);
+  return Promise.resolve(newId);
 }
 
 export async function updateVendedor(id: string, vendedorData: Partial<Omit<Vendedor, 'id'>>): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const vendedorDoc = doc(db, 'vendedores', id);
-  await updateDoc(vendedorDoc, vendedorData);
+  vendedores = vendedores.map(v => v.id === id ? { ...v, ...vendedorData } : v);
+  console.log("Mock updateVendedor:", id, vendedorData);
+  return Promise.resolve();
 }
 
 export async function deleteVendedor(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase is not configured. Check your .env file.");
-  const vendedorDoc = doc(db, 'vendedores', id);
-  await deleteDoc(vendedorDoc);
+  vendedores = vendedores.filter(v => v.id !== id);
+  console.log("Mock deleteVendedor:", id);
+  return Promise.resolve();
 }
