@@ -3,8 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode, useMemo } from 'react';
 import type { Pais, Vendedor, Customer, Finca, Carguera, Consignatario, Dae, Marcacion, Provincia, Invoice, Producto, CreditNote, DebitNote, Payment, Variedad } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { writeDb } from '@/lib/db-actions';
-import initialDbData from '@/lib/db.json';
+import { readDb, writeDb } from '@/lib/db-actions';
 
 export type AppData = {
   paises: Pais[];
@@ -33,23 +32,48 @@ type AppDataContextType = AppData & {
 
 const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
-// In-memory state for the demo
-let memoryState: AppData = initialDbData as AppData;
+const initialEmptyData: AppData = {
+    paises: [],
+    vendedores: [],
+    customers: [],
+    fincas: [],
+    cargueras: [],
+    consignatarios: [],
+    daes: [],
+    marcaciones: [],
+    provincias: [],
+    invoices: [],
+    productos: [],
+    variedades: [],
+    creditNotes: [],
+    debitNotes: [],
+    payments: [],
+};
+
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<AppData>(memoryState);
-  
-  const [isLoading, setIsLoading] = useState(!memoryState);
-  const [hasBeenLoaded, setHasBeenLoaded] = useState(!!memoryState);
+  const [data, setData] = useState<AppData>(initialEmptyData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasBeenLoaded, setHasBeenLoaded] = useState(false);
   const { toast } = useToast();
 
   const fetchData = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    // In a real app, this would fetch from a DB. For demo, we use the in-memory state.
-    setData(memoryState);
-    setHasBeenLoaded(true);
-    setIsLoading(false);
-  }, []);
+    try {
+        const dbData = await readDb();
+        setData(dbData);
+        setHasBeenLoaded(true);
+    } catch (error) {
+        console.error("Failed to load local DB data", error);
+        toast({
+            title: "Error de Carga",
+            description: "No se pudieron cargar los datos de demostración.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
   
   useEffect(() => {
     if (!hasBeenLoaded) {
@@ -58,11 +82,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   }, [fetchData, hasBeenLoaded]);
   
   const updateAndRefreshData = useCallback(async (updatedData: Partial<AppData>) => {
-    const newData = { ...memoryState, ...updatedData };
-    memoryState = newData; // Update in-memory state
-    await writeDb(newData); // Write to file for local dev persistence
-    setData(newData); // Update React state to trigger re-render
-  }, []);
+    const currentData = await readDb();
+    const newData = { ...currentData, ...updatedData };
+    await writeDb(newData);
+    await fetchData();
+  }, [fetchData]);
 
 
   const value = useMemo(() => ({
