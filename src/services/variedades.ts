@@ -33,6 +33,10 @@ export async function updateVariedad(id: string, variedadData: Partial<Omit<Vari
 
 export async function deleteVariedad(id: string): Promise<void> {
   const db = await readDb();
+  const productsUsingVariety = db.productos.filter(p => p.variedad === db.variedades.find(v => v.id === id)?.nombre);
+    if (productsUsingVariety.length > 0) {
+        throw new Error(`No se puede eliminar la variedad porque está siendo utilizada por ${productsUsingVariety.length} producto(s).`);
+    }
   db.variedades = db.variedades.filter(v => v.id !== id);
   await writeDb(db);
 }

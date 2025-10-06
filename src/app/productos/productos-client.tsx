@@ -122,7 +122,14 @@ export function ProductosClient() {
       handleCloseProductoDialog();
       // Also close the view dialog if it's open
       if (isViewProductsDialogOpen) {
-        setIsViewProductsDialogOpen(false);
+        // Refresh products for the current view
+        const updatedProds = await getProductos();
+        const updatedSelectedVariedad = selectedVariedad ? await getVariedades().then(vars => vars.find(v => v.id === selectedVariedad.id)) : null;
+        if(updatedSelectedVariedad) {
+          setSelectedVariedad(updatedSelectedVariedad);
+        } else {
+            setIsViewProductsDialogOpen(false);
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -195,18 +202,6 @@ export function ProductosClient() {
 
   const handleDeleteVariedadConfirm = async () => {
     if (!variedadToDelete) return;
-    // Check if there are any products using this variety
-    const productsUsingVariety = productos.filter(p => p.variedad === variedadToDelete.nombre);
-    if (productsUsingVariety.length > 0) {
-      toast({
-        title: 'Error al Eliminar',
-        description: `No se puede eliminar la variedad "${variedadToDelete.nombre}" porque está siendo utilizada por ${productsUsingVariety.length} producto(s).`,
-        variant: 'destructive',
-        duration: 10000,
-      });
-      setVariedadToDelete(null);
-      return;
-    }
 
     try {
       await deleteVariedad(variedadToDelete.id);
@@ -217,7 +212,7 @@ export function ProductosClient() {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al Eliminar',
-        description: `No se pudo eliminar la variedad: ${errorMessage}.`,
+        description: `${errorMessage}`,
         variant: 'destructive',
         duration: 10000,
       });
@@ -357,7 +352,12 @@ export function ProductosClient() {
       <Dialog open={isViewProductsDialogOpen} onOpenChange={setIsViewProductsDialogOpen}>
         <DialogContent 
           className="sm:max-w-4xl"
-          onPointerDownOutside={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            if (Object.keys(pendingChanges).length > 0) {
+              e.preventDefault();
+              toast({ title: 'Cambios no guardados', description: 'Guarde o descarte sus cambios antes de cerrar.', variant: 'destructive' });
+            }
+          }}
         >
           <DialogHeader>
             <DialogTitle>Variedades del Producto: {selectedVariedad?.nombre}</DialogTitle>
