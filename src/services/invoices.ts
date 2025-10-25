@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Invoice } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 5;
-
-export async function getInvoices(): Promise<Invoice[]> {
-  const db = await readDb();
-  return db.invoices || [];
+export function getInvoices() {
+  return useAppData().invoices;
 }
 
-export async function addInvoice(invoiceData: Omit<Invoice, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.invoices.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} facturas.`);
-  }
-  const newId = `invoice-${Date.now()}`;
-  const newInvoice: Invoice = { id: newId, ...invoiceData };
-  db.invoices.unshift(newInvoice);
-  await writeDb(db);
-  return newId;
+export function addInvoice(data: Omit<Invoice, 'id'>) {
+  return useAppData().addInvoice(data);
 }
 
-export async function updateInvoice(id: string, invoiceData: Partial<Omit<Invoice, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.invoices.findIndex(inv => inv.id === id);
-  if (index > -1) {
-    db.invoices[index] = { ...db.invoices[index], ...invoiceData } as Invoice;
-    await writeDb(db);
-  } else {
-    throw new Error(`Invoice with id ${id} not found.`);
-  }
+export function updateInvoice(id: string, data: Partial<Omit<Invoice, 'id'>>) {
+  return useAppData().updateInvoice(id, data);
 }
 
-export async function deleteInvoice(id: string): Promise<void> {
-  const db = await readDb();
-  db.invoices = db.invoices.filter(inv => inv.id !== id);
-  await writeDb(db);
+export function deleteInvoice(id: string) {
+  return useAppData().deleteInvoice(id);
 }

@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Finca } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 5;
-
-export async function getFincas(): Promise<Finca[]> {
-  const db = await readDb();
-  return db.fincas || [];
+export function getFincas() {
+  return useAppData().fincas;
 }
 
-export async function addFinca(fincaData: Omit<Finca, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.fincas.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} fincas.`);
-  }
-  const newId = `finca-${Date.now()}`;
-  const newFinca: Finca = { id: newId, ...fincaData };
-  db.fincas.push(newFinca);
-  await writeDb(db);
-  return newId;
+export function addFinca(data: Omit<Finca, 'id'>) {
+  return useAppData().addFinca(data);
 }
 
-export async function updateFinca(id: string, fincaData: Partial<Omit<Finca, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.fincas.findIndex(f => f.id === id);
-  if (index > -1) {
-    db.fincas[index] = { ...db.fincas[index], ...fincaData };
-    await writeDb(db);
-  } else {
-    throw new Error(`Finca with id ${id} not found.`);
-  }
+export function updateFinca(id: string, data: Partial<Omit<Finca, 'id'>>) {
+  return useAppData().updateFinca(id, data);
 }
 
-export async function deleteFinca(id: string): Promise<void> {
-  const db = await readDb();
-  db.fincas = db.fincas.filter(f => f.id !== id);
-  await writeDb(db);
+export function deleteFinca(id: string) {
+  return useAppData().deleteFinca(id);
 }

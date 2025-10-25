@@ -20,7 +20,7 @@ function AppLoadingScreen() {
 
 export function AppInitializer({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
-  const { isLoading: isDataLoading, hasBeenLoaded } = useAppData();
+  const { isLoading: isDataLoading } = useAppData();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -30,14 +30,13 @@ export function AppInitializer({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isAuthLoading, pathname, router]);
 
-  if (isAuthLoading) {
+  const isLoading = isAuthLoading || isDataLoading;
+
+  if (isLoading) {
     return <AppLoadingScreen />;
   }
 
   if (isAuthenticated) {
-     if (!hasBeenLoaded || isDataLoading) {
-        return <AppLoadingScreen />;
-     }
      if (pathname === '/login') {
         // If authenticated and on login page, show loading while redirecting
         return <AppLoadingScreen />;

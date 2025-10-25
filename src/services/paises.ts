@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Pais } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 10;
-
-export async function getPaises(): Promise<Pais[]> {
-  const db = await readDb();
-  return db.paises || [];
+export function getPaises() {
+  return useAppData().paises;
 }
 
-export async function addPais(paisData: Omit<Pais, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.paises.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} países.`);
-  }
-  const newId = `pais-${Date.now()}`;
-  const newPais: Pais = { id: newId, ...paisData };
-  db.paises.push(newPais);
-  await writeDb(db);
-  return newId;
+export function addPais(data: Omit<Pais, 'id'>) {
+  return useAppData().addPais(data);
 }
 
-export async function updatePais(id: string, paisData: Partial<Omit<Pais, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.paises.findIndex(p => p.id === id);
-  if (index > -1) {
-    db.paises[index] = { ...db.paises[index], ...paisData };
-    await writeDb(db);
-  } else {
-    throw new Error(`Pais with id ${id} not found.`);
-  }
+export function updatePais(id: string, data: Partial<Omit<Pais, 'id'>>) {
+  return useAppData().updatePais(id, data);
 }
 
-export async function deletePais(id: string): Promise<void> {
-  const db = await readDb();
-  db.paises = db.paises.filter(p => p.id !== id);
-  await writeDb(db);
+export function deletePais(id: string) {
+  return useAppData().deletePais(id);
 }

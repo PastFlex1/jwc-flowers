@@ -6,7 +6,7 @@ import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, Search, Eye, Save } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,8 +20,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { addProducto, updateProducto, deleteProducto } from '@/services/productos';
-import { addVariedad, getVariedades, deleteVariedad } from '@/services/variedades';
 import type { Producto, Variedad } from '@/lib/types';
 import { ProductoForm } from './producto-form';
 import { useAppData } from '@/context/app-data-context';
@@ -49,7 +47,15 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export function ProductosClient() {
-  const { productos, variedades, refreshData } = useAppData();
+  const { 
+    productos, 
+    variedades, 
+    addProducto, 
+    updateProducto, 
+    deleteProducto,
+    addVariedad,
+    deleteVariedad,
+  } = useAppData();
   const { t } = useTranslation();
   
   const [isProductoDialogOpen, setIsProductoDialogOpen] = useState(false);
@@ -118,19 +124,7 @@ export function ProductosClient() {
         await addProducto(productoData);
         toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
       }
-      await refreshData();
       handleCloseProductoDialog();
-      // Also close the view dialog if it's open
-      if (isViewProductsDialogOpen) {
-        // Refresh products for the current view
-        const updatedProds = await getProductos();
-        const updatedSelectedVariedad = selectedVariedad ? await getVariedades().then(vars => vars.find(v => v.id === selectedVariedad.id)) : null;
-        if(updatedSelectedVariedad) {
-          setSelectedVariedad(updatedSelectedVariedad);
-        } else {
-            setIsViewProductsDialogOpen(false);
-        }
-      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       if (errorMessage.includes('Límite de demostración alcanzado')) {
@@ -152,8 +146,7 @@ export function ProductosClient() {
     setIsSubmitting(true);
     try {
       await addVariedad(variedadData);
-      toast({ title: 'Éxito', description: 'Variedad añadida correctamente.' });
-      await refreshData();
+      toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
       handleCloseVariedadDialog();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -162,7 +155,7 @@ export function ProductosClient() {
       } else {
         toast({
           title: 'Error al Guardar',
-          description: `No se pudo guardar la variedad: ${errorMessage}.`,
+          description: `No se pudo guardar el producto: ${errorMessage}.`,
           variant: 'destructive',
           duration: 10000,
         });
@@ -184,7 +177,6 @@ export function ProductosClient() {
     if (!productoToDelete) return;
     try {
       await deleteProducto(productoToDelete.id);
-      await refreshData();
       toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -205,8 +197,7 @@ export function ProductosClient() {
 
     try {
       await deleteVariedad(variedadToDelete.id);
-      await refreshData();
-      toast({ title: 'Éxito', description: 'Variedad eliminada correctamente.' });
+      toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
     } catch (error) {
       console.error("Error deleting variety:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -240,13 +231,11 @@ export function ProductosClient() {
             changesToSave.map(([id, data]) => updateProducto(id, data))
         );
         
-        await refreshData();
         setPendingChanges({});
         toast({ title: 'Éxito', description: `${changesToSave.length} producto(s) actualizados.` });
 
     } catch (error) {
         toast({ title: 'Error', description: 'No se pudieron guardar todos los cambios.', variant: 'destructive' });
-        await refreshData();
     } finally {
         setIsSubmitting(false);
     }
@@ -262,7 +251,7 @@ export function ProductosClient() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight font-headline">VARIEDADES</h2>
+            <h2 className="text-3xl font-bold tracking-tight font-headline">PRODUCTOS Y VARIEDADES</h2>
             <p className="text-muted-foreground">Administra tus productos y variedades.</p>
           </div>
           <div className="flex gap-2">
@@ -279,6 +268,9 @@ export function ProductosClient() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingProducto ? 'Editar Variedad' : 'Añadir Nueva Variedad'}</DialogTitle>
+              <DialogDescription>
+                Añada una nueva variedad a un producto existente en su catálogo.
+              </DialogDescription>
             </DialogHeader>
             <ProductoForm 
               onSubmit={handleProductoFormSubmit}
@@ -294,6 +286,9 @@ export function ProductosClient() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Añadir Nuevo Producto</DialogTitle>
+              <DialogDescription>
+                Cree un nuevo tipo de producto (ej. Rosas, Claveles) para agrupar sus variedades.
+              </DialogDescription>
             </DialogHeader>
             <VariedadForm 
               onSubmit={handleVariedadFormSubmit}
@@ -317,7 +312,7 @@ export function ProductosClient() {
                         />
                     </div>
                 </div>
-                <CardDescription>Una lista de todos tus productos y sus variedades.</CardDescription>
+                <CardDescription>Una lista de todos tus productos principales.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -361,6 +356,9 @@ export function ProductosClient() {
         >
           <DialogHeader>
             <DialogTitle>Variedades del Producto: {selectedVariedad?.nombre}</DialogTitle>
+             <DialogDescription>
+                Administre las variedades de este producto. Puede editar el código de barras y el estado aquí mismo.
+             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto">
             <Table>
@@ -432,7 +430,7 @@ export function ProductosClient() {
           <AlertDialogHeader>
             <AlertDialogTitle>¿Estás totalmente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto.
+              Esta acción no se puede deshacer. Esto eliminará permanentemente el producto y todas sus variedades asociadas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

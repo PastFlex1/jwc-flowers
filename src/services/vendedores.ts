@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Vendedor } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 5;
-
-export async function getVendedores(): Promise<Vendedor[]> {
-  const db = await readDb();
-  return db.vendedores || [];
+export function getVendedores() {
+  return useAppData().vendedores;
 }
 
-export async function addVendedor(vendedorData: Omit<Vendedor, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.vendedores.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} vendedores.`);
-  }
-  const newId = `vend-${Date.now()}`;
-  const newVendedor: Vendedor = { id: newId, ...vendedorData };
-  db.vendedores.push(newVendedor);
-  await writeDb(db);
-  return newId;
+export function addVendedor(data: Omit<Vendedor, 'id'>) {
+  return useAppData().addVendedor(data);
 }
 
-export async function updateVendedor(id: string, vendedorData: Partial<Omit<Vendedor, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.vendedores.findIndex(v => v.id === id);
-  if (index > -1) {
-    db.vendedores[index] = { ...db.vendedores[index], ...vendedorData };
-    await writeDb(db);
-  } else {
-    throw new Error(`Vendedor with id ${id} not found.`);
-  }
+export function updateVendedor(id: string, data: Partial<Omit<Vendedor, 'id'>>) {
+  return useAppData().updateVendedor(id, data);
 }
 
-export async function deleteVendedor(id: string): Promise<void> {
-  const db = await readDb();
-  db.vendedores = db.vendedores.filter(v => v.id !== id);
-  await writeDb(db);
+export function deleteVendedor(id: string) {
+  return useAppData().deleteVendedor(id);
 }

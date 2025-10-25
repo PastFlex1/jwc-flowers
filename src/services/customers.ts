@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Customer } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 5;
-
-export async function getCustomers(): Promise<Customer[]> {
-  const db = await readDb();
-  return db.customers || [];
+export function getCustomers() {
+  return useAppData().customers;
 }
 
-export async function addCustomer(customerData: Omit<Customer, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.customers.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} clientes.`);
-  }
-  const newId = `customer-${Date.now()}`;
-  const newCustomer: Customer = { id: newId, ...customerData };
-  db.customers.push(newCustomer);
-  await writeDb(db);
-  return newId;
+export function addCustomer(data: Omit<Customer, 'id'>) {
+  return useAppData().addCustomer(data);
 }
 
-export async function updateCustomer(id: string, customerData: Partial<Omit<Customer, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.customers.findIndex(c => c.id === id);
-  if (index > -1) {
-    db.customers[index] = { ...db.customers[index], ...customerData };
-    await writeDb(db);
-  } else {
-    throw new Error(`Customer with id ${id} not found.`);
-  }
+export function updateCustomer(id: string, data: Partial<Omit<Customer, 'id'>>) {
+  return useAppData().updateCustomer(id, data);
 }
 
-export async function deleteCustomer(id: string): Promise<void> {
-  const db = await readDb();
-  db.customers = db.customers.filter(c => c.id !== id);
-  await writeDb(db);
+export function deleteCustomer(id: string) {
+  return useAppData().deleteCustomer(id);
 }

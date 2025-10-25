@@ -1,38 +1,22 @@
+// This service is a wrapper around the AppData context.
+// It is used to abstract the data source from the components.
+// All data logic is handled within the AppDataProvider.
+
+import { useAppData } from '@/context/app-data-context';
 import type { Dae } from '@/lib/types';
-import { readDb, writeDb } from '@/lib/db-actions';
 
-const DEMO_LIMIT = 10;
-
-export async function getDaes(): Promise<Dae[]> {
-  const db = await readDb();
-  return db.daes || [];
+export function getDaes() {
+  return useAppData().daes;
 }
 
-export async function addDae(daeData: Omit<Dae, 'id'>): Promise<string> {
-  const db = await readDb();
-  if (db.daes.length >= DEMO_LIMIT) {
-    throw new Error(`Límite de demostración alcanzado. No se pueden crear más de ${DEMO_LIMIT} DAEs.`);
-  }
-  const newId = `dae-${Date.now()}`;
-  const newDae: Dae = { id: newId, ...daeData };
-  db.daes.push(newDae);
-  await writeDb(db);
-  return newId;
+export function addDae(data: Omit<Dae, 'id'>) {
+  return useAppData().addDae(data);
 }
 
-export async function updateDae(id: string, daeData: Partial<Omit<Dae, 'id'>>): Promise<void> {
-  const db = await readDb();
-  const index = db.daes.findIndex(d => d.id === id);
-  if (index > -1) {
-    db.daes[index] = { ...db.daes[index], ...daeData };
-    await writeDb(db);
-  } else {
-    throw new Error(`DAE with id ${id} not found.`);
-  }
+export function updateDae(id: string, data: Partial<Omit<Dae, 'id'>>) {
+  return useAppData().updateDae(id, data);
 }
 
-export async function deleteDae(id: string): Promise<void> {
-  const db = await readDb();
-  db.daes = db.daes.filter(d => d.id !== id);
-  await writeDb(db);
+export function deleteDae(id: string) {
+  return useAppData().deleteDae(id);
 }
