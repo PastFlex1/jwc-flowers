@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addDae, updateDae, deleteDae } from '@/services/daes';
 import type { Dae } from '@/lib/types';
 import { DaeForm } from './dae-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type DaeFormData = Omit<Dae, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function DaeClient() {
-  const { daes, paises, refreshData } = useAppData();
+  const { daes, paises, refreshData, addDae, updateDae, deleteDae } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

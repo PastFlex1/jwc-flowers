@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addCreditNote, deleteCreditNote } from '@/services/credit-notes';
 import type { CreditNote } from '@/lib/types';
 import { CreditNoteForm } from './credit-note-form';
 import { useAppData } from '@/context/app-data-context';
@@ -31,7 +30,7 @@ type CreditNoteFormData = Omit<CreditNote, 'id'>;
 const ITEMS_PER_PAGE = 10;
 
 export function CreditNotesClient() {
-  const { creditNotes, invoices, refreshData } = useAppData();
+  const { creditNotes, invoices, refreshData, addCreditNote, deleteCreditNote } = useAppData();
   const [localCreditNotes, setLocalCreditNotes] = useState<CreditNote[]>([]);
   const { t } = useTranslation();
   

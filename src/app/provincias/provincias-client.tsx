@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addProvincia, updateProvincia, deleteProvincia } from '@/services/provincias';
 import type { Provincia } from '@/lib/types';
 import { ProvinciaForm } from './provincia-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type ProvinciaFormData = Omit<Provincia, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function ProvinciasClient() {
-  const { provincias, refreshData } = useAppData();
+  const { provincias, refreshData, addProvincia, updateProvincia, deleteProvincia } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

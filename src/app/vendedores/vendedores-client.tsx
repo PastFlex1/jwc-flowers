@@ -17,7 +17,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addVendedor, updateVendedor, deleteVendedor } from '@/services/vendedores';
 import type { Vendedor } from '@/lib/types';
 import { VendedorForm } from './vendedor-form';
 import { useAppData } from '@/context/app-data-context';
@@ -29,7 +28,7 @@ type VendedorFormData = Omit<Vendedor, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function VendedoresClient() {
-  const { vendedores, refreshData } = useAppData();
+  const { vendedores, refreshData, addVendedor, updateVendedor, deleteVendedor } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

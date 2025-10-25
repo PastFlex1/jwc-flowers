@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { addCustomer, updateCustomer, deleteCustomer } from '@/services/customers';
 import type { Customer } from '@/lib/types';
 import { CustomerForm } from './customer-form';
 import { useAppData } from '@/context/app-data-context';
@@ -44,7 +43,7 @@ type CustomerFormData = Omit<Customer, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function CustomersClient() {
-  const { customers, paises, cargueras, vendedores, daes, provincias, refreshData } = useAppData();
+  const { customers, paises, cargueras, vendedores, daes, provincias, refreshData, addCustomer, updateCustomer, deleteCustomer } = useAppData();
   const { t } = useTranslation();
 
   const [searchTerm, setSearchTerm] = useState('');

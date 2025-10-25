@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addConsignatario, updateConsignatario, deleteConsignatario } from '@/services/consignatarios';
 import type { Consignatario } from '@/lib/types';
 import { ConsignatarioForm } from './consignatario-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type ConsignatarioFormData = Omit<Consignatario, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function ConsignatariosClient() {
-  const { consignatarios, paises, customers, provincias, refreshData } = useAppData();
+  const { consignatarios, paises, customers, provincias, refreshData, addConsignatario, updateConsignatario, deleteConsignatario } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

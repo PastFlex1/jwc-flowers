@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addDebitNote, deleteDebitNote } from '@/services/debit-notes';
 import type { DebitNote } from '@/lib/types';
 import { DebitNoteForm } from './debit-note-form';
 import { useAppData } from '@/context/app-data-context';
@@ -31,7 +30,7 @@ type DebitNoteFormData = Omit<DebitNote, 'id'>;
 const ITEMS_PER_PAGE = 10;
 
 export function DebitNotesClient() {
-  const { debitNotes, invoices, refreshData } = useAppData();
+  const { debitNotes, invoices, refreshData, addDebitNote, deleteDebitNote } = useAppData();
   const [localDebitNotes, setLocalDebitNotes] = useState<DebitNote[]>([]);
   const { t } = useTranslation();
   

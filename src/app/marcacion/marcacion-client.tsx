@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addMarcacion, updateMarcacion, deleteMarcacion } from '@/services/marcaciones';
 import type { Marcacion } from '@/lib/types';
 import { MarcacionForm } from './marcacion-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type MarcacionFormData = Omit<Marcacion, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function MarcacionClient() {
-  const { marcaciones, customers, refreshData } = useAppData();
+  const { marcaciones, customers, refreshData, addMarcacion, updateMarcacion, deleteMarcacion } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

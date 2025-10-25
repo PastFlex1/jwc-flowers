@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addPais, updatePais, deletePais } from '@/services/paises';
 import type { Pais } from '@/lib/types';
 import { PaisForm } from './pais-form';
 import { useAppData } from '@/context/app-data-context';
@@ -31,7 +30,7 @@ type PaisFormData = Omit<Pais, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function PaisClient() {
-  const { paises, refreshData } = useAppData();
+  const { paises, refreshData, addPais, updatePais, deletePais } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

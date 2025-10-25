@@ -22,7 +22,6 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { Invoice, Customer, CreditNote, DebitNote, Payment, BunchItem } from '@/lib/types';
 import { format, parseISO, isSameDay } from 'date-fns';
-import { deleteInvoice } from '@/services/invoices';
 import { useToast } from '@/hooks/use-toast';
 import { useAppData } from '@/context/app-data-context';
 import { useTranslation } from '@/context/i18n-context';
@@ -45,7 +44,7 @@ function useDebounce<T>(value: T, delay: number): T {
 const ITEMS_PER_PAGE = 10;
 
 export function InvoicesClient() {
-  const { invoices, customers, creditNotes, debitNotes, payments, refreshData } = useAppData();
+  const { invoices, customers, creditNotes, debitNotes, payments, refreshData, deleteInvoice } = useAppData();
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);

@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from '@/hooks/use-toast';
-import { addCarguera, updateCarguera, deleteCarguera } from '@/services/cargueras';
 import type { Carguera } from '@/lib/types';
 import { CargueraForm } from './carguera-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type CargueraFormData = Omit<Carguera, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function CarguerasClient() {
-  const { cargueras, refreshData } = useAppData();
+  const { cargueras, refreshData, addCarguera, updateCarguera, deleteCarguera } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);

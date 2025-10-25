@@ -18,7 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { addFinca, updateFinca, deleteFinca } from '@/services/fincas';
 import type { Finca } from '@/lib/types';
 import { FincaForm } from './finca-form';
 import { useAppData } from '@/context/app-data-context';
@@ -30,7 +29,7 @@ type FincaFormData = Omit<Finca, 'id'> & { id?: string };
 const ITEMS_PER_PAGE = 10;
 
 export function FincasClient() {
-  const { fincas, refreshData } = useAppData();
+  const { fincas, refreshData, addFinca, updateFinca, deleteFinca } = useAppData();
   const { t } = useTranslation();
   
   const [currentPage, setCurrentPage] = useState(1);
