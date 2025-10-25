@@ -1,4 +1,4 @@
-# Firebase Studio - Demo Version
+# Demo Version
 
 This is a demo version of a Next.js application built in Firebase Studio. This version is configured to run entirely offline, using mock data instead of a live Firebase database.
 
