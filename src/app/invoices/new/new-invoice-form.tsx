@@ -33,7 +33,6 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from '@/context/i18n-context';
 
-import { addInvoice, updateInvoice } from '@/services/invoices';
 import type { Invoice, BunchItem, LineItem } from '@/lib/types';
 import { useAppData } from '@/context/app-data-context';
 import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
@@ -92,7 +91,7 @@ export function NewInvoiceForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isLoading: isAppDataLoading } = useAppData();
+  const { customers, fincas, vendedores, cargueras, paises, consignatarios, productos, marcaciones, invoices, refreshData, isLoading: isAppDataLoading, addInvoice, updateInvoice } = useAppData();
   const { t } = useTranslation();
 
   const editId = searchParams.get('edit');
@@ -345,7 +344,7 @@ export function NewInvoiceForm() {
 
     try {
       if (editId) {
-        await updateInvoice(editId, invoiceData);
+        await updateInvoice(editId, invoiceData as Partial<Invoice>);
         toast({
           title: "Factura Actualizada",
           description: "La factura ha sido actualizada correctamente.",

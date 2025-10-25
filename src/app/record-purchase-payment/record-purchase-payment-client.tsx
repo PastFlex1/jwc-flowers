@@ -7,11 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { Payment } from '@/lib/types';
-import { addBulkPayment } from '@/services/payments';
 import { DemoLimitDialog } from '@/components/ui/demo-limit-dialog';
 
 export function RecordPurchasePaymentClient() {
-  const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData } = useAppData();
+  const { customers, fincas, invoices, creditNotes, debitNotes, payments, refreshData, addBulkPayment } = useAppData();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
