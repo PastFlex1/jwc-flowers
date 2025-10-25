@@ -55,6 +55,7 @@ export function ProductosClient() {
     deleteProducto,
     addVariedad,
     deleteVariedad,
+    refreshData,
   } = useAppData();
   const { t } = useTranslation();
   
@@ -68,6 +69,7 @@ export function ProductosClient() {
   const [isViewProductsDialogOpen, setIsViewProductsDialogOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<PendingChanges>({});
   const [isDemoLimitDialogOpen, setIsDemoLimitDialogOpen] = useState(false);
+  const [varietyInUseError, setVarietyInUseError] = useState<string | null>(null);
 
 
   const { toast } = useToast();
@@ -125,6 +127,7 @@ export function ProductosClient() {
         toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
       }
       handleCloseProductoDialog();
+      await refreshData();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       if (errorMessage.includes('Límite de demostración alcanzado')) {
@@ -148,6 +151,7 @@ export function ProductosClient() {
       await addVariedad(variedadData);
       toast({ title: 'Éxito', description: 'Producto añadido correctamente.' });
       handleCloseVariedadDialog();
+      await refreshData();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       if (errorMessage.includes('Límite de demostración alcanzado')) {
@@ -178,6 +182,7 @@ export function ProductosClient() {
     try {
       await deleteProducto(productoToDelete.id);
       toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
       console.error("Error deleting product:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -198,15 +203,19 @@ export function ProductosClient() {
     try {
       await deleteVariedad(variedadToDelete.id);
       toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
+      await refreshData();
     } catch (error) {
-      console.error("Error deleting variety:", error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      toast({
-        title: 'Error al Eliminar',
-        description: `${errorMessage}`,
-        variant: 'destructive',
-        duration: 10000,
-      });
+      if (errorMessage.startsWith('No se puede eliminar la variedad')) {
+        setVarietyInUseError(errorMessage);
+      } else {
+        toast({
+          title: 'Error al Eliminar',
+          description: errorMessage,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      }
     } finally {
       setVariedadToDelete(null);
     }
@@ -232,6 +241,7 @@ export function ProductosClient() {
         );
         
         setPendingChanges({});
+        await refreshData();
         toast({ title: 'Éxito', description: `${changesToSave.length} producto(s) actualizados.` });
 
     } catch (error) {
@@ -452,6 +462,20 @@ export function ProductosClient() {
             <AlertDialogCancel onClick={() => setProductoToDelete(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteProductoConfirm} variant="destructive">Eliminar</AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!varietyInUseError} onOpenChange={() => setVarietyInUseError(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Eliminación Bloqueada</AlertDialogTitle>
+                <AlertDialogDescription>
+                    {varietyInUseError}
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setVarietyInUseError(null)}>Entendido</AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
