@@ -201,21 +201,23 @@ export function ProductosClient() {
     if (!variedadToDelete) return;
 
     try {
-      await deleteVariedad(variedadToDelete.id);
-      toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
-      await refreshData();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-      if (errorMessage.startsWith('No se puede eliminar la variedad')) {
-        setVarietyInUseError(errorMessage);
+      const result = await deleteVariedad(variedadToDelete.id);
+      if (typeof result === 'string') {
+        // This is an error message
+        setVarietyInUseError(result);
       } else {
-        toast({
+        toast({ title: 'Éxito', description: 'Producto eliminado correctamente.' });
+        await refreshData();
+      }
+    } catch (error) {
+      // Fallback for unexpected errors
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+       toast({
           title: 'Error al Eliminar',
           description: errorMessage,
           variant: 'destructive',
           duration: 10000,
         });
-      }
     } finally {
       setVariedadToDelete(null);
     }

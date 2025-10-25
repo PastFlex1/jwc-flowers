@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, useCallback, type ReactNode, useMemo } from 'react';
@@ -92,7 +93,7 @@ type AppDataContextType = AppData & {
   deleteProducto: (id: string) => Promise<void>;
 
   addVariedad: (data: Omit<Variedad, 'id'>) => Promise<void>;
-  deleteVariedad: (id: string) => Promise<void>;
+  deleteVariedad: (id: string) => Promise<string | void>;
 
   addCreditNote: (data: Omit<CreditNote, 'id'>) => Promise<void>;
   deleteCreditNote: (id: string) => Promise<void>;
@@ -178,18 +179,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       });
   };
   
-  const deleteVariedad = async (id: string) => {
-     setData(prevData => {
+  const deleteVariedad = async (id: string): Promise<string | void> => {
+    let errorMessage: string | undefined;
+    setData(prevData => {
       const varietyToDelete = prevData.variedades.find(v => v.id === id);
       if (!varietyToDelete) {
-        throw new Error(`Variedad with id ${id} not found.`);
+        errorMessage = `Variedad with id ${id} not found.`;
+        return prevData;
       }
       const productsUsingVariety = prevData.productos.filter(p => p.variedad === varietyToDelete.nombre);
       if (productsUsingVariety.length > 0) {
-        throw new Error(`No se puede eliminar la variedad porque está siendo utilizada por ${productsUsingVariety.length} producto(s).`);
+        errorMessage = `No se puede eliminar la variedad porque está siendo utilizada por ${productsUsingVariety.length} producto(s).`;
+        return prevData;
       }
       return { ...prevData, variedades: prevData.variedades.filter(v => v.id !== id) };
     });
+
+    if (errorMessage) {
+      return errorMessage;
+    }
   };
 
   const addBulkPayment = async (paymentData: Omit<Payment, 'id' | 'invoiceId' | 'amount'>, invoiceBalances: { invoiceId: string; balance: number }[], totalAmountToApply: number) => {
